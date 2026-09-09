@@ -28,7 +28,6 @@ async function bootstrap() {
 
   /**
    * Configuración de Helmet para Fastify
-   * @see https://docs.nestjs.com/security/helmet
    * Aplica cabeceras estándar de protección (X-Content-Type-Options, Strict-Transport-Security, etc.)
    * Configura crossOriginResourcePolicy en 'cross-origin' para permitir consumo de recursos estáticos.
    */
@@ -36,12 +35,13 @@ async function bootstrap() {
     crossOriginResourcePolicy: { policy: 'cross-origin' },
   });
 
+  const cookieSecret = process.env.COOKIE_SECRET || process.env.JWT_SECRET || 'ChatConnect_Cookie_Secret_Key_32_Chars_Min';
+
   /**
    * Manejo de cookies firmadas
-   * @see https://docs.nestjs.com/security/csrf#use-with-fastify
    */
   await app.register(fastifyCookie, {
-    secret: process.env.COOKIE_SECRET || process.env.JWT_SECRET,
+    secret: cookieSecret,
   });
 
   /**
@@ -54,12 +54,13 @@ async function bootstrap() {
       path: '/',
       sameSite: 'lax',
       secure: process.env.NODE_ENV === 'production',
+      signed: true,
     },
   });
 
   /**
    * Configuración de CORS (Cross-Origin Resource Sharing)
-   * Restringe los orígenes permitidos según variables de entorno o defaults locales (Vite @ 5173).
+   * Permite cookies y la cabecera 'x-csrf-token' desde el frontend en localhost:5173
    */
   const allowedOrigins = process.env.CORS_ORIGIN
     ? process.env.CORS_ORIGIN.split(',').map((o) => o.trim())
@@ -69,6 +70,7 @@ async function bootstrap() {
     origin: allowedOrigins,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-csrf-token', 'csrf-token'],
   });
 
   // Resolución de puerto y escucha en todas las interfaces de red

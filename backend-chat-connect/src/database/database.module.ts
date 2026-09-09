@@ -1,16 +1,45 @@
 import { Global, Module } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import dotenv from 'dotenv';
 import { DatabaseService } from './database.service.js';
+import { EmpresaModel, UsuarioModel } from '../login/models/login.model.js';
+
+dotenv.config();
 
 /**
- * Módulo Global de Base de Datos.
- *
- * Al estar decorado con `@Global()`, cualquier otro módulo (LoginModule, etc.)
- * puede inyectar `DatabaseService` directamente sin necesidad de volver a importarlo en sus `imports`.
+ * ============================================================================
+ * MÓDULO GLOBAL DE BASE DE DATOS (TYPEORM)
+ * ============================================================================
+ * Configura la conexión centralizada con PostgreSQL a través de TypeORM:
+ * - `synchronize: false`: Protege de modificaciones destructivas el esquema en PostgreSQL.
+ * - `autoLoadEntities: true`: Carga entidades registradas mediante `TypeOrmModule.forFeature`.
+ * - Exporta `TypeOrmModule` y `DatabaseService` globalmente.
  */
 @Global()
 @Module({
+  imports: [
+    TypeOrmModule.forRootAsync({
+      useFactory: () => ({
+        type: 'postgres',
+        host: process.env.DB_HOST || 'localhost',
+        port: process.env.DB_PORT ? parseInt(process.env.DB_PORT, 10) : 5432,
+        username: process.env.DB_USER || 'postgres',
+        password: process.env.DB_PASSWORD || '',
+        database: process.env.DB_NAME || 'chatbotDatabase',
+        entities: [EmpresaModel, UsuarioModel],
+        autoLoadEntities: true,
+        synchronize: false, // ¡ESTRICTO!: Nunca alterar o sobrescribir tablas en la base de datos
+        logging: process.env.NODE_ENV === 'development' ? ['error', 'warn'] : false,
+        extra: {
+          max: 10,
+          idleTimeoutMillis: 30000,
+          connectionTimeoutMillis: 10000,
+        },
+      }),
+    }),
+    TypeOrmModule.forFeature([EmpresaModel, UsuarioModel]),
+  ],
   providers: [DatabaseService],
-  exports: [DatabaseService],
+  exports: [TypeOrmModule, DatabaseService],
 })
 export class DatabaseModule {}
-

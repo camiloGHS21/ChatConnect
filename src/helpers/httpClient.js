@@ -9,34 +9,65 @@ const authSessionKey = '_REBACK_AUTH_KEY_';
 
 /**
  * ============================================================================
- * CLIENTE HTTP (AXIOS)
+ * CLIENTE HTTP (AXIOS) CON PROTECCIÓN CSRF Y JWT
  * ============================================================================
  * Instancia centralizada de Axios para realizar peticiones HTTP al backend.
- * - baseURL: Dirección del servidor backend (obtenida de .env con fallback a localhost:3000).
- * - headers: Formato de intercambio de datos predeterminado (JSON).
- * - timeout: Tiempo límite de espera (10 segundos) antes de cancelar la solicitud.
+ * - withCredentials: true permite el intercambio de cookies firmadas (_csrf) con el backend.
+ * - baseURL: Dirección del servidor backend.
+ * - timeout: Tiempo límite de espera (10 segundos).
  */
 const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3000',
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: true,
   timeout: 10000,
 });
+
+/** Token CSRF en memoria caché para evitar peticiones redundantes */
+let cachedCsrfToken = null;
+
+/**
+ * Solicita un nuevo token CSRF al backend y asegura la recepción de la cookie `_csrf`.
+ */
+export async function getCsrfToken() {
+  try {
+    const res = await axios.get(
+      `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/login/csrf-token`,
+      { withCredentials: true }
+    );
+    cachedCsrfToken = res.data?.csrfToken;
+    return cachedCsrfToken;
+  } catch (error) {
+    console.warn('No se pudo obtener el token CSRF:', error);
+    return null;
+  }
+}
 
 /**
  * ----------------------------------------------------------------------------
  * INTERCEPTOR DE PETICIONES (REQUEST INTERCEPTOR)
  * ----------------------------------------------------------------------------
- * Se ejecuta automáticamente ANTES de que cualquier solicitud salga hacia el backend:
- * 1. Busca si existe una sesión activa en las Cookies o en el LocalStorage.
- * 2. Si encuentra el token JWT (`session.token`), lo adjunta en el encabezado
- *    HTTP estándar `Authorization: Bearer <token>`.
- * 3. Si no hay token o la petición es pública (/login), continúa sin el header.
+ * 1. Para métodos mutables (POST, PUT, PATCH, DELETE), inyecta la cabecera `x-csrf-token`.
+ * 2. Inyecta el token de sesión JWT en `Authorization: Bearer <token>` si el usuario está autenticado.
  */
-apiClient.interceptors.request.use((config) => {
+apiClient.interceptors.request.use(async (config) => {
+  const method = config.method?.toLowerCase() || 'get';
+  const isMutatingMethod = ['post', 'put', 'patch', 'delete'].includes(method);
+
+  // 1. Inyección de Token CSRF en peticiones mutables
+  if (isMutatingMethod) {
+    if (!cachedCsrfToken) {
+      await getCsrfToken();
+    }
+    if (cachedCsrfToken) {
+      config.headers['x-csrf-token'] = cachedCsrfToken;
+    }
+  }
+
+  // 2. Inyección de Token JWT de sesión
   try {
-    // Intentar leer la sesión desde las cookies; si no está, leer desde localStorage
     const rawSession =
       getCookie(authSessionKey)?.toString() ||
       (typeof window !== 'undefined' && window.localStorage
@@ -45,16 +76,44 @@ apiClient.interceptors.request.use((config) => {
 
     if (rawSession) {
       const session = JSON.parse(rawSession);
-      // Inyectar el token JWT en las cabeceras de autorización
       if (session?.token) {
         config.headers.Authorization = `Bearer ${session.token}`;
       }
     }
-  } catch (e) {
-    // Si la cadena JSON está corrupta o falla la lectura, se ignora para no romper la app
+  } catch {
+    // Session parse error ignorado
   }
+
   return config;
 });
+
+/**
+ * ----------------------------------------------------------------------------
+ * INTERCEPTOR DE RESPUESTAS (RESPONSE INTERCEPTOR)
+ * ----------------------------------------------------------------------------
+ * Si el servidor responde 403 por token CSRF inválido o expirado,
+ * renueva automáticamente el token y reintenta la petición original una vez.
+ */
+apiClient.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+    if (
+      error.response?.status === 403 &&
+      error.response?.data?.code === 'FST_CSRF_INVALID_TOKEN' &&
+      !originalRequest._retry
+    ) {
+      originalRequest._retry = true;
+      cachedCsrfToken = null;
+      const newToken = await getCsrfToken();
+      if (newToken) {
+        originalRequest.headers['x-csrf-token'] = newToken;
+        return apiClient(originalRequest);
+      }
+    }
+    return Promise.reject(error);
+  }
+);
 
 /**
  * Fachada (Wrapper) que expone los métodos HTTP habituales de Axios

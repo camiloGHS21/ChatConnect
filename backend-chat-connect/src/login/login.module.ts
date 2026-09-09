@@ -1,42 +1,42 @@
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { LoginController } from './controllers/login.controller.js';
-import { LoginService } from './services/login.service.js';
+import { LoginRepository } from './repositories/login.repository.js';
 import { DatabaseModule } from '../database/database.module.js';
+import { EmpresaModel, UsuarioModel } from './models/login.model.js';
 
+import { CsrfGuard } from './guards/csrf.guard.js';
 
 /**
- * Módulo de Autenticación y Login de ChatConnect CRM.
- *
- * Responsabilidades:
- * - Proporciona el controlador de inicio de sesión (`LoginController`).
- * - Expone el servicio de autenticación con Bcrypt y JWT (`LoginService`).
- * - Aplica limitación de tasa (Rate Limiting) global mediante `ThrottlerGuard` y `@nestjs/throttler`.
- *   Por defecto: límite de 30 peticiones cada 60 segundos por IP.
- * - Integra el módulo de acceso a datos (`DatabaseModule`).
+ * ============================================================================
+ * MÓDULO DE LOGIN (Controller ──► Repository)
+ * ============================================================================
+ * Estructura simplificada sin capas intermedias:
+ * - LoginController: Expone endpoints y gestiona el flujo de login.
+ * - LoginRepository: Maneja consultas TypeORM a PostgreSQL.
  */
 @Module({
   imports: [
-    // Rate Limiting oficial de NestJS: https://docs.nestjs.com/security/rate-limiting
     ThrottlerModule.forRoot([
       {
-        ttl: 60000, // Ventana de tiempo: 60.000 ms (1 minuto)
-        limit: 30,  // Máximo 30 peticiones por minuto por IP por defecto
+        ttl: 60000,
+        limit: 30,
       },
     ]),
     DatabaseModule,
+    TypeOrmModule.forFeature([EmpresaModel, UsuarioModel]),
   ],
   controllers: [LoginController],
   providers: [
-    LoginService,
+    LoginRepository,
+    CsrfGuard,
     {
-      // Aplica el guardián de limitación de tasa de forma global a todos los endpoints del módulo
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
     },
   ],
-  exports: [LoginService],
+  exports: [LoginRepository, CsrfGuard],
 })
 export class LoginModule {}
-
