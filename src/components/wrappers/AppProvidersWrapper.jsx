@@ -6,7 +6,7 @@ import { LayoutProvider } from '@/context/useLayoutContext';
 import { NotificationProvider } from '@/context/useNotificationContext';
 const handleChangeTitle = () => {
   if (document.visibilityState === 'hidden') {
-    document.title = 'Please come back 🥺';
+    document.title = 'Vuelve pronto 🥺';
   } else {
     document.title = DEFAULT_PAGE_TITLE;
   }
@@ -21,12 +21,12 @@ const AppProvidersWrapper = ({
     };
   }, []);
   return <AuthProvider>
-      <LayoutProvider>
-        <NotificationProvider>
-          {children}
-          <ToastContainer theme="colored" />
-        </NotificationProvider>
-      </LayoutProvider>
-    </AuthProvider>;
+    <LayoutProvider>
+      <NotificationProvider>
+        {children}
+        <ToastContainer theme="colored" />
+      </NotificationProvider>
+    </LayoutProvider>
+  </AuthProvider>;
 };
 export default AppProvidersWrapper;

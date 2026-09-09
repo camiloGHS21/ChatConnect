@@ -9,7 +9,7 @@
  * Representa la entidad Empresa (`public.empresas`).
  * Agrupa la configuración multitenant, razón social y datos de contacto de WhatsApp.
  */
-export interface EmpresaModel {
+export class EmpresaModel {
   /** Identificador primario autoincremental en PostgreSQL */
   id: number;
   /** Identificador universal único opcional */
