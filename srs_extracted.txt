@@ -1,0 +1,346 @@
+DOCUMENTO DE ESPECIFICACIÓN DE REQUISITOS DE SOFTWARE (SRS)
+Plataforma SaaS de Comercio Conversacional por WhatsApp y Panel Web Administrativo (ChatConnect)Estándar IEEE 830 / ISO/IEC/IEEE 29148
+1. Introducción
+1.1 Propósito del Documento
+El presente Documento de Especificación de Requisitos de Software (SRS) define de manera formal, completa y exhaustiva los requisitos funcionales, no funcionales, interfaces externas, arquitectura de capas, modelo de datos relacional y reglas de negocio para la plataforma SaaS de comercio conversacional y automatización de pedidos por WhatsApp con panel web administrativo (ChatConnect). Este documento constituye la fuente única de verdad para los equipos de desarrollo frontend (React.js), backend (Node.js / n8n), arquitectura cloud, ingeniería de datos y aseguramiento de calidad (QA).
+1.2 Alcance del Sistema
+ChatConnect es una plataforma SaaS multiempresa (multi-tenant) desarrollada por Integraciones y Desarrollo Tecnológicos S.A.S. para comercios, distribuidoras y puntos de venta. El sistema integra de manera unificada dos componentes principales: un motor de atención comercial automatizada vía WhatsApp (Meta Cloud API directa + Inteligencia Artificial multimodal en n8n) y un panel web administrativo (CRM básico en React.js) para el control operativo del negocio. El alcance abarca:
+• Atención Comercial y Enrutamiento Inteligente: Canal de WhatsApp 24/7 con soporte para texto, audios (Gemini STT), imágenes de productos (Gemini Vision) y ubicaciones GPS, gestionando hilos en 'ia' y derivación a 'humano'.
+• Catálogo Dinámico y Búsqueda en Español: Búsqueda indexada de alta velocidad sobre productos mediante Full-Text Search en español (to_tsvector con índice GIN), categorización (categorias), marcas (marcas) y galerías (producto_imagenes).
+• Precios por Escala e Inventario en Tiempo Real: Consulta de precios vigentes por listas de precios corporativas (listas_precios) en COP, rangos por escala de volumen (cantidad_minima y cantidad_maxima) y stock disponible calculado (disponible = existencia - reservado).
+• Carrito Conversacional y Pedidos ACID: Liquidación automática de subtotales, descuentos, impuestos y fletes en carritos, formalización de órdenes en pedidos con código unívoco (numero_pedido) y reserva atómica de stock con SELECT FOR UPDATE.
+• Panel Web Administrativo (CRM Básico en React.js): Interfaz web para comercios y asesores que permite:
+- Gestión de Clientes: Consulta de perfiles, historial de compras, geolocalización y datos de contacto.
+- Gestión de Catálogo e Inventarios: Creación y edición de productos, categorías, marcas, imágenes, precios y existencias físicas.
+- Tablero de Pedidos en Tiempo Real: Monitoreo y cambio de estados de pedidos (pendiente -> confirmado -> despachado) con trazabilidad en pedido_estados.
+- Live Chat y Supervisión de Asesores: Visualización de hilos en conversaciones/mensajes, toma de control en modo 'humano' y reasignación.
+• Trazabilidad, Auditoría y Resiliencia: Registro de consumo de tokens y latencias de IA (procesamiento_ia), respaldo de webhooks de Meta (eventos_webhook) y control de excepciones operativas (errores_integracion).
+1.3 Definiciones, Siglas y Abreviaturas
+Término / Sigla
+Definición y Contexto en el Sistema
+Empresa (Tenant)
+Comercio suscrito que opera de forma aislada dentro de la plataforma, identificado por su clave primaria numérico (id) y su uuid global (pgcrypto).
+Multi-tenant Lógico
+Arquitectura donde una única base de datos (chatbotDatabase) segrega estrictamente los datos de cada comercio mediante la columna obligatoria empresa_id.
+Panel Web (CRM)
+Interfaz gráfica de usuario construida en React.js para que los comercios administren visualmente clientes, catálogo, precios, inventarios y pedidos.
+Meta Cloud API Directa
+Canal de mensajería oficial de WhatsApp provisto directamente por Meta Graph API (proveedor = 'meta'), prescindiendo de intermediarios como Twilio.
+Phone Number ID / WABA ID
+Identificadores unívocos entregados por Meta en la entidad canales para la ingesta y despacho de eventos de mensajería.
+Full-Text Search (GIN)
+Mecanismo nativo de PostgreSQL con diccionario en español (to_tsvector('spanish', nombre)) e indexación GIN para búsquedas textuales ultra rápidas.
+pgcrypto
+Extensión de PostgreSQL para la generación criptográfica de identificadores universales (gen_random_uuid()) en la entidad empresas.
+IA en Dos Etapas
+Patrón arquitectónico donde una primera llamada extrae la intención estructurada (JSONB) y una segunda llamada genera la respuesta conversacional.
+Idempotencia Estricta
+Garantía de procesar un mensaje entrante exactamente una sola vez, utilizando el identificador único de Meta (external_message_id / wamid).
+Reserva Atómica
+Bloqueo transaccional de registros en inventarios (SELECT FOR UPDATE) al confirmar un pedido, incrementando reservado sin riesgo de sobreventa.
+2. Descripción General y Modelo de Operación
+2.1 Perspectiva del Producto y Arquitectura de Capas
+ChatConnect opera bajo una arquitectura desacoplada estructurada en cinco capas complementarias:
+1. Capa de Mensajería y Canales: Recepción y emisión directa vía WhatsApp Business Cloud API (Meta) con endpoints HTTPS seguros y auditoría en eventos_webhook (proveedor = 'meta').
+2. Capa de Presentación Web (CRM en React.js): Panel administrativo web interactivo y responsive para comercios y asesores, consumiendo servicios de backend bajo autenticación y filtrado multi-tenant.
+3. Capa de Orquestación y Backend (n8n / Node.js): Servidor n8n (Self-Hosted en Docker) y servicios Node.js para normalización de webhooks, flujos de conversación, endpoints transaccionales y lógica de negocio.
+4. Capa de Inteligencia Artificial: Modelos multimodales de Gemini para extracción de intenciones, generación de diálogo, procesamiento de audio a texto e interpretación visual de imágenes, auditados en procesamiento_ia.
+5. Capa de Persistencia y Transacciones: Motor PostgreSQL 16 (base chatbotDatabase) con extensión pgcrypto, índices GIN, restricciones CHECK, columnas generadas y aislamiento por empresa_id.
+2.2 Perfiles de Usuario (Actores del Sistema)
+Perfil de Usuario
+Descripción y Responsabilidades
+Cliente Final
+Comprador que interactúa vía WhatsApp (persona natural o jurídica) para consultar productos, armar carritos, enviar coordenadas GPS y formalizar pedidos.
+Empresa (Tenant / Admin)
+Administrador del comercio que accede al CRM en React.js para configurar canales telefónicos, gestionar el catálogo, listas de precios, inventarios y despachos.
+Asesor Humano
+Operador de servicio que utiliza el CRM para monitorear conversaciones, asumir hilos de chat (modo = 'humano'), responder dudas complejas y actualizar estados de pedidos.
+Administrador de Plataforma
+Equipo técnico de Integraciones y Desarrollo Tecnológicos S.A.S. que aprovisiona tenants, monitorea infraestructura VPS (Hostinger), n8n y consumo de tokens.
+2.3 Supuestos y Dependencias
+• Conectividad y Políticas Meta: Disponibilidad ininterrumpida de Meta Graph API y entrega de webhooks HTTPS válidos con identificadores wamid.
+• Servicios Multimodales de IA: Conectividad y tiempos de respuesta estables (< 3.0s) en las APIs de Gemini para texto, audio e imágenes.
+• Entorno Transaccional y Web: Infraestructura VPS (Hostinger) con Docker, Nginx SSL, Node.js, n8n y PostgreSQL 16 con pool de conexiones optimizado.
+3. Requisitos Funcionales Detallados
+A continuación se presentan los requisitos funcionales del sistema organizados en dos módulos sinérgicos: Automatización Conversacional por WhatsApp y Panel Web Administrativo (CRM Básico en React.js), 100% consistentes con el esquema relacional:
+ID
+Módulo / Requisito
+Descripción y Criterios de Aceptación
+Entidades del Modelo Impactadas
+RF-01
+Identificación Multi-tenant Directa
+Al recibir un webhook de Meta, el sistema extrae el phone_number_id o phone_number y localiza el canal en canales (validando proveedor = 'meta' y tipo = 'whatsapp'). Asigna el empresa_id que regirá toda la sesión.
+canales, empresas, eventos_webhook
+RF-02
+Registro y Gestión de Clientes
+Localiza al cliente en clientes mediante el índice único (empresa_id, whatsapp). Si no existe, lo crea automáticamente con tipo_persona = 'natural', número de WhatsApp y estado 'activo'.
+clientes, empresas
+RF-03
+Gestión de Sesiones y Modos
+Busca o crea una sesión activa en conversaciones vinculada a (empresa_id, cliente_id, canal_id). Controla el modo ('ia' vs 'humano'), actualiza fecha_ultima_interaccion y valida estados de conversación.
+conversaciones, clientes, canales
+RF-04
+Idempotencia Estricta de Mensajes
+Registra cada mensaje en mensajes validando la restricción UNIQUE sobre external_message_id (wamid). Si ya existe, descarta el procesamiento para evitar duplicados.
+mensajes, eventos_webhook
+RF-05
+Búsqueda Textual de Catálogo
+Permite consultas de productos en lenguaje natural mediante Full-Text Search en español (to_tsvector('spanish', nombre)) con índice GIN, categorización (categorias) y marcas (marcas) con activo = TRUE.
+productos, categorias, marcas, producto_imagenes
+RF-06
+Consulta Dinámica de Listas de Precios
+Obtiene los precios vigentes desde precios considerando empresa_id, producto_id, lista_precio_id (listas_precios), rango por escalas [cantidad_minima, cantidad_maxima], vigencia temporal y moneda ('COP').
+precios, listas_precios, productos
+RF-07
+Cálculo de Inventario Disponible
+Calcula el stock disponible en tiempo real desde inventarios mediante la columna generada almacenada: disponible = existencia - reservado. Impide adiciones si se supera el stock disponible.
+inventarios, productos
+RF-08
+Administración de Carrito Conversacional
+Permite agregar, modificar cantidades y remover ítems en carritos y carrito_detalles (CHECK cantidad > 0), recalculando automáticamente subtotal, descuento, impuesto, envio y total.
+carritos, carrito_detalles, productos
+RF-09
+Procesamiento de Audio (STT)
+Descarga notas de voz de WhatsApp desde Meta, las transcribe mediante Gemini STT y registra el mensaje en mensajes con tipo = 'audio' y su contenido textual para el flujo conversacional.
+mensajes
+RF-10
+Procesamiento Visual de Catálogo (Vision)
+Analiza fotografías enviadas por el usuario mediante Gemini Vision para identificar referencias comerciales, marcas o códigos SKU, cruzando las coincidencias con productos y producto_imagenes.
+mensajes, productos, producto_imagenes
+RF-11
+Captura de Ubicación GPS
+Extrae latitud y longitud de mensajes de tipo 'location' y actualiza la ficha del cliente en clientes (latitud, longitud, direccion) para cálculo logístico y despacho.
+clientes, mensajes
+RF-12
+Generación y Formalización de Pedidos
+Convierte un carrito confirmado en una orden formal en pedidos con código unívoco (numero_pedido, ej. PED-000001), estado 'pendiente', desglose de flete y totales, tipo_entrega y fechas/horas.
+pedidos, carritos, clientes, conversaciones
+RF-13
+Reserva Atómica de Inventario (ACID)
+Ejecuta una transacción con bloqueo explícito (SELECT FOR UPDATE) sobre inventarios para incrementar reservado y copiar las líneas de carrito_detalles a pedido_detalles de forma inmutable.
+inventarios, pedido_detalles, carrito_detalles, pedidos
+RF-14
+Historial de Estados de Pedido
+Registra cada cambio de estado de la orden en pedido_estados (ej. 'pendiente' -> 'confirmado' -> 'despachado') con timestamp created_at y comentario explicativo para trazabilidad completa.
+pedido_estados, pedidos
+RF-15
+Derivación Fluida a Asesor Humano
+Actualiza conversaciones.modo = 'humano' y asigna agente_humano cuando la IA detecte baja confianza o cuando el cliente lo solicite explícitamente, pausando la respuesta automática.
+conversaciones
+RF-16
+Auditoría de Inferencia y Consumo IA
+Registra en procesamiento_ia cada interacción con Gemini, auditando conversacion_id, mensaje_id, modelo Gemini utilizado, intent, input, output JSONB, tokens de entrada/salida, latencia y estado.
+procesamiento_ia, conversaciones, mensajes
+RF-17
+Registro de Webhooks de Meta
+Almacena los payloads JSON originales recibidos desde Meta en eventos_webhook (proveedor = 'meta', external_id, procesado, fecha_recepcion, error) para auditoría técnica.
+eventos_webhook
+RF-18
+Gestión de Errores en Workflows
+Registra fallos operativos de integración en errores_integracion (empresa_id, workflow, tipo, mensaje, detalle JSONB, resuelto, intentos) para resiliencia y reintentos.
+errores_integracion, empresas
+RF-19
+CRM: Panel de Gestión de Clientes
+Proporciona en el panel web (React.js) una vista de administración de clientes por empresa_id con búsqueda por nombre, teléfono/whatsapp, tipo_persona, edición de datos fiscales y acceso directo a su historial de pedidos y conversaciones.
+clientes, empresas, pedidos, conversaciones
+RF-20
+CRM: Administración de Catálogo e Inventario
+Permite desde la interfaz web dar de alta, editar y categorizar productos (productos, categorias, marcas, producto_imagenes), gestionar listas_precios y precios por escala, y ajustar existencias físicas en inventarios.
+productos, categorias, marcas, producto_imagenes, listas_precios, precios, inventarios
+RF-21
+CRM: Tablero de Pedidos en Tiempo Real
+Muestra un tablero visual tipo Kanban/Lista con los pedidos generados vía WhatsApp, detalles de líneas de compra (pedido_detalles), cambio interactivo de estado con inserción automática en pedido_estados y visualización de ubicación de entrega.
+pedidos, pedido_detalles, pedido_estados, clientes
+RF-22
+CRM: Live Chat y Supervisión Comercial
+Consola visual para asesores humanos que lista conversaciones activas, permite visualizar el historial de mensajes multimedia, alternar el modo ('ia' <-> 'humano'), responder directamente al cliente por WhatsApp y registrar notas internas.
+conversaciones, mensajes, clientes, canales
+4. Requisitos No Funcionales (RNF)
+ID
+Categoría
+Especificación Técnica y Métrica
+Criterio de Validación
+RNF-01
+Aislamiento Multi-tenant Estricto
+Todas las operaciones DML, consultas en n8n y endpoints del CRM web deben incluir obligatoriamente el filtro empresa_id. Cero fuga de datos entre empresas.
+100% de consultas parametrizadas con empresa_id. Verificación en pruebas de penetración.
+RNF-02
+Rendimiento y Latencia de Respuesta
+Tiempo de respuesta menor a 3.0s para mensajes de texto simples, menor a 6.0s para audios/visión, y tiempo de carga de vistas del CRM menor a 1.5s.
+Medición de latencia en procesamiento_ia, logs de n8n y métricas Core Web Vitals en React.js.
+RNF-03
+Idempotencia y Descarte de Duplicados
+Garantía de no procesar webhooks o mensajes duplicados mediante control UNIQUE sobre external_message_id (wamid) en mensajes y external_id en eventos_webhook.
+0% de respuestas o pedidos duplicados ante reintentos de red de Meta.
+RNF-04
+Integridad Transaccional y Concurrencia
+Control estricto de concurrencia en inventarios mediante transacciones ACID con SELECT FOR UPDATE y restricciones CHECK (reservado <= existencia, disponible >= 0).
+Cero sobreventas en pruebas de estrés con compras simultáneas de la última unidad.
+RNF-05
+Seguridad, Autenticación y Secretos
+Prohibición de almacenar tokens secretos de Meta o API Keys en base de datos. Autenticación del CRM web mediante tokens JWT seguros y roles por tenant (Admin / Asesor).
+Revisión SAST y verificación de campo configuracion en canales sin secretos.
+RNF-06
+Cumplimiento Oficial de Políticas Meta
+Alineación total con las directivas de WhatsApp Business Cloud API: respeto a la ventana de 24 horas para mensajes libres y uso exclusivo de plantillas de servicio aprobadas fuera de ventana.
+0% de suspensiones o bloqueos de líneas en Meta Business Manager.
+RNF-07
+Usabilidad y Responsividad del CRM
+La interfaz administrativa web (React.js) debe ser 100% responsive (móvil, tablet y escritorio) con interfaces claras para gestión de pedidos y live chat.
+Validación en navegadores modernos (Chrome, Firefox, Safari, Edge) y pruebas UX.
+5. Matriz de Trazabilidad y Criterios de Aceptación
+Requisito
+Componente Implementador
+Entidades Relacionadas
+Criterio de Validación Operativa
+RF-01
+n8n (Workflow Ingesta Meta)
+canales, empresas, eventos_webhook
+Identifica el tenant por phone_number_id y asigna empresa_id en < 40 ms.
+RF-02
+n8n / PostgreSQL
+clientes, empresas
+Crea o recupera cliente por (empresa_id, whatsapp) en < 30 ms.
+RF-03
+n8n (Control de Sesiones)
+conversaciones, canales, clientes
+Controla estado y modo ('ia'/'humano') actualizando fecha_ultima_interaccion.
+RF-04
+n8n / PostgreSQL
+mensajes, eventos_webhook
+Filtra y descarta el 100% de mensajes repetidos por external_message_id (wamid).
+RF-05
+PostgreSQL (Full-Text Search)
+productos, categorias, marcas, producto_imagenes
+Búsqueda textual con to_tsvector('spanish', nombre) responde en < 20 ms.
+RF-06
+PostgreSQL / n8n
+precios, listas_precios, productos
+Aplica precios vigentes por lista y escala de volumen [cantidad_minima, cantidad_maxima].
+RF-07
+PostgreSQL (Generated Column)
+inventarios, productos
+Calcula disponible = existencia - reservado en tiempo real.
+RF-08
+n8n / PostgreSQL
+carritos, carrito_detalles, productos
+Mantiene totales, descuentos, impuestos y envío actualizados en cada interacción.
+RF-09
+n8n / Gemini STT
+mensajes
+Transcribe audio de WhatsApp y almacena texto en mensajes en < 3.5 s.
+RF-10
+n8n / Gemini Vision
+mensajes, productos, producto_imagenes
+Reconoce productos en imágenes y vincula referencias SKU en < 4.5 s.
+RF-11
+n8n / PostgreSQL
+clientes, mensajes
+Registra coordenadas GPS en clientes para cálculo de envío y entrega.
+RF-12
+PostgreSQL / n8n
+pedidos, carritos, clientes
+Genera numero_pedido único y crea orden con tipo_entrega y desglose de totales.
+RF-13
+PostgreSQL Transaccional (ACID)
+inventarios, pedido_detalles, carrito_detalles
+Bloquea fila con SELECT FOR UPDATE e incrementa reservado sin sobreventa.
+RF-14
+n8n / PostgreSQL
+pedido_estados, pedidos
+Registra cada transición de estado del pedido con created_at y comentario.
+RF-15
+n8n (Enrutamiento Humano)
+conversaciones
+Cambia modo a 'humano' y alerta a la bandeja del asesor comercial.
+RF-16
+n8n / PostgreSQL
+procesamiento_ia, conversaciones, mensajes
+Audita modelo, intent, tokens input/output, latencia y JSONB de respuesta.
+RF-17
+n8n / PostgreSQL
+eventos_webhook
+Persiste el payload JSON original de Meta para auditoría técnica.
+RF-18
+n8n / PostgreSQL
+errores_integracion, empresas
+Registra fallos operativos para auditoría, alerta y reintentos automatizados.
+RF-19
+Frontend CRM (React.js) / Backend
+clientes, empresas, pedidos, conversaciones
+Permite listar, filtrar y editar clientes en la UI web con paginación en < 500 ms.
+RF-20
+Frontend CRM (React.js) / Backend
+productos, categorias, marcas, listas_precios, inventarios
+CRUD visual completo de catálogo, imágenes, listas de precios y ajuste de stock.
+RF-21
+Frontend CRM (React.js) / Backend
+pedidos, pedido_detalles, pedido_estados
+Tablero visual en tiempo real que refleja nuevas órdenes y actualiza estados.
+RF-22
+Frontend CRM (React.js) / n8n / Meta
+conversaciones, mensajes, clientes, canales
+Bandeja de live chat con historial multimedia y switch instantáneo de modo IA/Humano.
+6. Casos de Uso
+ID
+Actor principal
+Descripción del caso de uso
+Resultado esperado
+CU-01
+Cliente Final
+Consultar productos por WhatsApp usando texto, audio o imagen.
+El sistema identifica la intención, busca en el catálogo activo y responde con productos relevantes, precio vigente y disponibilidad.
+CU-02
+Cliente Final
+Agregar productos al carrito conversacional y modificar cantidades.
+El carrito se actualiza con precios por escala, subtotal, descuentos, impuestos, envío y total.
+CU-03
+Cliente Final
+Confirmar un pedido desde WhatsApp.
+El sistema formaliza la orden, genera un número único de pedido y reserva inventario de forma transaccional.
+CU-04
+Asesor Humano
+Tomar control de una conversación derivada por baja confianza de la IA o solicitud del cliente.
+La conversación cambia a modo humano y se pausa la atención automática.
+CU-05
+Empresa / Admin
+Administrar catálogo, inventario, listas de precios y pedidos desde el CRM web.
+Los datos operativos quedan actualizados por tenant y disponibles para WhatsApp y el panel administrativo.
+7. Reglas de Negocio
+Todo dato operativo debe estar asociado obligatoriamente a un empresa_id para garantizar aislamiento multi-tenant.
+Solo los productos activos, con categoría/marca vigente y stock disponible mayor a cero podrán ser ofrecidos al cliente final.
+El precio aplicado a un producto debe corresponder a la lista de precios vigente, moneda COP y rango de cantidad definido por cantidad_minima y cantidad_maxima.
+El stock disponible se calcula como existencia menos reservado; el sistema no permitirá agregar o confirmar cantidades superiores al disponible.
+La confirmación de pedidos debe ejecutarse mediante transacción ACID y bloqueo SELECT FOR UPDATE para evitar sobreventas.
+Cada pedido debe contar con un numero_pedido único e inmutable, además de historial de estados en pedido_estados.
+Todo webhook o mensaje entrante debe validarse por external_message_id o external_id para asegurar idempotencia y evitar procesamiento duplicado.
+Cuando la IA no pueda resolver una intención con confianza suficiente o el cliente solicite asesor, la conversación debe cambiar a modo humano.
+Los errores de integración, fallos de workflows y consumos de IA deben registrarse para auditoría, trazabilidad y soporte operativo.
+8. Historias de Usuario
+ID
+Historia de usuario
+Criterios de aceptación
+HU-01
+Como cliente final, quiero consultar productos por WhatsApp para conocer disponibilidad, precio y opciones de compra sin ingresar al sitio web.
+La consulta debe responder con productos activos, precio vigente, disponibilidad real y datos suficientes para continuar la compra.
+HU-02
+Como cliente final, quiero agregar productos al carrito y cambiar cantidades para construir mi pedido conversacionalmente.
+El sistema debe recalcular totales, validar stock disponible y mantener el carrito actualizado en cada interacción.
+HU-03
+Como cliente final, quiero confirmar mi pedido por WhatsApp para recibir un número de orden y continuar el proceso de entrega.
+El sistema debe crear el pedido, generar numero_pedido único, reservar inventario y registrar el estado inicial.
+HU-04
+Como asesor humano, quiero tomar conversaciones cuando la IA no pueda resolverlas para garantizar continuidad en la atención.
+La conversación debe cambiar a modo humano, conservar historial y permitir respuesta directa desde el CRM.
+HU-05
+Como administrador de empresa, quiero gestionar catálogo, inventario, clientes y pedidos desde un panel web para controlar la operación comercial.
+El CRM debe permitir crear, editar, consultar y filtrar información respetando empresa_id y roles autorizados.
+9. Definición de Terminado
+Todos los requisitos funcionales priorizados cuentan con implementación verificable, pruebas unitarias y validación manual documentada.
+Los requisitos no funcionales críticos de seguridad, latencia, idempotencia, auditoría y aislamiento multi-tenant fueron probados y cumplen las métricas definidas.
+Las operaciones de catálogo, precios, inventario, carrito y pedidos funcionan de extremo a extremo desde WhatsApp y desde el CRM web.
+La confirmación de pedidos garantiza integridad transaccional, generación de número único y reserva atómica de inventario sin sobreventas.
+Los eventos de Meta, mensajes, inferencias de IA, errores de integración y cambios de estado quedan registrados para trazabilidad.
+El CRM web es responsive, accesible en navegadores modernos y restringe operaciones según rol y empresa_id.
+Los casos de prueba de regresión fueron ejecutados sin defectos bloqueantes o críticos abiertos.
+La documentación técnica y funcional queda actualizada, incluyendo alcance, actores, casos de uso, historias de usuario, reglas de negocio, criterios de aceptación y matriz de trazabilidad.

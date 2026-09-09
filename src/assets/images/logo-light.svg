@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 38" width="160" height="38" fill="none">
+  <defs>
+    <!-- Gradiente Luminoso para fondo oscuro -->
+    <linearGradient id="text-brand-light" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#25D366" />
+      <stop offset="50%" stop-color="#38bdf8" />
+      <stop offset="100%" stop-color="#c084fc" />
+    </linearGradient>
+
+    <linearGradient id="pulse-dot-light" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#25D366" />
+      <stop offset="100%" stop-color="#38bdf8" />
+    </linearGradient>
+  </defs>
+
+  <!-- Texto Principal: Chat (Blanco Nítido) -->
+  <text x="2" y="24" 
+        font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, sans-serif" 
+        font-size="23" 
+        font-weight="900" 
+        letter-spacing="-0.6" 
+        fill="#ffffff">Chat</text>
+
+  <!-- Texto Principal: Connect (Degradado Neón Omnicanal) -->
+  <text x="56" y="24" 
+        font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, sans-serif" 
+        font-size="23" 
+        font-weight="900" 
+        letter-spacing="-0.6" 
+        fill="url(#text-brand-light)">Connect</text>
+
+  <!-- Arco de Conexión y Nodo Inteligente -->
+  <circle cx="55" cy="8" r="2.8" fill="url(#pulse-dot-light)" />
+  <circle cx="55" cy="8" r="1.2" fill="#0f172a" />
+  <path d="M 50 12 C 53 9.5, 57 9.5, 60 12" stroke="#25D366" stroke-width="1.4" stroke-linecap="round" fill="none" opacity="0.9" />
+
+  <!-- Subtítulo de categoría de producto -->
+  <text x="3" y="34" 
+        font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, sans-serif" 
+        font-size="6.8" 
+        font-weight="700" 
+        letter-spacing="1.8" 
+        fill="#94a3b8">OMNICHANNEL AI CRM</text>
+</svg>
