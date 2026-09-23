@@ -1,0 +1,93 @@
+import React from 'react';
+import { Form, Button, Badge } from 'react-bootstrap';
+import IconifyIcon from '@/components/wrappers/IconifyIcon';
+import { getCommercialRoundingSuggestions } from './pricingCalculations';
+
+const PreciosVentaSummary = ({
+  precioBase = 0,
+  precioImpuesto = 0,
+  taxBreakdown = {},
+  onPrecioImpuestoChange,
+  onSmartRound
+}) => {
+  const suggestions = getCommercialRoundingSuggestions(precioImpuesto);
+
+  return (
+    <div className="p-3 bg-light rounded-2 border">
+      <div className="d-flex justify-content-between align-items-center mb-1">
+        <span className="text-muted fs-12">Precio Base de Venta:</span>
+        <span className="fw-semibold fs-13 text-dark">
+          ${Number(precioBase || 0).toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+        </span>
+      </div>
+      {taxBreakdown.totalFixed > 0 && (
+        <div className="d-flex justify-content-between align-items-center mb-1">
+          <span className="text-muted fs-12">Impuestos Fijos:</span>
+          <span className="fw-semibold fs-12 text-warning">+${Number(taxBreakdown.totalFixed).toLocaleString('es-CO')}</span>
+        </div>
+      )}
+      {taxBreakdown.totalPercent > 0 && (
+        <div className="d-flex justify-content-between align-items-center mb-1">
+          <span className="text-muted fs-12">Impuestos % ({taxBreakdown.totalPercent}%):</span>
+          <span className="fw-semibold fs-12 text-primary">
+            +${Number((precioBase * taxBreakdown.totalPercent) / 100).toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </span>
+        </div>
+      )}
+      <div className="d-flex justify-content-between align-items-center mb-1">
+        <span className="text-muted fs-12">Total Impuestos Venta:</span>
+        <span className="fw-semibold fs-13 text-primary">
+          +${Number(taxBreakdown.totalTaxAmount || 0).toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+        </span>
+      </div>
+
+      <div className="border-top pt-2 mt-2 d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <div>
+          <span className="fw-bold fs-13 text-dark d-block">Precio Final de Venta:</span>
+          <small className="text-muted fs-11 font-monospace">(precio_impuesto - editable para redondear)</small>
+        </div>
+        <div className="d-flex flex-column align-items-end gap-1">
+          <div className="input-group input-group-sm" style={{ maxWidth: '230px' }}>
+            <span className="input-group-text bg-white fw-bold text-success">$</span>
+            <Form.Control
+              type="number"
+              step="1"
+              min="0"
+              className="text-end fw-bold fs-14 text-success font-monospace"
+              value={precioImpuesto ?? ''}
+              onChange={e => onPrecioImpuestoChange(e.target.value)}
+              title="Precio final con impuestos redondeable"
+            />
+            <Button
+              variant="success"
+              type="button"
+              size="sm"
+              className="text-white px-2 py-0 fs-11 fw-semibold d-flex align-items-center gap-1"
+              title="Redondear a denominación COP"
+              onClick={onSmartRound}
+            >
+              <IconifyIcon icon="bx:magic-wand" className="fs-13" />
+              Redondear
+            </Button>
+          </div>
+          <div className="d-flex flex-wrap justify-content-end gap-1 mt-1">
+            {suggestions.map((sug, i) => (
+              <Badge
+                key={i}
+                bg="success-subtle"
+                className="text-success border border-success border-opacity-25 cursor-pointer fs-10"
+                style={{ cursor: 'pointer' }}
+                onClick={() => onPrecioImpuestoChange(sug.value)}
+                title={sug.desc}
+              >
+                {sug.label}
+              </Badge>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default PreciosVentaSummary;

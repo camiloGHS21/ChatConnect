@@ -17,9 +17,9 @@ export const MENU_ITEMS = [
     url: '/clientes',
   },
   {
-    key: 'catalogo',
+    key: 'productos',
     icon: 'iconamoon:shopping-bag-duotone',
-    label: 'Catálogo',
+    label: 'Productos',
     url: '/catalogo',
   },
   {

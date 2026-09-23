@@ -31,10 +31,10 @@ import {
  * - updated_at: timestamp with time zone
  * =============================================================================
  */
-@Entity('empresas', { schema: 'public' })
+@Entity('empresa', { schema: 'public' })
 export class EmpresaModel {
   /** Identificador primario (bigserial en PostgreSQL) */
-  @PrimaryGeneratedColumn({ type: 'bigint' })
+  @PrimaryGeneratedColumn({ type: 'bigint', name: 'id_empresa' })
   id: number;
 
   /** Identificador universal único */
@@ -119,10 +119,10 @@ export class EmpresaModel {
  * - updated_at: timestamp with time zone
  * =============================================================================
  */
-@Entity('usuarios', { schema: 'public' })
+@Entity('usuario', { schema: 'public' })
 export class UsuarioModel {
   /** Identificador primario (bigserial en PostgreSQL) */
-  @PrimaryGeneratedColumn({ type: 'bigint' })
+  @PrimaryGeneratedColumn({ type: 'bigint', name: 'id_usuario' })
   id: number;
 
   /** Clave foránea que referencia a public.empresas(id) */

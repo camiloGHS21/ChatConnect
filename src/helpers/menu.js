@@ -23,6 +23,9 @@ export const getMenuItemFromURL = (items, url) => {
     }
   } else {
     if (items.url == url) return items;
+    if (items.url && url.startsWith(items.url) && items.url !== '/' && items.url !== '/dashboard') {
+      return items;
+    }
     if (items.children != null) {
       for (const item of items.children) {
         if (item.url == url) return item;

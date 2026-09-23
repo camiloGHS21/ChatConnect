@@ -2,6 +2,7 @@ import { Global, Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import dotenv from 'dotenv';
 import { DatabaseService } from './database.service.js';
+import { SeedService } from './seed.service.js';
 import { EmpresaModel, UsuarioModel } from '../login/models/login.model.js';
 
 dotenv.config();
@@ -13,7 +14,7 @@ dotenv.config();
  * Configura la conexión centralizada con PostgreSQL a través de TypeORM:
  * - `synchronize: false`: Protege de modificaciones destructivas el esquema en PostgreSQL.
  * - `autoLoadEntities: true`: Carga entidades registradas mediante `TypeOrmModule.forFeature`.
- * - Exporta `TypeOrmModule` y `DatabaseService` globalmente.
+ * - Exporta `TypeOrmModule`, `DatabaseService` y `SeedService` globalmente.
  */
 @Global()
 @Module({
@@ -39,7 +40,7 @@ dotenv.config();
     }),
     TypeOrmModule.forFeature([EmpresaModel, UsuarioModel]),
   ],
-  providers: [DatabaseService],
-  exports: [TypeOrmModule, DatabaseService],
+  providers: [DatabaseService, SeedService],
+  exports: [TypeOrmModule, DatabaseService, SeedService],
 })
 export class DatabaseModule {}

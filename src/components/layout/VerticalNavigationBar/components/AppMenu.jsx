@@ -93,7 +93,8 @@ const AppMenu = ({
         setActiveMenuItems([activeMt.key, ...findAllParent(menuItems, activeMt)]);
       }
       setTimeout(() => {
-        const activatedItem = document.querySelector(`#leftside-menu-container .simplebar-content a[href="${trimmedURL}"]`);
+        const targetUrl = matchingMenuItem.url || trimmedURL;
+        const activatedItem = document.querySelector(`#leftside-menu-container .simplebar-content a[href="${targetUrl}"]`);
         if (activatedItem) {
           const simplebarContent = document.querySelector('#leftside-menu-container .simplebar-content-wrapper');
           if (simplebarContent) {

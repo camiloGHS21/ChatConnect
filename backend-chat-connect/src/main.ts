@@ -6,7 +6,7 @@ import {
 import helmet from '@fastify/helmet';
 import fastifyCookie from '@fastify/cookie';
 import fastifyCsrf from '@fastify/csrf-protection';
-import { LoginModule } from './login/login.module.js';
+import { AppModule } from './app.module.js';
 
 /**
  * Función principal de arranque (Bootstrap) del servidor backend ChatConnect CRM.
@@ -22,7 +22,7 @@ import { LoginModule } from './login/login.module.js';
 async function bootstrap() {
   // Inicialización de la aplicación NestJS utilizando el adaptador Fastify
   const app = await NestFactory.create<NestFastifyApplication>(
-    LoginModule,
+    AppModule,
     new FastifyAdapter(),
   );
 
