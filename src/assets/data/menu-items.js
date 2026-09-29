@@ -40,4 +40,10 @@ export const MENU_ITEMS = [
     label: 'Chat',
     url: '/chat',
   },
+  {
+    key: 'configuracion',
+    icon: 'iconamoon:settings-duotone',
+    label: 'Configuración',
+    url: '/configuracion',
+  },
 ];

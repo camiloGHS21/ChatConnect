@@ -12,6 +12,9 @@ import {
   AtributoModel,
   AtributoComponenteModel,
   SecuenciaModel,
+  CanalModel,
+  DepartamentoModel,
+  CiudadModel,
 } from './models/producto.model.js';
 import { DatabaseModule } from '../database/database.module.js';
 
@@ -34,10 +37,13 @@ import { DatabaseModule } from '../database/database.module.js';
       AtributoModel,
       AtributoComponenteModel,
       SecuenciaModel,
+      CanalModel,
+      DepartamentoModel,
+      CiudadModel,
     ]),
   ],
   controllers: [ProductoController],
   providers: [ProductoRepository],
   exports: [ProductoRepository],
 })
-export class ProductoModule {}
+export class ProductoModule { }

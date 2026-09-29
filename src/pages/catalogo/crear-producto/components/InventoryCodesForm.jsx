@@ -16,6 +16,7 @@ const InventoryCodesForm = ({
   updateField,
   catalogs = {},
   triggerDeleteConfirm,
+  errors = {},
 }) => {
   const [showSupplierModal, setShowSupplierModal] = useState(false);
   const [allCustomSuppliers, setAllCustomSuppliers] = useState([]);
@@ -54,6 +55,7 @@ const InventoryCodesForm = ({
         updateField={updateField}
         inventoryTypesCatalog={inventoryTypes}
         measuresCatalog={measures}
+        errors={errors}
       />
 
       {/* Encabezado Referencias y Códigos */}

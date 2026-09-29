@@ -1,85 +1,81 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import DeleteConfirmationModal from '@/components/DeleteConfirmationModal';
 import WizardTabsHeader from '@/components/producto/wizard/WizardTabsHeader';
 import WizardNavigation from '@/components/producto/wizard/WizardNavigation';
 import { buildProductWizardSteps } from '@/components/producto/wizard/buildProductWizardSteps';
 import { getInitialProductState } from '@/components/producto/wizard/initialProductState';
+import { validateStep, validateAllProductData } from '@/components/producto/wizard/productValidation';
+import useProductCatalogs from '@/components/producto/wizard/useProductCatalogs';
 import productoService from '@/services/productoService';
 import ProductSubmittedForm from './ProductSubmittedForm';
 
 /**
  * Asistente de Creación de Producto (5 Pasos Oficiales Reback)
- * 1. Descripción | 2. Impuestos | 3. Inventario (incl. Variantes) | 4. Imágenes | 5. Metadata
+ * Con validaciones por paso y pre-guardado según reglas de PostgreSQL.
  */
 const CreateProductForms = () => {
   const [activeStep, setActiveStep] = useState(1);
   const [isSubmitted, setIsSubmitted] = useState(false);
-  const [catalogs, setCatalogs] = useState({});
   const [productData, setProductData] = useState(() => getInitialProductState());
-  const [deleteModalConfig, setDeleteModalConfig] = useState({
-    show: false,
-    title: '',
-    message: '',
-    itemName: '',
-    itemType: '',
-    onConfirm: null,
-  });
+  const [validationErrors, setValidationErrors] = useState({});
+  const [stepError, setStepError] = useState('');
+  const [saveError, setSaveError] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+  const [deleteModalConfig, setDeleteModalConfig] = useState({ show: false });
 
   const { control, setValue, reset } = useForm({ defaultValues: productData, mode: 'onChange' });
 
-  const triggerDeleteConfirm = (config) => {
-    setDeleteModalConfig({ show: true, ...config });
+  const updateField = (name, val) => {
+    setValue(name, val, { shouldValidate: true, shouldDirty: true });
+    setProductData(prev => ({ ...prev, [name]: val }));
+    if (validationErrors[name]) {
+      setValidationErrors(prev => { const n = { ...prev }; delete n[name]; return n; });
+      setStepError('');
+    }
   };
 
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        const [catData, code] = await Promise.all([
-          productoService.getCatalogos(1),
-          productoService.getSiguienteCodigo(1),
-        ]);
-        const categoriesWithSubs = (catData.categorias || []).map(cat => ({
-          ...cat,
-          subcategorias: (catData.subcategorias || []).filter(sub => String(sub.categoria_id) === String(cat.id)),
-        }));
-        const attributesWithComps = (catData.atributos || []).map(attr => ({
-          ...attr,
-          id_atributo: attr.id,
-          componentes: (catData.atributosComponentes || [])
-            .filter(comp => String(comp.atributo_id) === String(attr.id))
-            .map(comp => ({
-              ...comp,
-              id_atributo_componente: comp.id,
-            })),
-        }));
-        setCatalogs({
-          ...catData,
-          categorias: categoriesWithSubs,
-          atributos: attributesWithComps,
-        });
-        if (code) {
-          updateField('codigo_interno', code);
-        }
-      } catch (err) {
-        console.warn('Error al cargar catálogos desde backend:', err);
+  const { catalogs, setCatalogs } = useProductCatalogs(updateField);
+
+  const handleNext = () => {
+    const val = validateStep(activeStep, productData);
+    if (!val.isValid) {
+      setValidationErrors(val.errors);
+      setStepError(val.message);
+      return;
+    }
+    setValidationErrors({});
+    setStepError('');
+    setActiveStep(prev => Math.min(5, prev + 1));
+  };
+
+  const handleTabSelect = (stepNum) => {
+    const target = Number(stepNum);
+    if (target > activeStep) {
+      const val = validateStep(activeStep, productData);
+      if (!val.isValid) {
+        setValidationErrors(val.errors);
+        setStepError(val.message);
+        return;
       }
-    };
-    loadData();
-  }, []);
-
-  const updateField = (fieldName, value) => {
-    setValue(fieldName, value, { shouldValidate: true, shouldDirty: true });
-    setProductData(prev => ({ ...prev, [fieldName]: value }));
+    }
+    setValidationErrors({});
+    setStepError('');
+    setActiveStep(target);
   };
-
-  const [saveError, setSaveError] = useState('');
-  const [isSaving, setIsSaving] = useState(false);
 
   const handleSaveProduct = async () => {
+    const check = validateAllProductData(productData);
+    if (!check.isValid) {
+      setActiveStep(check.firstInvalidStep);
+      setValidationErrors(check.errors);
+      setStepError(check.message);
+      return;
+    }
     try {
       setIsSaving(true);
       setSaveError('');
+      setStepError('');
       const res = await productoService.crearProducto(productData, 1);
       if (res?.producto) {
         setProductData(prev => ({
@@ -90,8 +86,7 @@ const CreateProductForms = () => {
       }
       setIsSubmitted(true);
     } catch (e) {
-      console.error('Error al persistir producto en PostgreSQL:', e);
-      const msg = e.response?.data?.message || e.message || 'Error al guardar el producto en la base de datos';
+      const msg = e.response?.data?.message || e.message || 'Error al persistir producto';
       setSaveError(typeof msg === 'string' ? msg : JSON.stringify(msg));
     } finally {
       setIsSaving(false);
@@ -100,6 +95,8 @@ const CreateProductForms = () => {
 
   const handleResetForm = async () => {
     setSaveError('');
+    setStepError('');
+    setValidationErrors({});
     const nextCode = await productoService.getSiguienteCodigo(1).catch(() => '');
     const fresh = getInitialProductState(nextCode);
     reset(fresh);
@@ -113,9 +110,10 @@ const CreateProductForms = () => {
     updateField,
     catalogs,
     setCatalogs,
-    triggerDeleteConfirm,
+    triggerDeleteConfirm: cfg => setDeleteModalConfig({ show: true, ...cfg }),
     control,
     setValue,
+    errors: validationErrors,
     onGenerateCode: async () => {
       const c = await productoService.getSiguienteCodigo(1);
       if (c) updateField('codigo_interno', c);
@@ -128,11 +126,20 @@ const CreateProductForms = () => {
 
   return (
     <>
+      {stepError && (
+        <div className="alert alert-warning py-2 px-3 fs-13 mb-3 d-flex align-items-center shadow-sm">
+          <i className="bx bx-error-circle fs-18 me-2 text-warning" />
+          <div className="flex-grow-1"><strong>Atención:</strong> {stepError}</div>
+          <button type="button" className="btn-close fs-11" onClick={() => setStepError('')} />
+        </div>
+      )}
       {saveError && <div className="alert alert-danger py-2 fs-13 mb-3">{saveError}</div>}
-      <WizardTabsHeader formSteps={formSteps} activeStep={activeStep} setActiveStep={setActiveStep} />
+      <WizardTabsHeader formSteps={formSteps} activeStep={activeStep} setActiveStep={handleTabSelect} />
       <WizardNavigation
         activeStep={activeStep}
         setActiveStep={setActiveStep}
+        onNext={handleNext}
+        onPrev={() => { setStepError(''); setActiveStep(prev => Math.max(1, prev - 1)); }}
         totalSteps={formSteps.length}
         stepName={formSteps[activeStep - 1]?.name}
         onSave={handleSaveProduct}
@@ -140,15 +147,9 @@ const CreateProductForms = () => {
       />
       <DeleteConfirmationModal
         show={deleteModalConfig.show}
-        onHide={() => setDeleteModalConfig(prev => ({ ...prev, show: false }))}
-        onConfirm={() => {
-          if (deleteModalConfig.onConfirm) deleteModalConfig.onConfirm();
-          setDeleteModalConfig(prev => ({ ...prev, show: false }));
-        }}
-        title={deleteModalConfig.title}
-        message={deleteModalConfig.message}
-        itemName={deleteModalConfig.itemName}
-        itemType={deleteModalConfig.itemType}
+        onHide={() => setDeleteModalConfig(p => ({ ...p, show: false }))}
+        onConfirm={() => { if (deleteModalConfig.onConfirm) deleteModalConfig.onConfirm(); setDeleteModalConfig(p => ({ ...p, show: false })); }}
+        {...deleteModalConfig}
       />
     </>
   );

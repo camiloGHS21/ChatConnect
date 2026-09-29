@@ -7,6 +7,7 @@ const InventarioConfigCard = ({
   updateField,
   inventoryTypesCatalog = [],
   measuresCatalog = [],
+  errors = {},
 }) => {
   return (
     <Card className="border shadow-none mb-4 rounded-3">
@@ -69,11 +70,24 @@ const InventarioConfigCard = ({
               <Form.Control
                 type="number"
                 min="0"
+                isInvalid={!!errors?.stock_minimo}
                 value={formData.stock_minimo ?? 0}
-                onChange={e => updateField('stock_minimo', parseInt(e.target.value) || 0)}
+                onChange={e => {
+                  const val = Math.max(0, parseInt(e.target.value) || 0);
+                  updateField('stock_minimo', val);
+                  if (formData.stock_maximo != null && val > formData.stock_maximo) {
+                    updateField('stock_maximo', val);
+                  }
+                }}
                 disabled={!formData.maneja_inventario}
               />
-              <Form.Text className="text-muted fs-12">Alerta de reposición.</Form.Text>
+              {errors?.stock_minimo ? (
+                <Form.Control.Feedback type="invalid" className="d-block fs-11">
+                  {errors.stock_minimo}
+                </Form.Control.Feedback>
+              ) : (
+                <Form.Text className="text-muted fs-12">Alerta de reposición.</Form.Text>
+              )}
             </Form.Group>
           </Col>
 
@@ -83,11 +97,18 @@ const InventarioConfigCard = ({
               <Form.Control
                 type="number"
                 min="0"
+                isInvalid={!!errors?.stock_maximo}
                 value={formData.stock_maximo ?? 0}
-                onChange={e => updateField('stock_maximo', parseInt(e.target.value) || 0)}
+                onChange={e => updateField('stock_maximo', Math.max(0, parseInt(e.target.value) || 0))}
                 disabled={!formData.maneja_inventario}
               />
-              <Form.Text className="text-muted fs-12">Capacidad sugerida.</Form.Text>
+              {errors?.stock_maximo ? (
+                <Form.Control.Feedback type="invalid" className="d-block fs-11">
+                  {errors.stock_maximo}
+                </Form.Control.Feedback>
+              ) : (
+                <Form.Text className="text-muted fs-12">Capacidad sugerida (&ge; mínimo).</Form.Text>
+              )}
             </Form.Group>
           </Col>
 

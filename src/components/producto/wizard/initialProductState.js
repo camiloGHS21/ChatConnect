@@ -1,10 +1,10 @@
 /**
- * Estado inicial del producto idéntico al template oficial Reback
- * (Zapatillas Deportivas Ultra Light Pro) con datos completos en los 5 pasos.
+ * Estado inicial con datos demo para agilizar pruebas de creación de producto,
+ * manteniendo el código interno limpio para ser asignado por PostgreSQL.
  */
 export const getInitialProductState = (siguienteCodigo = '') => ({
-  // SECCIÓN 1 — Información general
-  codigo_interno: siguienteCodigo || 'FER-0049',
+  // SECCIÓN 1 — Información general (Código interno dinámico/limpio)
+  codigo_interno: siguienteCodigo || '',
   nombre: 'Taladro Percutor Inalámbrico 20V MAX XR',
   categoria: 'Herramientas Eléctricas',
   categoria_id: '1',
@@ -51,6 +51,7 @@ export const getInitialProductState = (siguienteCodigo = '') => ({
   presentacion: 'Caja individual con maletín y batería',
   stock_minimo: 5,
   stock_maximo: 100,
+  existencia_inicial: 10,
 
   // SECCIÓN 6 — Referencias y códigos
   referencias: [
@@ -70,23 +71,23 @@ export const getInitialProductState = (siguienteCodigo = '') => ({
     { id_atributo: 2, nombre: 'Voltaje', codigo: 'VOLTAJE', obligatorio: false, orden: 2, componentes_seleccionados: [4, 5] }
   ],
   variantes: [
-    { id: 1, sku: 'FER-0050-AMA-20V', combinacion: 'Color: Amarillo DeWalt | Voltaje: 20V MAX', codigo_barras: '7709990001', referencia: 'VAR-AMA-20V', precio: 172550, stock: 25, estado: 'activo' },
-    { id: 2, sku: 'FER-0050-NEG-20V', combinacion: 'Color: Negro | Voltaje: 20V MAX', codigo_barras: '7709990002', referencia: 'VAR-NEG-20V', precio: 172550, stock: 30, estado: 'activo' }
+    { id: 1, sku: 'VAR-AMA-20V', combinacion: 'Color: Amarillo DeWalt | Voltaje: 20V MAX', codigo_barras: '7709990001', referencia: 'VAR-AMA-20V', precio: 172550, stock: 25, estado: 'activo' },
+    { id: 2, sku: 'VAR-NEG-20V', combinacion: 'Color: Negro | Voltaje: 20V MAX', codigo_barras: '7709990002', referencia: 'VAR-NEG-20V', precio: 172550, stock: 30, estado: 'activo' }
   ],
 
   // Metadatos para la IA y buscadores (producto_seo_ia)
-  titulo_seo: 'Zapatillas Deportivas Ultra Light Pro | Tienda Oficial',
-  slug: '/productos/zapatillas-deportivas-ultra-light-pro',
-  descripcion_seo: 'Compra las Zapatillas Deportivas Ultra Light Pro con amortiguación premium. Envíos a todo el país y pago contraentrega.',
-  palabras_clave: 'zapatillas, running, calzado deportivo, zapatillas nike, tenis deportivos',
-  etiquetas: ['Running', 'Hombre', 'Nueva Colección', 'Tendencia'],
-  sinonimos: 'tenis deportivos, zapatillas para correr, calzado runner',
-  texto_busqueda: 'Zapatillas Deportivas Ultra Light Pro PRD-1001 running calzado suela antideslizante',
-  caracteristicas: '• Amortiguación avanzada de impacto\n• Malla ultra transpirable\n• Suela de alta tracción',
-  usos: 'Entrenamiento diario, carreras de 5k a 21k, gimnasio y uso casual.',
-  publico_objetivo: 'Atletas, deportistas y personas que buscan comodidad al caminar o ejercitarse.',
+  titulo_seo: 'Taladro Percutor Inalámbrico 20V MAX XR DeWalt | Tienda Oficial',
+  slug: '/productos/taladro-percutor-inalambrico-20v-max-xr',
+  descripcion_seo: 'Compra el Taladro Percutor Inalámbrico 20V MAX XR DeWalt con motor sin escobillas. Envíos a todo el país y garantía oficial.',
+  palabras_clave: 'taladro, percutor, dewalt, herramientas electricas, taladro inalambrico',
+  etiquetas: ['Herramientas', 'DeWalt', 'Inalámbrico', 'Profesional'],
+  sinonimos: 'taladro percutor, taladro de impacto, perforador inalambrico',
+  texto_busqueda: 'Taladro Percutor Inalambrico 20V MAX XR DeWalt motor brushless perforacion',
+  caracteristicas: '• Motor sin escobillas Brushless de alta eficiencia\n• Mandril metálico de 1/2 pulgada\n• 3 modos de velocidad y luz LED integrada',
+  usos: 'Perforación en mampostería, concreto, madera y metal para uso profesional e industrial.',
+  publico_objetivo: 'Contratistas, instaladores, carpinteros y profesionales de la construcción.',
   indexable: true,
-  contenido_ia: 'Recomienda este calzado cuando los clientes busquen zapatillas cómodas para correr o hacer ejercicio diario.',
+  contenido_ia: 'Recomienda este taladro cuando los clientes busquen herramientas de alta potencia para trabajo pesado.',
 
   // Imágenes (producto_imagen)
   imagenes: [
@@ -94,3 +95,5 @@ export const getInitialProductState = (siguienteCodigo = '') => ({
     { id: 2, url: '/src/assets/images/products/product-1(2).png', nombre: 'vista_lateral.png', principal: false, orden: 2, tamano: '138 KB' }
   ]
 });
+
+export default getInitialProductState;

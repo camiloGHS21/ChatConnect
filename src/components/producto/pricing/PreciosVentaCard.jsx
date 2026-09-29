@@ -4,7 +4,7 @@ import IconifyIcon from '@/components/wrappers/IconifyIcon';
 import PreciosVentaInputs from './PreciosVentaInputs';
 import PreciosVentaTaxesList from './PreciosVentaTaxesList';
 import PreciosVentaSummary from './PreciosVentaSummary';
-import { calculateTaxBreakdown } from './pricingCalculations';
+import { calculateTaxBreakdown, calculateFinalWithTax } from './pricingCalculations';
 
 /**
  * Tarjeta de Precios de Venta al Público
@@ -38,11 +38,17 @@ const PreciosVentaCard = ({
       porcentaje: parseFloat(meta.porcentaje) || 0,
       valor_fijo: parseFloat(meta.valor || meta.valor_fijo) || 0,
     };
-    updateField('impuestos_venta', [...impuestosVenta, newTax]);
+    const nextTaxes = [...impuestosVenta, newTax];
+    updateField('impuestos_venta', nextTaxes);
+    const finalPrecio = calculateFinalWithTax(precioBase, nextTaxes);
+    updateField('precio_impuesto', Math.round(finalPrecio * 100) / 100);
   };
 
   const handleRemoveTax = (taxId) => {
-    updateField('impuestos_venta', impuestosVenta.filter(t => t.id !== taxId));
+    const nextTaxes = impuestosVenta.filter(t => t.id !== taxId);
+    updateField('impuestos_venta', nextTaxes);
+    const finalPrecio = calculateFinalWithTax(precioBase, nextTaxes);
+    updateField('precio_impuesto', Math.round(finalPrecio * 100) / 100);
   };
 
   const handleUpdateValorFijo = (taxId, val) => {
@@ -50,6 +56,8 @@ const PreciosVentaCard = ({
       t.id === taxId ? { ...t, valor_fijo: val === '' ? '' : parseFloat(val) || 0 } : t
     );
     updateField('impuestos_venta', updated);
+    const finalPrecio = calculateFinalWithTax(precioBase, updated);
+    updateField('precio_impuesto', Math.round(finalPrecio * 100) / 100);
   };
 
   return (
@@ -67,10 +75,7 @@ const PreciosVentaCard = ({
         <Card.Body>
           <PreciosVentaInputs
             precioBase={formData?.precio_base}
-            precioImpuesto={formData?.precio_impuesto}
             onPrecioBaseChange={onPrecioBaseChange}
-            onPrecioImpuestoChange={onPrecioImpuestoChange}
-            onSmartRound={onSmartRound}
           />
           <PreciosVentaTaxesList
             taxesCatalog={taxesCatalog}

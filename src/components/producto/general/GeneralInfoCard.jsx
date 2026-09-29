@@ -17,6 +17,7 @@ const GeneralInfoCard = ({
   onOpenCreateCategory,
   onOpenCreateSubcategory,
   onOpenCreateBrand,
+  errors = {},
 }) => {
   return (
     <Card className="border shadow-none mb-3 bg-light-subtle rounded-3">
@@ -35,12 +36,14 @@ const GeneralInfoCard = ({
             formData={formData}
             updateField={updateField}
             onGenerateCode={onGenerateCode}
+            errors={errors}
           />
           <GeneralTaxonomyInputs
             formData={formData}
             updateField={updateField}
             categories={categories}
             brands={brands}
+            errors={errors}
             onOpenCreateCategory={onOpenCreateCategory}
             onOpenCreateSubcategory={onOpenCreateSubcategory}
             onOpenCreateBrand={onOpenCreateBrand}

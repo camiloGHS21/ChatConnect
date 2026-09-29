@@ -1,10 +1,11 @@
 import React from 'react';
 import { Row, Col, Form } from 'react-bootstrap';
 import { DOC_TYPES } from './supplierUtils';
+import ModalProveedorGeoFields from './ModalProveedorGeoFields';
 
 /**
  * Campos del formulario para Crear Proveedor (Tercero).
- * Idéntico al diseño de la imagen (media_1790109184725.png).
+ * Soporta separación de nombre y apellidos para persona natural y catálogo geográfico 1:N.
  */
 const ModalNuevoProveedorFields = ({ form, update, handleDocChange }) => {
   return (
@@ -76,18 +77,39 @@ const ModalNuevoProveedorFields = ({ form, update, handleDocChange }) => {
         />
       </Col>
 
-      {/* Fila 3: Razón Social */}
-      <Col md={12}>
-        <Form.Label className="fs-12 fw-semibold text-secondary mb-1">
-          {form.tipo_persona === 'natural' ? 'Nombre Completo *' : 'Razón Social *'}
-        </Form.Label>
-        <Form.Control
-          type="text"
-          placeholder={form.tipo_persona === 'natural' ? 'Ej: Juan Pérez Gómez' : 'Ej: Distribuciones Industriales de Colombia S.A.S.'}
-          value={form.razon_social}
-          onChange={e => update('razon_social', e.target.value)}
-        />
-      </Col>
+      {/* Fila 3: Nombres / Apellidos (Persona Natural) o Razón Social (Jurídica) */}
+      {form.tipo_persona === 'natural' ? (
+        <>
+          <Col md={6}>
+            <Form.Label className="fs-12 fw-semibold text-secondary mb-1">Nombres *</Form.Label>
+            <Form.Control
+              type="text"
+              placeholder="Ej: Juan Carlos"
+              value={form.nombre || ''}
+              onChange={e => update('nombre', e.target.value)}
+            />
+          </Col>
+          <Col md={6}>
+            <Form.Label className="fs-12 fw-semibold text-secondary mb-1">Apellidos *</Form.Label>
+            <Form.Control
+              type="text"
+              placeholder="Ej: Pérez Gómez"
+              value={form.apellido || ''}
+              onChange={e => update('apellido', e.target.value)}
+            />
+          </Col>
+        </>
+      ) : (
+        <Col md={12}>
+          <Form.Label className="fs-12 fw-semibold text-secondary mb-1">Razón Social *</Form.Label>
+          <Form.Control
+            type="text"
+            placeholder="Ej: Distribuciones Industriales de Colombia S.A.S."
+            value={form.razon_social || ''}
+            onChange={e => update('razon_social', e.target.value)}
+          />
+        </Col>
+      )}
 
       {/* Fila 4: Correo, Teléfono Fijo, WhatsApp */}
       <Col md={4}>
@@ -118,34 +140,8 @@ const ModalNuevoProveedorFields = ({ form, update, handleDocChange }) => {
         />
       </Col>
 
-      {/* Fila 5: Departamento, Ciudad, Dirección */}
-      <Col md={4}>
-        <Form.Label className="fs-12 fw-semibold text-secondary mb-1">Departamento</Form.Label>
-        <Form.Control
-          type="text"
-          placeholder="Ej: Antioquia"
-          value={form.departamento}
-          onChange={e => update('departamento', e.target.value)}
-        />
-      </Col>
-      <Col md={4}>
-        <Form.Label className="fs-12 fw-semibold text-secondary mb-1">Ciudad</Form.Label>
-        <Form.Control
-          type="text"
-          placeholder="Ej: Medellín"
-          value={form.ciudad}
-          onChange={e => update('ciudad', e.target.value)}
-        />
-      </Col>
-      <Col md={4}>
-        <Form.Label className="fs-12 fw-semibold text-secondary mb-1">Dirección</Form.Label>
-        <Form.Control
-          type="text"
-          placeholder="Ej: Carrera 43A # 1Sur-100"
-          value={form.direccion}
-          onChange={e => update('direccion', e.target.value)}
-        />
-      </Col>
+      {/* Fila 5: Selector 1:N Departamento y Ciudad */}
+      <ModalProveedorGeoFields form={form} update={update} />
     </Row>
   );
 };

@@ -9,6 +9,7 @@ const GeneralTaxonomyInputs = ({
   updateField,
   categories = [],
   brands = [],
+  errors = {},
   onOpenCreateCategory,
   onOpenCreateSubcategory,
   onOpenCreateBrand,
@@ -47,6 +48,7 @@ const GeneralTaxonomyInputs = ({
           <Form.Select
             id="categoria_id"
             size="sm"
+            isInvalid={!!errors?.categoria_id}
             value={formData?.categoria_id != null ? String(formData.categoria_id) : ''}
             onChange={handleCategoryChange}
           >
@@ -57,6 +59,11 @@ const GeneralTaxonomyInputs = ({
               </option>
             ))}
           </Form.Select>
+          {errors?.categoria_id && (
+            <Form.Control.Feedback type="invalid" className="d-block fs-11">
+              {errors.categoria_id}
+            </Form.Control.Feedback>
+          )}
         </div>
       </Col>
 

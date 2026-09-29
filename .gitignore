@@ -17,6 +17,7 @@ dist-ssr
 !.env.example
 .agents
 *.tsbuildinfo
+scratch/
 
 
 # Editor directories and files

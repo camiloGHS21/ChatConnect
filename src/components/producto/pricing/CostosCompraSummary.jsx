@@ -1,7 +1,6 @@
 import React from 'react';
-import { Form, Button, Badge } from 'react-bootstrap';
+import { Form, Button } from 'react-bootstrap';
 import IconifyIcon from '@/components/wrappers/IconifyIcon';
-import { getCommercialRoundingSuggestions } from './pricingCalculations';
 
 const CostosCompraSummary = ({
   costoBase = 0,
@@ -10,8 +9,6 @@ const CostosCompraSummary = ({
   onCostoImpuestoChange,
   onSmartRound
 }) => {
-  const suggestions = getCommercialRoundingSuggestions(costoImpuesto);
-
   return (
     <div className="p-3 bg-light rounded-2 border">
       <div className="d-flex justify-content-between align-items-center mb-1">
@@ -46,7 +43,7 @@ const CostosCompraSummary = ({
           <span className="fw-bold fs-13 text-dark d-block">Costo Final con Impuestos:</span>
           <small className="text-muted fs-11 font-monospace">(costo_impuesto - editable para redondear)</small>
         </div>
-        <div className="d-flex flex-column align-items-end gap-1">
+        <div className="d-flex align-items-center gap-1">
           <div className="input-group input-group-sm" style={{ maxWidth: '230px' }}>
             <span className="input-group-text bg-white fw-bold text-info">$</span>
             <Form.Control
@@ -69,20 +66,6 @@ const CostosCompraSummary = ({
               <IconifyIcon icon="bx:magic-wand" className="fs-13" />
               Redondear
             </Button>
-          </div>
-          <div className="d-flex flex-wrap justify-content-end gap-1 mt-1">
-            {suggestions.map((sug, i) => (
-              <Badge
-                key={i}
-                bg="info-subtle"
-                className="text-info border border-info border-opacity-25 cursor-pointer fs-10"
-                style={{ cursor: 'pointer' }}
-                onClick={() => onCostoImpuestoChange(sug.value)}
-                title={sug.desc}
-              >
-                {sug.label}
-              </Badge>
-            ))}
           </div>
         </div>
       </div>

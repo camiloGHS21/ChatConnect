@@ -1,73 +1,124 @@
 import clsx from 'clsx';
-import { useEffect, useState } from 'react';
+import { useMemo } from 'react';
 import { Col } from 'react-bootstrap';
 import IconifyIcon from '../wrappers/IconifyIcon';
+
 const getVisiblePages = (totalPages, currentPage) => {
-  if (totalPages > 1) {
-    if (currentPage === 1) {
-      return [currentPage, currentPage + 1, currentPage + 2].filter(page => page > 0 && page <= totalPages);
-    } else if (currentPage === totalPages) {
-      return [currentPage - 2, currentPage - 1, currentPage].filter(page => page > 0 && page <= totalPages);
-    } else {
-      return [currentPage - 1, currentPage, currentPage + 1].filter(page => page > 0 && page <= totalPages);
-    }
+  if (!totalPages || totalPages <= 1) return [1];
+  if (totalPages <= 7) {
+    return Array.from({ length: totalPages }, (_, i) => i + 1);
   }
-  return [1];
+  if (currentPage <= 4) {
+    return [1, 2, 3, 4, 5, '...', totalPages];
+  }
+  if (currentPage >= totalPages - 3) {
+    return [1, '...', totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
+  }
+  return [1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages];
 };
-const Pagination = ({
-  table,
-  rowsPerPageList,
-  currentPage,
-  totalPages
-}) => {
+
+const Pagination = ({ table, rowsPerPageList, currentPage, totalPages }) => {
   const pageSizeList = rowsPerPageList ?? [5, 10, 25, 50, 100];
-  const [visiblePages, setVisiblePages] = useState([1]);
-  useEffect(() => {
-    setVisiblePages(getVisiblePages(totalPages, currentPage));
-  }, [currentPage]);
-  return <div className="align-items-center justify-content-between row g-0 text-center text-sm-start p-3 border-top">
+  const pagesCount = Math.max(1, totalPages || 1);
+  const activePage = Math.min(Math.max(1, currentPage || 1), pagesCount);
+
+  const visiblePages = useMemo(
+    () => getVisiblePages(pagesCount, activePage),
+    [pagesCount, activePage]
+  );
+
+  const canPrevious = table.getCanPreviousPage() && activePage > 1;
+  const canNext = table.getCanNextPage() && activePage < pagesCount;
+
+  return (
+    <div className="align-items-center justify-content-between row g-0 text-center text-sm-start p-3 border-top">
       <div className="col-sm">
         <div className="d-flex align-items-center gap-2">
           <div className="text-muted text-nowrap">
-            Showing <span className="fw-semibold">{currentPage}</span> of <span className="fw-semibold">{totalPages}</span> Pages
+            Showing <span className="fw-semibold">{activePage}</span> of{' '}
+            <span className="fw-semibold">{pagesCount}</span> Pages
           </div>
           <div className="d-flex align-items-center gap-2">
             <label htmlFor="page-size-select">Show: </label>
-            <select name="page-size-select" id="page-size-select" className="form-select w-auto" value={table.getState().pagination.pageSize} onChange={e => {
-            table.setPageSize(Number(e.target.value));
-          }}>
-              {pageSizeList.map(pageSize => <option key={pageSize} value={pageSize}>
+            <select
+              name="page-size-select"
+              id="page-size-select"
+              className="form-select w-auto"
+              value={table.getState().pagination.pageSize}
+              onChange={(e) => {
+                table.setPageSize(Number(e.target.value));
+                table.setPageIndex(0);
+              }}
+            >
+              {pageSizeList.map((pageSize) => (
+                <option key={pageSize} value={pageSize}>
                   {pageSize}
-                </option>)}
+                </option>
+              ))}
             </select>
           </div>
         </div>
       </div>
       <Col sm="auto" className="mt-3 mt-sm-0">
         <ul className="pagination pagination-rounded m-0">
-          <li className="page-item">
-            <button onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()} className={clsx('page-link', {
-            disabled: !table.getCanPreviousPage()
-          })}>
+          <li className={clsx('page-item', { disabled: !canPrevious })}>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                if (canPrevious) table.previousPage();
+              }}
+              disabled={!canPrevious}
+              className={clsx('page-link', { disabled: !canPrevious })}
+              style={{ cursor: !canPrevious ? 'not-allowed' : 'pointer' }}
+              aria-label="Previous Page"
+            >
               <IconifyIcon icon="bx:left-arrow-alt" height={18} width={18} />
             </button>
           </li>
-          {visiblePages.map((page, idx) => <li key={idx} className={clsx('page-item', {
-          active: page === currentPage
-        })}>
-              <button onClick={() => table.setPageIndex(page - 1)} className="page-link">
-                {page}
-              </button>
-            </li>)}
-          <li className="page-item">
-            <button onClick={() => table.nextPage()} disabled={!table.getCanNextPage()} className={clsx('page-link', {
-            disabled: !table.getCanNextPage()
-          })}>
+          {visiblePages.map((page, idx) => {
+            if (page === '...') {
+              return (
+                <li key={`ellipsis-${idx}`} className="page-item disabled">
+                  <span className="page-link border-0 text-muted">...</span>
+                </li>
+              );
+            }
+            const isActive = page === activePage;
+            return (
+              <li key={page} className={clsx('page-item', { active: isActive })}>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    table.setPageIndex(page - 1);
+                  }}
+                  className="page-link"
+                >
+                  {page}
+                </button>
+              </li>
+            );
+          })}
+          <li className={clsx('page-item', { disabled: !canNext })}>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                if (canNext) table.nextPage();
+              }}
+              disabled={!canNext}
+              className={clsx('page-link', { disabled: !canNext })}
+              style={{ cursor: !canNext ? 'not-allowed' : 'pointer' }}
+              aria-label="Next Page"
+            >
               <IconifyIcon icon="bx:right-arrow-alt" height={18} width={18} />
             </button>
           </li>
         </ul>
       </Col>
-    </div>;
+    </div>
+  );
 };
+
 export default Pagination;

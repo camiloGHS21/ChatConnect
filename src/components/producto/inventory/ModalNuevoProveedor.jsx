@@ -24,11 +24,27 @@ const ModalNuevoProveedor = ({ show, onHide, onSave, existingSuppliers = [] }) =
 
   const handleSave = async () => {
     setError('');
-    const name = form.razon_social.trim();
-    if (!name) {
-      setError(form.tipo_persona === 'natural' ? 'Por favor ingresa el nombre.' : 'Por favor ingresa la razón social.');
-      return;
+    const esNatural = form.tipo_persona === 'natural';
+    const nombre = (form.nombre || '').trim();
+    const apellido = (form.apellido || '').trim();
+    const razonSocial = (form.razon_social || '').trim();
+
+    if (esNatural) {
+      if (!nombre) {
+        setError('Por favor ingresa los nombres del tercero.');
+        return;
+      }
+      if (!apellido) {
+        setError('Por favor ingresa los apellidos del tercero.');
+        return;
+      }
+    } else {
+      if (!razonSocial) {
+        setError('Por favor ingresa la razón social.');
+        return;
+      }
     }
+
     const doc = form.numero_documento.trim();
     if (!doc) {
       setError('Por favor ingresa el número de documento / NIT.');
@@ -40,17 +56,19 @@ const ModalNuevoProveedor = ({ show, onHide, onSave, existingSuppliers = [] }) =
       return sDoc && curDoc && sDoc === curDoc;
     });
     if (isDup) {
-      setError('Ya existe un proveedor registrado con este número de documento.');
+      setError('Ya existe un tercero registrado con este número de documento.');
       return;
     }
 
+    const nameDisplay = esNatural ? `${nombre} ${apellido}` : razonSocial;
     const fullDoc = form.tipo_documento === 'NIT' && form.digito_verificacion ? `${doc}-${form.digito_verificacion}` : doc;
     try {
       setLoading(true);
       const created = await productoService.crearProveedor({
         ...form,
-        nombre: name,
-        razon_social: name,
+        nombre: esNatural ? nombre : razonSocial,
+        apellido: esNatural ? apellido : null,
+        razon_social: esNatural ? null : razonSocial,
         numero_documento: fullDoc,
         telefono: form.celular || form.telefono_fijo || '',
       });
@@ -58,8 +76,8 @@ const ModalNuevoProveedor = ({ show, onHide, onSave, existingSuppliers = [] }) =
         ...created,
         id: created.id,
         id_tercero: created.id,
-        nombre: created.nombre || name,
-        razon_social: name,
+        nombre: created.nombre || nameDisplay,
+        razon_social: razonSocial || nameDisplay,
         numero_documento: created.numero_documento || fullDoc,
         telefono: form.celular || form.telefono_fijo || '',
         estado: 'activo',

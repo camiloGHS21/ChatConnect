@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Query, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Post, Put, Patch, Body, Query, Param, HttpCode, HttpStatus } from '@nestjs/common';
 import { ProductoRepository } from '../repositories/producto.repository.js';
 import { CreateProductoDto } from '../dto/create-producto.dto.js';
 
@@ -11,7 +11,7 @@ import { CreateProductoDto } from '../dto/create-producto.dto.js';
  */
 @Controller('productos')
 export class ProductoController {
-  constructor(private readonly productoRepo: ProductoRepository) {}
+  constructor(private readonly productoRepo: ProductoRepository) { }
 
   @Get('catalogos')
   async getCatalogos(@Query('empresa_id') empresaId?: string) {
@@ -30,6 +30,14 @@ export class ProductoController {
   async crearProducto(@Body() dto: CreateProductoDto, @Query('empresa_id') empresaId?: string) {
     const id = dto.empresa_id || (empresaId ? parseInt(empresaId, 10) : 1);
     return await this.productoRepo.crearProducto(dto, id);
+  }
+
+  @Post(':id/sync-meta')
+  @HttpCode(HttpStatus.OK)
+  async syncMeta(@Param('id') id: string, @Query('empresa_id') empresaId?: string) {
+    const empId = empresaId ? parseInt(empresaId, 10) : 1;
+    const prodId = parseInt(id, 10);
+    return await this.productoRepo.sincronizarConMetaCatalog(prodId, empId);
   }
 
   @Post('categorias')
@@ -87,4 +95,89 @@ export class ProductoController {
     const id = dto.empresa_id || (empresaId ? parseInt(empresaId, 10) : 1);
     return await this.productoRepo.crearComponente(dto, id);
   }
+
+  @Get()
+  async getProductos(@Query('empresa_id') empresaId?: string) {
+    const id = empresaId ? parseInt(empresaId, 10) : 1;
+    return await this.productoRepo.getProductos(id);
+  }
+
+  // ==========================================================================
+  // MÓDULO DE CONFIGURACIONES (renombrar catálogos maestros)
+  // ==========================================================================
+
+  @Get('configuraciones/catalogos')
+  async getConfiguraciones(@Query('empresa_id') empresaId?: string) {
+    const id = empresaId ? parseInt(empresaId, 10) : 1;
+    return await this.productoRepo.getCatalogosConfiguracion(id);
+  }
+
+  @Patch('configuraciones/categorias/:id')
+  async actualizarCategoria(
+    @Param('id') id: string,
+    @Body() dto: any,
+    @Query('empresa_id') empresaId?: string,
+  ) {
+    const empId = empresaId ? parseInt(empresaId, 10) : 1;
+    return await this.productoRepo.actualizarCategoria(parseInt(id, 10), dto, empId);
+  }
+
+  @Patch('configuraciones/marcas/:id')
+  async actualizarMarca(@Param('id') id: string, @Body() dto: any, @Query('empresa_id') empresaId?: string) {
+    const empId = empresaId ? parseInt(empresaId, 10) : 1;
+    return await this.productoRepo.actualizarMarca(parseInt(id, 10), dto, empId);
+  }
+
+  @Patch('configuraciones/listas-precios/:id')
+  async actualizarListaPrecio(
+    @Param('id') id: string,
+    @Body() dto: any,
+    @Query('empresa_id') empresaId?: string,
+  ) {
+    const empId = empresaId ? parseInt(empresaId, 10) : 1;
+    return await this.productoRepo.actualizarListaPrecio(parseInt(id, 10), dto, empId);
+  }
+
+  @Patch('configuraciones/impuestos/:id')
+  async actualizarImpuesto(
+    @Param('id') id: string,
+    @Body() dto: any,
+    @Query('empresa_id') empresaId?: string,
+  ) {
+    const empId = empresaId ? parseInt(empresaId, 10) : 1;
+    return await this.productoRepo.actualizarImpuesto(parseInt(id, 10), dto, empId);
+  }
+
+  // ==========================================================================
+  // CATÁLOGOS GEOGRÁFICOS (Departamento / Ciudad)
+  // ==========================================================================
+
+  @Get('departamentos')
+  async getDepartamentos() {
+    return await this.dataSourceDepartamentos();
+  }
+
+  private async dataSourceDepartamentos() {
+    return await this.productoRepo.getCatalogosConfiguracion().then(c => c.departamentos);
+  }
+
+  @Post('departamentos')
+  @HttpCode(HttpStatus.CREATED)
+  async crearDepartamento(@Body() dto: any) {
+    return await this.productoRepo.crearDepartamento(dto);
+  }
+
+  @Get('ciudades')
+  async getCiudades(@Query('departamento_id') departamentoId?: string) {
+    const cat = await this.productoRepo.getCatalogosConfiguracion();
+    if (!departamentoId) return cat.ciudades;
+    return cat.ciudades.filter(c => String(c.id_departamento) === String(departamentoId));
+  }
+
+  @Post('ciudades')
+  @HttpCode(HttpStatus.CREATED)
+  async crearCiudad(@Body() dto: any) {
+    return await this.productoRepo.crearCiudad(dto);
+  }
 }
+

@@ -341,6 +341,18 @@ export class ProductoModel {
   @Column({ type: 'varchar', length: 30, name: 'estado_publicacion', default: 'publicado' })
   estadoPublicacion: string;
 
+  @Column({ type: 'varchar', length: 100, name: 'fb_product_id', nullable: true })
+  fbProductId?: string;
+
+  @Column({ type: 'varchar', length: 30, name: 'meta_sync_status', default: 'pendiente' })
+  metaSyncStatus: string;
+
+  @Column({ type: 'text', name: 'meta_sync_error', nullable: true })
+  metaSyncError?: string;
+
+  @Column({ type: 'timestamp with time zone', name: 'meta_synced_at', nullable: true })
+  metaSyncedAt?: Date;
+
   @CreateDateColumn({ type: 'timestamp with time zone', name: 'created_at' })
   createdAt: Date;
 
@@ -354,4 +366,115 @@ export class ProductoModel {
   @ManyToOne(() => MarcaModel)
   @JoinColumn({ name: 'marca_id' })
   marca?: MarcaModel;
+}
+
+/**
+ * =============================================================================
+ * MODELO / ENTIDAD TYPEORM: Canal (`public.canal`)
+ * =============================================================================
+ */
+@Entity('canal', { schema: 'public' })
+export class CanalModel {
+  @PrimaryGeneratedColumn({ type: 'bigint', name: 'id_canal' })
+  id: number;
+
+  @Column({ type: 'bigint', name: 'empresa_id' })
+  empresaId: number;
+
+  @Column({ type: 'varchar', length: 50, name: 'tipo', default: 'whatsapp' })
+  tipo: string;
+
+  @Column({ type: 'varchar', length: 50, name: 'proveedor', default: 'meta' })
+  proveedor: string;
+
+  @Column({ type: 'varchar', length: 50, name: 'phone_number', nullable: true })
+  phoneNumber?: string;
+
+  @Column({ type: 'varchar', length: 100, name: 'phone_number_id', nullable: true })
+  phoneNumberId?: string;
+
+  @Column({ type: 'varchar', length: 100, name: 'waba_id', nullable: true })
+  wabaId?: string;
+
+  @Column({ type: 'varchar', length: 100, name: 'business_account_id', nullable: true })
+  businessAccountId?: string;
+
+  @Column({ type: 'varchar', length: 100, name: 'app_id', nullable: true })
+  appId?: string;
+
+  @Column({ type: 'varchar', length: 100, name: 'catalog_id', nullable: true })
+  catalogId?: string;
+
+  @Column({ type: 'varchar', length: 30, name: 'estado', default: 'activo' })
+  estado: string;
+
+  @Column({ type: 'jsonb', name: 'configuracion', nullable: true })
+  configuracion?: any;
+
+  @CreateDateColumn({ type: 'timestamp with time zone', name: 'created_at' })
+  createdAt: Date;
+
+  @UpdateDateColumn({ type: 'timestamp with time zone', name: 'updated_at' })
+  updatedAt: Date;
+}
+
+/**
+ * =============================================================================
+ * MODELO / ENTIDAD TYPEORM: Departamento (`public.departamento`)
+ * =============================================================================
+ * Catálogo geográfico base. Relación 1:N con Ciudad.
+ */
+@Entity('departamento', { schema: 'public' })
+export class DepartamentoModel {
+  @PrimaryGeneratedColumn({ type: 'bigint', name: 'id' })
+  id: number;
+
+  @Column({ type: 'varchar', length: 20, name: 'codigo' })
+  codigo: string;
+
+  @Column({ type: 'varchar', length: 150, name: 'nombre' })
+  nombre: string;
+
+  @Column({ type: 'varchar', length: 30, name: 'estado', default: 'activo' })
+  estado: string;
+
+  @CreateDateColumn({ type: 'timestamp with time zone', name: 'created_at' })
+  createdAt: Date;
+
+  @UpdateDateColumn({ type: 'timestamp with time zone', name: 'updated_at' })
+  updatedAt: Date;
+}
+
+/**
+ * =============================================================================
+ * MODELO / ENTIDAD TYPEORM: Ciudad (`public.ciudad`)
+ * =============================================================================
+ * Pertenece a un departamento (relación N:1 → DepartamentoModel).
+ */
+@Entity('ciudad', { schema: 'public' })
+export class CiudadModel {
+  @PrimaryGeneratedColumn({ type: 'bigint', name: 'id' })
+  id: number;
+
+  @Column({ type: 'bigint', name: 'id_departamento' })
+  idDepartamento: number;
+
+  @Column({ type: 'varchar', length: 20, name: 'codigo' })
+  codigo: string;
+
+  @Column({ type: 'varchar', length: 150, name: 'nombre' })
+  nombre: string;
+
+  @Column({ type: 'varchar', length: 30, name: 'estado', default: 'activo' })
+  estado: string;
+
+  @CreateDateColumn({ type: 'timestamp with time zone', name: 'created_at' })
+  createdAt: Date;
+
+  @UpdateDateColumn({ type: 'timestamp with time zone', name: 'updated_at' })
+  updatedAt: Date;
+
+  @ManyToOne(() => DepartamentoModel)
+  @JoinColumn({ name: 'id_departamento' })
+  departamento?: DepartamentoModel;
 }

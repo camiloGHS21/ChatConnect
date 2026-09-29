@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import ListasPreciosForm from './ListasPreciosForm';
 import ListasPreciosTable from './ListasPreciosTable';
+import ModalEditarListaPrecio from './ModalEditarListaPrecio';
 import {
   calcPriceListByBase,
   calcPriceListByUtilidad,
@@ -102,6 +103,8 @@ const ListasPreciosCard = ({
     isAssigned: listasPrecios.some(item => String(item.lista_precio_id) === String(lp.id))
   }));
 
+  const [editingList, setEditingList] = useState(null);
+
   return (
     <>
       <div className="mb-3 mt-4">
@@ -125,8 +128,17 @@ const ListasPreciosCard = ({
       <ListasPreciosTable
         listasPrecios={listasPrecios}
         onToggleState={id => updateField('listas_precios', listasPrecios.map(it => it.id === id ? { ...it, estado: it.estado === 'activo' ? 'inactivo' : 'activo' } : it))}
+        onEdit={item => setEditingList(item)}
         onRemove={id => updateField('listas_precios', listasPrecios.filter(it => it.id !== id))}
         triggerDeleteConfirm={triggerDeleteConfirm}
+      />
+
+      <ModalEditarListaPrecio
+        show={Boolean(editingList)}
+        item={editingList}
+        costoBase={costoBase}
+        onHide={() => setEditingList(null)}
+        onSave={updated => updateField('listas_precios', listasPrecios.map(it => it.id === updated.id ? updated : it))}
       />
     </>
   );

@@ -9,6 +9,7 @@ import IconifyIcon from '@/components/wrappers/IconifyIcon';
 const ListasPreciosTable = ({
   listasPrecios = [],
   onToggleState,
+  onEdit,
   onRemove,
   triggerDeleteConfirm
 }) => {
@@ -98,15 +99,25 @@ const ListasPreciosTable = ({
                   </button>
                 </td>
                 <td className="py-3 px-3 text-end">
-                  <button
-                    type="button"
-                    className="btn btn-link p-0 text-danger border-0"
-                    onClick={() => handleDelete(item)}
-                    title="Eliminar de esta lista"
-                    style={{ color: '#ef4444' }}
-                  >
-                    <IconifyIcon icon="bx:trash" className="fs-18" />
-                  </button>
+                  <div className="d-flex align-items-center justify-content-end gap-2">
+                    <button
+                      type="button"
+                      className="btn btn-link p-0 text-primary border-0"
+                      onClick={() => onEdit && onEdit(item)}
+                      title="Editar valores de esta lista"
+                    >
+                      <IconifyIcon icon="bx:edit-alt" className="fs-18" />
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-link p-0 text-danger border-0"
+                      onClick={() => handleDelete(item)}
+                      title="Eliminar de esta lista"
+                      style={{ color: '#ef4444' }}
+                    >
+                      <IconifyIcon icon="bx:trash" className="fs-18" />
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))

@@ -92,7 +92,94 @@ export const productoService = {
     return res.data;
   },
 
+  /**
+   * Lista los productos registrados en el catálogo.
+   */
+  async getProductos(empresaId = 1) {
+    const res = await HttpClient.get(`/productos?empresa_id=${empresaId}`);
+    return res.data;
+  },
 
+  /**
+   * Sincroniza manualmente un producto con Meta Catalog (Facebook / WhatsApp).
+   */
+  async syncMeta(productoId, empresaId = 1) {
+    const res = await HttpClient.post(`/productos/${productoId}/sync-meta?empresa_id=${empresaId}`);
+    return res.data;
+  },
+
+  /**
+   * Obtiene todos los catálogos para el módulo de configuración.
+   */
+  async getConfiguraciones(empresaId = 1) {
+    const res = await HttpClient.get(`/productos/configuraciones/catalogos?empresa_id=${empresaId}`);
+    return res.data;
+  },
+
+  /**
+   * Actualiza el nombre/estado de una categoría.
+   */
+  async actualizarCategoria(id, datos, empresaId = 1) {
+    const res = await HttpClient.patch(`/productos/configuraciones/categorias/${id}?empresa_id=${empresaId}`, datos);
+    return res.data;
+  },
+
+  /**
+   * Actualiza el nombre/estado de una marca.
+   */
+  async actualizarMarca(id, datos, empresaId = 1) {
+    const res = await HttpClient.patch(`/productos/configuraciones/marcas/${id}?empresa_id=${empresaId}`, datos);
+    return res.data;
+  },
+
+  /**
+   * Actualiza el nombre/estado de una lista de precios.
+   */
+  async actualizarListaPrecio(id, datos, empresaId = 1) {
+    const res = await HttpClient.patch(`/productos/configuraciones/listas-precios/${id}?empresa_id=${empresaId}`, datos);
+    return res.data;
+  },
+
+  /**
+   * Actualiza un impuesto en el catálogo.
+   */
+  async actualizarImpuesto(id, datos, empresaId = 1) {
+    const res = await HttpClient.patch(`/productos/configuraciones/impuestos/${id}?empresa_id=${empresaId}`, datos);
+    return res.data;
+  },
+
+  /**
+   * Obtiene el catálogo de departamentos.
+   */
+  async getDepartamentos() {
+    const res = await HttpClient.get('/productos/departamentos');
+    return res.data;
+  },
+
+  /**
+   * Obtiene las ciudades (opcionalmente filtradas por departamento).
+   */
+  async getCiudades(departamentoId) {
+    const qs = departamentoId ? `?departamento_id=${departamentoId}` : '';
+    const res = await HttpClient.get(`/productos/ciudades${qs}`);
+    return res.data;
+  },
+
+  /**
+   * Registra un nuevo departamento.
+   */
+  async crearDepartamento(datos) {
+    const res = await HttpClient.post('/productos/departamentos', datos);
+    return res.data;
+  },
+
+  /**
+   * Registra una nueva ciudad.
+   */
+  async crearCiudad(datos) {
+    const res = await HttpClient.post('/productos/ciudades', datos);
+    return res.data;
+  },
 };
 
 export default productoService;

@@ -4,7 +4,7 @@ import IconifyIcon from '@/components/wrappers/IconifyIcon';
 import CostosCompraInputs from './CostosCompraInputs';
 import CostosCompraTaxesList from './CostosCompraTaxesList';
 import CostosCompraSummary from './CostosCompraSummary';
-import { calculateTaxBreakdown } from './pricingCalculations';
+import { calculateTaxBreakdown, calculateFinalWithTax } from './pricingCalculations';
 
 /**
  * Tarjeta de Costos de Adquisición / Compra
@@ -38,11 +38,17 @@ const CostosCompraCard = ({
       porcentaje: parseFloat(meta.porcentaje) || 0,
       valor_fijo: parseFloat(meta.valor || meta.valor_fijo) || 0,
     };
-    updateField('impuestos_compra', [...impuestosCompra, newTax]);
+    const nextTaxes = [...impuestosCompra, newTax];
+    updateField('impuestos_compra', nextTaxes);
+    const finalCosto = calculateFinalWithTax(costoBase, nextTaxes);
+    updateField('costo_impuesto', Math.round(finalCosto * 100) / 100);
   };
 
   const handleRemoveTax = (taxId) => {
-    updateField('impuestos_compra', impuestosCompra.filter(t => t.id !== taxId));
+    const nextTaxes = impuestosCompra.filter(t => t.id !== taxId);
+    updateField('impuestos_compra', nextTaxes);
+    const finalCosto = calculateFinalWithTax(costoBase, nextTaxes);
+    updateField('costo_impuesto', Math.round(finalCosto * 100) / 100);
   };
 
   const handleUpdateValorFijo = (taxId, val) => {
@@ -50,6 +56,8 @@ const CostosCompraCard = ({
       t.id === taxId ? { ...t, valor_fijo: val === '' ? '' : parseFloat(val) || 0 } : t
     );
     updateField('impuestos_compra', updated);
+    const finalCosto = calculateFinalWithTax(costoBase, updated);
+    updateField('costo_impuesto', Math.round(finalCosto * 100) / 100);
   };
 
   return (
@@ -67,10 +75,7 @@ const CostosCompraCard = ({
         <Card.Body>
           <CostosCompraInputs
             costoBase={formData?.costo_base}
-            costoImpuesto={formData?.costo_impuesto}
             onCostoBaseChange={onCostoBaseChange}
-            onCostoImpuestoChange={onCostoImpuestoChange}
-            onSmartRound={onSmartRound}
           />
           <CostosCompraTaxesList
             taxesCatalog={taxesCatalog}

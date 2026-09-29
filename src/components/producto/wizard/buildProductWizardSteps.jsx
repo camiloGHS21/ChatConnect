@@ -17,6 +17,7 @@ export const buildProductWizardSteps = ({
   control,
   setValue,
   onGenerateCode,
+  errors = {},
 }) => [
   {
     index: 1,
@@ -29,12 +30,13 @@ export const buildProductWizardSteps = ({
         catalogs={catalogs}
         setCatalogs={setCatalogs}
         onGenerateCode={onGenerateCode}
+        errors={errors}
       />
     ),
   },
   {
     index: 2,
-    name: 'Impuestos',
+    name: 'Precios',
     icon: 'bxs:dollar-circle',
     tab: (
       <PricingCostsForm
@@ -42,6 +44,7 @@ export const buildProductWizardSteps = ({
         updateField={updateField}
         catalogs={catalogs}
         triggerDeleteConfirm={triggerDeleteConfirm}
+        errors={errors}
       />
     ),
   },
@@ -55,6 +58,7 @@ export const buildProductWizardSteps = ({
         updateField={updateField}
         catalogs={catalogs}
         triggerDeleteConfirm={triggerDeleteConfirm}
+        errors={errors}
       />
     ),
   },
