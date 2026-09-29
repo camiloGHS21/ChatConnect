@@ -1572,15 +1572,15 @@ export class ProductoRepository {
         throw new Error(`Producto ${productoId} no encontrado en empresa ${empresaId}`);
       }
 
-      // 4. Consultar atributos y componentes configurados en el producto (Color, Voltaje, etc.)
+      // 4. Consultar atributos y componentes configurados en el producto (Color, Voltaje, Talla, etc.)
       const attrRows = await this.dataSource.query(
         `SELECT
            a.id_atributo,
-           LOWER(TRIM(a.nombre)) AS attr_nombre,
+           TRIM(a.nombre) AS attr_nombre,
            LOWER(TRIM(a.codigo)) AS attr_codigo,
            ac.id_atributo_componente,
-           ac.nombre AS comp_nombre,
-           ac.codigo AS comp_codigo
+           TRIM(ac.nombre) AS comp_nombre,
+           TRIM(ac.codigo) AS comp_codigo
          FROM public.producto_atributo pa
          JOIN public.atributo a ON a.id_atributo = pa.atributo_id
          JOIN public.producto_atributo_componente pac ON pac.producto_atributo_id = pa.id_producto_atributo
@@ -1590,23 +1590,24 @@ export class ProductoRepository {
         [productoId],
       );
 
-      const colorComps = attrRows
-        .filter((r: any) => r.attr_nombre.includes('color') || r.attr_codigo.includes('color'))
-        .map((r: any) => r.comp_nombre);
+      // Agrupar componentes por nombre de atributo
+      const attrsMap = new Map<string, { id: number; nombre: string; codigo: string; opciones: Set<string> }>();
+      for (const row of attrRows) {
+        const key = row.attr_nombre.toLowerCase().trim();
+        if (!attrsMap.has(key)) {
+          attrsMap.set(key, {
+            id: row.id_atributo,
+            nombre: row.attr_nombre,
+            codigo: row.attr_codigo || '',
+            opciones: new Set<string>(),
+          });
+        }
+        if (row.comp_nombre) {
+          attrsMap.get(key)!.opciones.add(row.comp_nombre.trim());
+        }
+      }
 
-      const sizeComps = attrRows
-        .filter((r: any) =>
-          r.attr_nombre.includes('voltaje') ||
-          r.attr_nombre.includes('talla') ||
-          r.attr_nombre.includes('tamaño') ||
-          r.attr_nombre.includes('tamano') ||
-          r.attr_nombre.includes('medida') ||
-          r.attr_codigo.includes('volt') ||
-          r.attr_codigo.includes('talla')
-        )
-        .map((r: any) => r.comp_nombre);
-
-      // 5. Consultar variantes registradas en PostgreSQL
+      // 5. Consultar variantes registradas en PostgreSQL con sus componentes exactos vía JSON_AGG
       const varRows = await this.dataSource.query(
         `SELECT
            pv.id_producto_variante,
@@ -1615,10 +1616,22 @@ export class ProductoRepository {
            pv.referencia,
            pv.precio,
            pv.estado,
-           STRING_AGG(DISTINCT ac.nombre, ', ') AS componentes_nombres
+           COALESCE(
+             JSON_AGG(
+               JSON_BUILD_OBJECT(
+                 'attr_id', a.id_atributo,
+                 'attr_nombre', a.nombre,
+                 'attr_codigo', a.codigo,
+                 'comp_id', ac.id_atributo_componente,
+                 'comp_nombre', ac.nombre
+               )
+             ) FILTER (WHERE a.id_atributo IS NOT NULL),
+             '[]'::json
+           ) AS componentes
          FROM public.producto_variante pv
          LEFT JOIN public.variante_componente vc ON vc.producto_variante_id = pv.id_producto_variante
          LEFT JOIN public.atributo_componente ac ON ac.id_atributo_componente = vc.atributo_componente_id
+         LEFT JOIN public.atributo a ON a.id_atributo = ac.atributo_id
          WHERE pv.producto_id = $1 AND pv.estado = 'activo'
          GROUP BY pv.id_producto_variante, pv.sku, pv.codigo_barras, pv.referencia, pv.precio, pv.estado
          ORDER BY pv.id_producto_variante ASC;`,
@@ -1658,8 +1671,16 @@ export class ProductoRepository {
       if (catNombre) detailsList.push(`🏷️ Categoría: ${catNombre}`);
       if (subcatNombre) detailsList.push(`📁 Subcategoría: ${subcatNombre}`);
       if (prod.marca_nombre) detailsList.push(`🏷️ Marca: ${prod.marca_nombre}`);
-      if (colorComps.length > 0) detailsList.push(`🎨 Color: ${colorComps.join(', ')}`);
-      if (sizeComps.length > 0) detailsList.push(`⚡ Voltaje / Talla: ${sizeComps.join(', ')}`);
+
+      for (const [, attr] of attrsMap.entries()) {
+        const ops = Array.from(attr.opciones);
+        if (ops.length > 0) {
+          const lower = attr.nombre.toLowerCase();
+          const icon = lower.includes('color') ? '🎨' : lower.includes('talla') ? '📏' : lower.includes('volt') ? '⚡' : '⚙️';
+          detailsList.push(`${icon} ${attr.nombre}: ${ops.join(', ')}`);
+        }
+      }
+
       if (prod.ficha_tecnica) detailsList.push(`\n📋 Ficha Técnica:\n${prod.ficha_tecnica}`);
 
       let fullDescription = descBase;
@@ -1667,8 +1688,6 @@ export class ProductoRepository {
         fullDescription = `${descBase}\n\n${detailsList.join('\n')}`.trim();
       }
 
-      const mainColor = colorComps[0] || (colorComps.length > 0 ? colorComps.join(' / ') : undefined);
-      const mainSize = sizeComps[0] || (sizeComps.length > 0 ? sizeComps.join(' / ') : undefined);
       const productTitle = (prod.nombre || 'Producto').substring(0, 100);
 
       let fbProductId = prod.fb_product_id;
@@ -1721,24 +1740,48 @@ export class ProductoRepository {
           this.logger.log(`✓ [MetaCatalog] Retirados ${orphanDeletes.length} producto(s) base obsoletos de Meta`);
         }
 
-        // Obtener o crear el ProductGroup correspondiente a este producto
+        // Obtener o crear el ProductGroup correspondiente a este producto con sus dimensiones correctas
         let productGroupId = existingGroupByRetailer.get(itemGroupId) || null;
         if (!productGroupId) {
           const variantDimensions: any[] = [];
-          if (colorComps.length > 0) {
-            variantDimensions.push({
-              label: 'Color',
-              product_field: 'color',
-              options: Array.from(new Set(colorComps)),
-            });
+          for (const [key, attr] of attrsMap.entries()) {
+            const ops = Array.from(attr.opciones);
+            if (ops.length === 0) continue;
+
+            if (key.includes('color')) {
+              variantDimensions.push({
+                label: attr.nombre,
+                product_field: 'color',
+                options: ops,
+              });
+            } else if (key.includes('talla') || key.includes('tamaño') || key.includes('tamano')) {
+              variantDimensions.push({
+                label: attr.nombre,
+                product_field: 'size',
+                options: ops,
+              });
+            } else if (key.includes('material')) {
+              variantDimensions.push({
+                label: attr.nombre,
+                product_field: 'material',
+                options: ops,
+              });
+            } else if (key.includes('estampado') || key.includes('diseño') || key.includes('diseno') || key.includes('patron')) {
+              variantDimensions.push({
+                label: attr.nombre,
+                product_field: 'pattern',
+                options: ops,
+              });
+            } else {
+              // Atributos técnicos/específicos (ej. Voltaje, Capacidad, etc.)
+              variantDimensions.push({
+                label: attr.nombre,
+                product_field: `custom_data:${attr.nombre}`,
+                options: ops,
+              });
+            }
           }
-          if (sizeComps.length > 0) {
-            variantDimensions.push({
-              label: 'Voltaje / Talla',
-              product_field: 'size',
-              options: Array.from(new Set(sizeComps)),
-            });
-          }
+
           if (variantDimensions.length === 0) {
             variantDimensions.push({
               label: 'Opción',
@@ -1767,23 +1810,40 @@ export class ProductoRepository {
         }
 
         // Subir o actualizar todas las variantes concurrentemente en paralelo
-        const varUploadPromises = varRows.map(async (v: any, vi: number) => {
+        const varUploadPromises = varRows.map(async (v: any) => {
           const vRetailerId = (v.sku || v.referencia || `${retailerId}-VAR-${v.id_producto_variante}`).trim();
 
-          let vColor = colorComps.find((c: string) =>
-            (v.componentes_nombres || '').toLowerCase().includes(c.toLowerCase()) ||
-            vRetailerId.toLowerCase().includes(c.toLowerCase().slice(0, 3))
-          );
-          if (!vColor && colorComps.length > 0) {
-            vColor = colorComps[vi % colorComps.length];
-          }
+          const comps: any[] = Array.isArray(v.componentes) ? v.componentes : [];
+          let vColor: string | undefined = undefined;
+          let vSize: string | undefined = undefined;
+          let vMaterial: string | undefined = undefined;
+          let vPattern: string | undefined = undefined;
+          const vAdditionalAttrs: Record<string, string> = {};
+          const vSpecsDetails: string[] = [];
 
-          let vSize = sizeComps.find((s: string) =>
-            (v.componentes_nombres || '').toLowerCase().includes(s.toLowerCase()) ||
-            vRetailerId.toLowerCase().includes(s.toLowerCase().replace(/[^a-z0-9]/g, ''))
-          );
-          if (!vSize && sizeComps.length > 0) {
-            vSize = sizeComps[vi % sizeComps.length];
+          for (const c of comps) {
+            const cAttrName = (c.attr_nombre || '').trim();
+            const cCompName = (c.comp_nombre || '').trim();
+            const lowerName = cAttrName.toLowerCase();
+
+            if (lowerName.includes('color')) {
+              vColor = cCompName;
+              vSpecsDetails.push(`🎨 Color: ${cCompName}`);
+            } else if (lowerName.includes('talla') || lowerName.includes('tamaño') || lowerName.includes('tamano')) {
+              vSize = cCompName;
+              vSpecsDetails.push(`📏 Talla: ${cCompName}`);
+            } else if (lowerName.includes('material')) {
+              vMaterial = cCompName;
+              vSpecsDetails.push(`🧵 Material: ${cCompName}`);
+            } else if (lowerName.includes('estampado') || lowerName.includes('diseño') || lowerName.includes('diseno') || lowerName.includes('patron')) {
+              vPattern = cCompName;
+              vSpecsDetails.push(`✨ Diseño: ${cCompName}`);
+            } else {
+              // Atributo específico (Voltaje, etc.) -> A additional_variant_attributes
+              vAdditionalAttrs[cAttrName] = cCompName;
+              const icon = lowerName.includes('volt') || lowerName.includes('energ') || lowerName.includes('potenc') ? '⚡' : '⚙️';
+              vSpecsDetails.push(`${icon} ${cAttrName}: ${cCompName}`);
+            }
           }
 
           const vPrecio = Number(v.precio || precioFinalDeVenta);
@@ -1794,7 +1854,7 @@ export class ProductoRepository {
             item_group_id: itemGroupId,
             title: productTitle,
             name: productTitle,
-            description: `${fullDescription}\n\nVariante: ${vRetailerId}\nColor: ${vColor || 'Estándar'}\nVoltaje/Talla: ${vSize || 'Estándar'}`.substring(0, 5000),
+            description: `${fullDescription}\n\nVariante: ${vRetailerId}\n${vSpecsDetails.join('\n')}`.substring(0, 5000),
             availability: 'in stock',
             inventory: 15,
             condition: 'new',
@@ -1807,11 +1867,14 @@ export class ProductoRepository {
             product_type: taxonomyBreadcrumb,
             color: vColor || undefined,
             size: vSize || undefined,
+            material: vMaterial || undefined,
+            pattern: vPattern || undefined,
+            additional_variant_attributes: Object.keys(vAdditionalAttrs).length > 0 ? vAdditionalAttrs : undefined,
             custom_label_0: catNombre.substring(0, 100),
             custom_label_1: subcatNombre.substring(0, 100),
             custom_label_2: vRetailerId.substring(0, 100),
             custom_label_3: (vColor || '').substring(0, 100) || undefined,
-            custom_label_4: (vSize || '').substring(0, 100) || undefined,
+            custom_label_4: (vSize || Object.values(vAdditionalAttrs)[0] || '').substring(0, 100) || undefined,
             url: productWebUrl,
           };
 
@@ -1858,13 +1921,11 @@ export class ProductoRepository {
           brand: prod.marca_nombre || 'Genérica',
           category: subcatNombre || catNombre || 'General',
           product_type: taxonomyBreadcrumb,
-          color: mainColor,
-          size: mainSize,
+          color: attrsMap.get('color')?.opciones ? Array.from(attrsMap.get('color')!.opciones)[0] : undefined,
+          size: (attrsMap.get('talla')?.opciones || attrsMap.get('tamaño')?.opciones) ? Array.from((attrsMap.get('talla') || attrsMap.get('tamaño'))!.opciones)[0] : undefined,
           custom_label_0: catNombre.substring(0, 100),
           custom_label_1: subcatNombre.substring(0, 100),
           custom_label_2: refPrincipal.substring(0, 100),
-          custom_label_3: colorComps.join(', ').substring(0, 100) || undefined,
-          custom_label_4: sizeComps.join(', ').substring(0, 100) || undefined,
           url: productWebUrl,
         };
 
