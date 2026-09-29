@@ -22,7 +22,7 @@ const apiClient = axios.create({
     'Content-Type': 'application/json',
   },
   withCredentials: true,
-  timeout: 10000,
+  timeout: 90000,
 });
 
 /** Token CSRF en memoria caché para evitar peticiones redundantes */

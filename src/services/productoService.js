@@ -24,7 +24,7 @@ export const productoService = {
    * Persiste el nuevo producto con todas sus entidades hijas en PostgreSQL.
    */
   async crearProducto(datos, empresaId = 1) {
-    const res = await HttpClient.post(`/productos?empresa_id=${empresaId}`, datos);
+    const res = await HttpClient.post(`/productos?empresa_id=${empresaId}`, datos, { timeout: 90000 });
     return res.data;
   },
 
