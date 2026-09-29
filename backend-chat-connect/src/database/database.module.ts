@@ -31,10 +31,14 @@ dotenv.config();
         autoLoadEntities: true,
         synchronize: false, // ¡ESTRICTO!: Nunca alterar o sobrescribir tablas en la base de datos
         logging: process.env.NODE_ENV === 'development' ? ['error', 'warn'] : false,
+        retryAttempts: 10,
+        retryDelay: 3000,
         extra: {
-          max: 10,
-          idleTimeoutMillis: 30000,
-          connectionTimeoutMillis: 10000,
+          max: 20,
+          idleTimeoutMillis: 60000,
+          connectionTimeoutMillis: 30000,
+          keepAlive: true,
+          keepAliveInitialDelayMillis: 10000,
         },
       }),
     }),
