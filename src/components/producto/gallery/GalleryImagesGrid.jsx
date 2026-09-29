@@ -51,7 +51,7 @@ const GalleryImagesGrid = ({
                     style={{ maxHeight: '100%', objectFit: 'contain' }}
                     onError={(e) => {
                       e.target.onerror = null;
-                      e.target.src = '/src/assets/images/products/product-1(1).png';
+                      e.target.src = 'https://iili.io/nYj72us.jpg';
                     }}
                   />
                   {img.principal && (

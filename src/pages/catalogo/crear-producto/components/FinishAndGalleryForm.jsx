@@ -12,7 +12,7 @@ const FinishAndGalleryForm = ({
     const currentImages = formData.imagenes || [];
     const newImages = acceptedFiles.map((file, idx) => ({
       id: Date.now() + idx,
-      url: file.preview || (file instanceof Blob ? URL.createObjectURL(file) : '/src/assets/images/products/product-1(1).png'),
+      url: file.preview || (file instanceof Blob ? URL.createObjectURL(file) : 'https://iili.io/nYj72us.jpg'),
       nombre: file.name || `imagen_${Date.now()}.png`,
       tamano: `${((file.size || 60000) / 1024).toFixed(1)} KB`,
       principal: currentImages.length === 0 && idx === 0,

@@ -92,8 +92,8 @@ export const getInitialProductState = (siguienteCodigo = '') => ({
 
   // Imágenes (producto_imagen)
   imagenes: [
-    { id: 1, url: '/src/assets/images/products/product-1(1).png', nombre: 'vista_frontal.png', principal: true, orden: 1, tamano: '142 KB' },
-    { id: 2, url: '/src/assets/images/products/product-1(2).png', nombre: 'vista_lateral.png', principal: false, orden: 2, tamano: '138 KB' }
+    { id: 1, url: 'https://iili.io/nYj72us.jpg', nombre: 'taladro_dewalt_amarillo_20v.jpg', principal: true, orden: 1, tamano: '417 KB' },
+    { id: 2, url: 'https://iili.io/nYj7fn4.jpg', nombre: 'taladro_percutor_negro_20v.jpg', principal: false, orden: 2, tamano: '345 KB' }
   ]
 });
 

@@ -766,7 +766,7 @@ export class ProductoRepository {
    */
   async resolverUrlPublicaImagen(urlOPath?: string | null): Promise<string> {
     if (!urlOPath || !urlOPath.trim()) {
-      return 'https://iili.io/nYMyIMF.png';
+      return 'https://iili.io/nYj72us.jpg';
     }
 
     const trimmed = urlOPath.trim();
@@ -836,7 +836,7 @@ export class ProductoRepository {
       this.logger.warn(`[MetaCatalog] Advertencia resolviendo URL de imagen pública: ${err.message}`);
     }
 
-    return 'https://iili.io/nYMyIMF.png';
+    return 'https://iili.io/nYj72us.jpg';
   }
 
   /**

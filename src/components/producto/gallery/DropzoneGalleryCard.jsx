@@ -4,10 +4,8 @@ import DropzoneFormInput from '@/components/form/DropzoneFormInput';
 import IconifyIcon from '@/components/wrappers/IconifyIcon';
 
 const sampleImages = [
-  { name: 'product-1(1).png', url: '/src/assets/images/products/product-1(1).png' },
-  { name: 'product-1(2).png', url: '/src/assets/images/products/product-1(2).png' },
-  { name: 'product-2.png', url: '/src/assets/images/products/product-2.png' },
-  { name: 'product-3.png', url: '/src/assets/images/products/product-3.png' },
+  { name: 'taladro_amarillo.jpg', url: 'https://iili.io/nYj72us.jpg' },
+  { name: 'taladro_negro.jpg', url: 'https://iili.io/nYj7fn4.jpg' },
 ];
 
 const DropzoneGalleryCard = ({ onFileUpload, onAddSample }) => {
