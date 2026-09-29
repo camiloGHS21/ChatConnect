@@ -1136,16 +1136,51 @@ export class ProductoRepository {
               ],
             );
             const varId = varRes[0]?.id_producto_variante;
-            if (varId && v.componentes && Array.isArray(v.componentes)) {
-              for (const c of v.componentes) {
-                const compId = Number(c.componenteId || c.id_atributo_componente);
-                if (compId && !isNaN(compId)) {
-                  await queryRunner.query(
-                    `INSERT INTO public.variante_componente (producto_variante_id, atributo_componente_id)
-                     VALUES ($1, $2)
-                     ON CONFLICT DO NOTHING;`,
-                    [varId, compId],
-                  );
+            if (varId) {
+              const insertedCompIds = new Set<number>();
+              if (v.componentes && Array.isArray(v.componentes)) {
+                for (const c of v.componentes) {
+                  const compId = Number(c.componenteId || c.id_atributo_componente || c.comp_id || c.id);
+                  if (compId && !isNaN(compId)) {
+                    await queryRunner.query(
+                      `INSERT INTO public.variante_componente (producto_variante_id, atributo_componente_id)
+                       VALUES ($1, $2)
+                       ON CONFLICT DO NOTHING;`,
+                      [varId, compId],
+                    );
+                    insertedCompIds.add(compId);
+                  }
+                }
+              }
+              if (insertedCompIds.size === 0) {
+                const assignedComps = await queryRunner.query(
+                  `SELECT pac.atributo_componente_id, ac.nombre, ac.codigo
+                   FROM public.producto_atributo_componente pac
+                   JOIN public.producto_atributo pa ON pa.id_producto_atributo = pac.producto_atributo_id
+                   JOIN public.atributo_componente ac ON ac.id_atributo_componente = pac.atributo_componente_id
+                   WHERE pa.producto_id = $1 AND pac.estado = 'activo';`,
+                  [productoId],
+                );
+                const matchTarget = `${v.sku || ''} ${v.combinacion || ''} ${v.referencia || ''}`.toLowerCase();
+                for (const ac of assignedComps) {
+                  const compName = (ac.nombre || '').toLowerCase().trim();
+                  const compCode = (ac.codigo || '').toLowerCase().trim();
+                  if (
+                    (compName && matchTarget.includes(compName)) ||
+                    (compCode && matchTarget.includes(compCode)) ||
+                    (compName.includes('negro') && (matchTarget.includes('neg') || matchTarget.includes('black'))) ||
+                    (compName.includes('amarillo') && (matchTarget.includes('ama') || matchTarget.includes('yellow'))) ||
+                    (compName.includes('blanco') && (matchTarget.includes('bla') || matchTarget.includes('white'))) ||
+                    (compName.includes('azul') && (matchTarget.includes('azu') || matchTarget.includes('blue'))) ||
+                    (compName.includes('20v') && matchTarget.includes('20v'))
+                  ) {
+                    await queryRunner.query(
+                      `INSERT INTO public.variante_componente (producto_variante_id, atributo_componente_id)
+                       VALUES ($1, $2)
+                       ON CONFLICT DO NOTHING;`,
+                      [varId, ac.atributo_componente_id],
+                    );
+                  }
                 }
               }
             }
@@ -1929,16 +1964,51 @@ export class ProductoRepository {
               ],
             );
             const varId = varRes[0]?.id_producto_variante;
-            if (varId && v.componentes && Array.isArray(v.componentes)) {
-              for (const c of v.componentes) {
-                const compId = Number(c.componenteId || c.id_atributo_componente);
-                if (compId && !isNaN(compId)) {
-                  await queryRunner.query(
-                    `INSERT INTO public.variante_componente (producto_variante_id, atributo_componente_id)
-                     VALUES ($1, $2)
-                     ON CONFLICT DO NOTHING;`,
-                    [varId, compId],
-                  );
+            if (varId) {
+              const insertedCompIds = new Set<number>();
+              if (v.componentes && Array.isArray(v.componentes)) {
+                for (const c of v.componentes) {
+                  const compId = Number(c.componenteId || c.id_atributo_componente || c.comp_id || c.id);
+                  if (compId && !isNaN(compId)) {
+                    await queryRunner.query(
+                      `INSERT INTO public.variante_componente (producto_variante_id, atributo_componente_id)
+                       VALUES ($1, $2)
+                       ON CONFLICT DO NOTHING;`,
+                      [varId, compId],
+                    );
+                    insertedCompIds.add(compId);
+                  }
+                }
+              }
+              if (insertedCompIds.size === 0) {
+                const assignedComps = await queryRunner.query(
+                  `SELECT pac.atributo_componente_id, ac.nombre, ac.codigo
+                   FROM public.producto_atributo_componente pac
+                   JOIN public.producto_atributo pa ON pa.id_producto_atributo = pac.producto_atributo_id
+                   JOIN public.atributo_componente ac ON ac.id_atributo_componente = pac.atributo_componente_id
+                   WHERE pa.producto_id = $1 AND pac.estado = 'activo';`,
+                  [productoId],
+                );
+                const matchTarget = `${v.sku || ''} ${v.combinacion || ''} ${v.referencia || ''}`.toLowerCase();
+                for (const ac of assignedComps) {
+                  const compName = (ac.nombre || '').toLowerCase().trim();
+                  const compCode = (ac.codigo || '').toLowerCase().trim();
+                  if (
+                    (compName && matchTarget.includes(compName)) ||
+                    (compCode && matchTarget.includes(compCode)) ||
+                    (compName.includes('negro') && (matchTarget.includes('neg') || matchTarget.includes('black'))) ||
+                    (compName.includes('amarillo') && (matchTarget.includes('ama') || matchTarget.includes('yellow'))) ||
+                    (compName.includes('blanco') && (matchTarget.includes('bla') || matchTarget.includes('white'))) ||
+                    (compName.includes('azul') && (matchTarget.includes('azu') || matchTarget.includes('blue'))) ||
+                    (compName.includes('20v') && matchTarget.includes('20v'))
+                  ) {
+                    await queryRunner.query(
+                      `INSERT INTO public.variante_componente (producto_variante_id, atributo_componente_id)
+                       VALUES ($1, $2)
+                       ON CONFLICT DO NOTHING;`,
+                      [varId, ac.atributo_componente_id],
+                    );
+                  }
                 }
               }
             }
@@ -2009,10 +2079,17 @@ export class ProductoRepository {
         const newProd = updatedRows[0];
 
         const canalRows = await this.dataSource.query(
-          `SELECT catalog_id FROM public.canal WHERE empresa_id = $1 AND tipo = 'whatsapp' LIMIT 1;`,
+          `SELECT catalog_id, phone_number_id, waba_id, configuracion FROM public.canal WHERE empresa_id = $1 AND tipo = 'whatsapp' LIMIT 1;`,
           [empresaId],
         );
         const catalogId = canalRows[0]?.catalog_id;
+        const phoneId = canalRows[0]?.phone_number_id || canalRows[0]?.configuracion?.phone_number_id || process.env.META_PHONE_NUMBER_ID;
+        const wabaId = canalRows[0]?.waba_id || canalRows[0]?.configuracion?.waba_id || process.env.META_WABA_ID;
+
+        // Acelerar activación de WhatsApp Commerce inmediatamente al inicio
+        if (phoneId && catalogId) {
+          this.activarComercioWhatsApp(phoneId, catalogId, metaToken, apiVersion, wabaId);
+        }
 
         if (!catalogId) {
           await this.sincronizarConMetaCatalog(productoId, empresaId);
@@ -2028,6 +2105,15 @@ export class ProductoRepository {
           for (const item of metaItems) {
             if (item.retailer_id) metaByRetailer.set(item.retailer_id, item);
           }
+
+          // Consultar imágenes del producto para asignación contextual a variantes
+          const prodImages = await this.dataSource.query(
+            `SELECT id_producto_imagen AS id, url, nombre, principal, orden
+             FROM public.producto_imagen
+             WHERE producto_id = $1 AND estado = 'activo'
+             ORDER BY principal DESC, orden ASC, id_producto_imagen ASC;`,
+            [productoId],
+          );
 
           const varRows = await this.dataSource.query(
             `SELECT
@@ -2074,10 +2160,36 @@ export class ProductoRepository {
               let vColor: string | undefined = undefined;
               let vSize: string | undefined = undefined;
               const comps: any[] = Array.isArray(v.componentes) ? v.componentes : [];
+              const vSpecsDetails: string[] = [];
               for (const c of comps) {
                 const attrName = (c.attr_nombre || '').toLowerCase();
-                if (attrName.includes('color')) vColor = c.comp_nombre;
-                if (attrName.includes('talla') || attrName.includes('tamaño') || attrName.includes('tamano')) vSize = c.comp_nombre;
+                const compVal = (c.comp_nombre || '').trim();
+                if (attrName.includes('color')) {
+                  vColor = compVal;
+                  vSpecsDetails.push(`🎨 Color: ${compVal}`);
+                } else if (attrName.includes('talla') || attrName.includes('tamaño') || attrName.includes('tamano')) {
+                  vSize = compVal;
+                  vSpecsDetails.push(`📏 Talla: ${compVal}`);
+                } else {
+                  const icon = attrName.includes('volt') || attrName.includes('energ') ? '⚡' : '⚙️';
+                  vSpecsDetails.push(`${icon} ${c.attr_nombre}: ${compVal}`);
+                }
+              }
+
+              let vImageUrl = newProd.imagen_url;
+              if (prodImages && prodImages.length > 0) {
+                const vMatch = prodImages.find((img: any) => {
+                  const str = `${img.nombre || ''} ${img.url || ''}`.toLowerCase();
+                  if (vColor && str.includes(vColor.toLowerCase())) return true;
+                  if (vColor?.toLowerCase().includes('amarillo') && (str.includes('amarillo') || str.includes('yellow') || str.includes('ama'))) return true;
+                  if (vColor?.toLowerCase().includes('negro') && (str.includes('negro') || str.includes('black') || str.includes('neg'))) return true;
+                  if (vColor?.toLowerCase().includes('blanco') && (str.includes('blanco') || str.includes('white') || str.includes('bla'))) return true;
+                  if (vColor?.toLowerCase().includes('azul') && (str.includes('azul') || str.includes('blue') || str.includes('azu'))) return true;
+                  return false;
+                });
+                if (vMatch?.url) {
+                  vImageUrl = vMatch.url;
+                }
               }
 
               if (existingMetaItem) {
@@ -2088,15 +2200,31 @@ export class ProductoRepository {
                   diff.title = newProd.nombre.substring(0, 100);
                   diff.name = newProd.nombre.substring(0, 100);
                 }
-                // Solo si la descripción cambió
+
+                // Descripción estructurada con jerarquía visual de WhatsApp
+                const descBase = (newProd.descripcion_corta || newProd.descripcion_larga || newProd.nombre || '').trim();
+                const vBreadcrumbs: string[] = [];
+                if (newProd.categoria_nombre) vBreadcrumbs.push(`📁 Categoría: ${newProd.categoria_nombre}`);
+                if (newProd.subcategoria_nombre) vBreadcrumbs.push(`📂 Subcategoría: ${newProd.subcategoria_nombre}`);
+                if (vRetailerId) vBreadcrumbs.push(`🔖 Referencia: ${vRetailerId}`);
+                if (newProd.marca_nombre) vBreadcrumbs.push(`🏷️ Marca: ${newProd.marca_nombre}`);
+                if (vSpecsDetails.length > 0) vBreadcrumbs.push(...vSpecsDetails);
+
+                const expectedDesc = [
+                  descBase,
+                  vBreadcrumbs.join('\n'),
+                  newProd.ficha_tecnica ? `📋 Ficha Técnica:\n${newProd.ficha_tecnica}` : '',
+                ].filter(Boolean).join('\n\n').substring(0, 5000);
+
                 if (
                   newProd.descripcion_corta !== oldProd.descripcion_corta ||
                   newProd.descripcion_larga !== oldProd.descripcion_larga ||
-                  newProd.ficha_tecnica !== oldProd.ficha_tecnica
+                  newProd.ficha_tecnica !== oldProd.ficha_tecnica ||
+                  existingMetaItem.description !== expectedDesc
                 ) {
-                  const descBase = (newProd.descripcion_corta || newProd.descripcion_larga || newProd.nombre || '').trim();
-                  diff.description = `${descBase}\n\nVariante: ${vRetailerId}`.substring(0, 5000);
+                  diff.description = expectedDesc;
                 }
+
                 // Solo si el precio cambió
                 const rawMetaDigits = String(existingMetaItem.price || '').replace(/[^0-9]/g, '');
                 const metaPriceNum = rawMetaDigits ? Number(rawMetaDigits) : 0;
@@ -2107,11 +2235,13 @@ export class ProductoRepository {
                   diff.price = vPriceInCents;
                   diff.sale_price = vPriceInCents;
                 }
+
                 // Solo si la marca cambió
                 if (newProd.marca_nombre && newProd.marca_nombre !== oldProd.marca_nombre) {
                   diff.brand = newProd.marca_nombre;
                 }
-                // Solo si categoría o subcategoría cambiaron
+
+                // Categoría y subcategoría
                 if (
                   newProd.categoria_nombre !== oldProd.categoria_nombre ||
                   newProd.subcategoria_nombre !== oldProd.subcategoria_nombre
@@ -2121,13 +2251,19 @@ export class ProductoRepository {
                   diff.custom_label_0 = newProd.categoria_nombre.substring(0, 100);
                   diff.custom_label_1 = newProd.subcategoria_nombre.substring(0, 100);
                 }
-                // Solo si la imagen cambió
-                if (newProd.imagen_url && newProd.imagen_url !== oldProd.imagen_url) {
-                  diff.image_url = newProd.imagen_url;
+
+                // Imagen de variante
+                if (vImageUrl && vImageUrl !== existingMetaItem.image_url) {
+                  diff.image_url = vImageUrl;
                 }
+
                 // Color o talla
                 if (vColor && vColor !== existingMetaItem.color) diff.color = vColor;
                 if (vSize && vSize !== existingMetaItem.size) diff.size = vSize;
+
+                // Asegurar disponibilidad y visibilidad inmediata en WhatsApp
+                diff.visibility = 'published';
+                diff.availability = 'in stock';
 
                 if (Object.keys(diff).length > 0) {
                   this.logger.log(`[MetaCatalog] Actualizando en Meta variante "${vRetailerId}" (Campos modificados: ${Object.keys(diff).join(', ')})`);
@@ -2167,12 +2303,26 @@ export class ProductoRepository {
                 diff.title = newProd.nombre.substring(0, 100);
                 diff.name = newProd.nombre.substring(0, 100);
               }
+              const descBase = (newProd.descripcion_corta || newProd.descripcion_larga || newProd.nombre || '').trim();
+              const simpleBreadcrumbs: string[] = [];
+              if (newProd.categoria_nombre) simpleBreadcrumbs.push(`📁 Categoría: ${newProd.categoria_nombre}`);
+              if (newProd.subcategoria_nombre) simpleBreadcrumbs.push(`📂 Subcategoría: ${newProd.subcategoria_nombre}`);
+              if (retailerId) simpleBreadcrumbs.push(`🔖 Referencia: ${retailerId}`);
+              if (newProd.marca_nombre) simpleBreadcrumbs.push(`🏷️ Marca: ${newProd.marca_nombre}`);
+
+              const expectedSimpleDesc = [
+                descBase,
+                simpleBreadcrumbs.join('\n'),
+                newProd.ficha_tecnica ? `📋 Ficha Técnica:\n${newProd.ficha_tecnica}` : '',
+              ].filter(Boolean).join('\n\n').substring(0, 5000);
+
               if (
                 newProd.descripcion_corta !== oldProd.descripcion_corta ||
                 newProd.descripcion_larga !== oldProd.descripcion_larga ||
-                newProd.ficha_tecnica !== oldProd.ficha_tecnica
+                newProd.ficha_tecnica !== oldProd.ficha_tecnica ||
+                existingMetaItem.description !== expectedSimpleDesc
               ) {
-                diff.description = (newProd.descripcion_corta || newProd.descripcion_larga || newProd.nombre || '').substring(0, 5000);
+                diff.description = expectedSimpleDesc;
               }
               const rawSimpleDigits = String(existingMetaItem.price || '').replace(/[^0-9]/g, '');
               const metaSimplePriceNum = rawSimpleDigits ? Number(rawSimpleDigits) : 0;
@@ -2199,6 +2349,9 @@ export class ProductoRepository {
                 diff.image_url = newProd.imagen_url;
               }
 
+              diff.visibility = 'published';
+              diff.availability = 'in stock';
+
               if (Object.keys(diff).length > 0) {
                 this.logger.log(`[MetaCatalog] Actualizando producto simple ${productoId} en Meta (Campos: ${Object.keys(diff).join(', ')})`);
                 await fetch(`https://graph.facebook.com/${apiVersion}/${existingMetaItem.id}`, {
@@ -2214,6 +2367,12 @@ export class ProductoRepository {
               await this.sincronizarConMetaCatalog(productoId, empresaId);
               metaModificaciones['producto_simple'] = ['creado_en_meta'];
             }
+          }
+
+          // Asegurar colecciones jerárquicas y reactivar comercio WhatsApp
+          await this.asegurarProductSets(catalogId, newProd.categoria_nombre, newProd.subcategoria_nombre, metaToken, apiVersion);
+          if (phoneId) {
+            await this.activarComercioWhatsApp(phoneId, catalogId, metaToken, apiVersion, wabaId);
           }
 
           await this.dataSource.query(
@@ -2489,7 +2648,12 @@ export class ProductoRepository {
 
       // Asegurar vinculación del Catálogo con WABA y WhatsApp Commerce
       let wabaId = canal.waba_id || canal.configuracion?.waba_id || process.env.META_WABA_ID;
-      const phoneId = canal.phone_number_id || canal.configuracion?.phone_number_id;
+      const phoneId = canal.phone_number_id || canal.configuracion?.phone_number_id || process.env.META_PHONE_NUMBER_ID;
+
+      // Acelerar activación de WhatsApp Commerce inmediatamente al inicio
+      if (phoneId && catalogId) {
+        this.activarComercioWhatsApp(phoneId, catalogId, metaToken, apiVersion, wabaId);
+      }
 
       if (!wabaId && businessId) {
         try {
@@ -2799,6 +2963,15 @@ export class ProductoRepository {
           }
         }
 
+        // Consultar todas las imágenes del producto para asignación contextual a variantes
+        const prodImages = await this.dataSource.query(
+          `SELECT id_producto_imagen AS id, url, nombre, principal, orden
+           FROM public.producto_imagen
+           WHERE producto_id = $1 AND estado = 'activo'
+           ORDER BY principal DESC, orden ASC, id_producto_imagen ASC;`,
+          [productoId],
+        );
+
         // Subir o actualizar todas las variantes concurrentemente en paralelo
         const varUploadPromises = varRows.map(async (v: any) => {
           const vRetailerId = (v.sku || v.referencia || `${retailerId}-VAR-${v.id_producto_variante}`).trim();
@@ -2836,22 +3009,54 @@ export class ProductoRepository {
             }
           }
 
+          // Asignar imagen específica de la variante según coincidencia con color o SKU
+          let vImageUrl = imageUrl;
+          if (prodImages && prodImages.length > 0) {
+            const vMatch = prodImages.find((img: any) => {
+              const str = `${img.nombre || ''} ${img.url || ''}`.toLowerCase();
+              if (vColor && str.includes(vColor.toLowerCase())) return true;
+              if (vColor?.toLowerCase().includes('amarillo') && (str.includes('amarillo') || str.includes('yellow') || str.includes('ama'))) return true;
+              if (vColor?.toLowerCase().includes('negro') && (str.includes('negro') || str.includes('black') || str.includes('neg'))) return true;
+              if (vColor?.toLowerCase().includes('blanco') && (str.includes('blanco') || str.includes('white') || str.includes('bla'))) return true;
+              if (vColor?.toLowerCase().includes('azul') && (str.includes('azul') || str.includes('blue') || str.includes('azu'))) return true;
+              return false;
+            });
+            if (vMatch?.url) {
+              vImageUrl = vMatch.url;
+            }
+          }
+
           const vPrecio = Number(v.precio || precioFinalDeVenta);
           const vPriceInCents = Math.round(vPrecio * 100);
+
+          // Descripción enriquecida con jerarquía visual para WhatsApp
+          const vBreadcrumbs: string[] = [];
+          if (catNombre) vBreadcrumbs.push(`📁 Categoría: ${catNombre}`);
+          if (subcatNombre) vBreadcrumbs.push(`📂 Subcategoría: ${subcatNombre}`);
+          if (vRetailerId) vBreadcrumbs.push(`🔖 Referencia: ${vRetailerId}`);
+          if (prod.marca_nombre) vBreadcrumbs.push(`🏷️ Marca: ${prod.marca_nombre}`);
+          if (vSpecsDetails.length > 0) vBreadcrumbs.push(...vSpecsDetails);
+
+          const variantDesc = [
+            descBase,
+            vBreadcrumbs.join('\n'),
+            prod.ficha_tecnica ? `📋 Ficha Técnica:\n${prod.ficha_tecnica}` : '',
+          ].filter(Boolean).join('\n\n').substring(0, 5000);
 
           const varPayload: any = {
             retailer_id: vRetailerId,
             item_group_id: itemGroupId,
             title: productTitle,
             name: productTitle,
-            description: `${fullDescription}\n\nVariante: ${vRetailerId}\n${vSpecsDetails.join('\n')}`.substring(0, 5000),
+            description: variantDesc,
+            visibility: 'published',
             availability: 'in stock',
             inventory: 15,
             condition: 'new',
             price: vPriceInCents,
             sale_price: vPriceInCents,
             currency: 'COP',
-            image_url: imageUrl,
+            image_url: vImageUrl,
             brand: prod.marca_nombre || 'Genérica',
             category: subcatNombre || catNombre || 'General',
             product_type: taxonomyBreadcrumb,
@@ -2895,12 +3100,25 @@ export class ProductoRepository {
         this.logger.log(`✓ [MetaCatalog] ${varRows.length} variantes sincronizadas exitosamente en paralelo`);
       } else {
         // PRODUCTO SIMPLE (Sin variantes):
+        const simpleBreadcrumbs: string[] = [];
+        if (catNombre) simpleBreadcrumbs.push(`📁 Categoría: ${catNombre}`);
+        if (subcatNombre) simpleBreadcrumbs.push(`📂 Subcategoría: ${subcatNombre}`);
+        if (retailerId) simpleBreadcrumbs.push(`🔖 Referencia: ${retailerId}`);
+        if (prod.marca_nombre) simpleBreadcrumbs.push(`🏷️ Marca: ${prod.marca_nombre}`);
+
+        const simpleDesc = [
+          descBase,
+          simpleBreadcrumbs.join('\n'),
+          prod.ficha_tecnica ? `📋 Ficha Técnica:\n${prod.ficha_tecnica}` : '',
+        ].filter(Boolean).join('\n\n').substring(0, 5000);
+
         const metaPayload: any = {
           retailer_id: retailerId,
           item_group_id: itemGroupId,
           title: productTitle,
           name: productTitle,
-          description: fullDescription.substring(0, 5000),
+          description: simpleDesc,
+          visibility: 'published',
           availability: 'in stock',
           inventory: Math.max(1, Number(prod.disponible) || 10),
           condition: 'new',
@@ -2941,48 +3159,10 @@ export class ProductoRepository {
       // 5. Colecciones en Meta (Product Sets) y Activación de Comercio en paralelo
       const postOperations: Promise<any>[] = [];
 
-      // A. Crear o asegurar Sets para Categoría y Subcategoría
+      // A. Crear o asegurar Sets jerárquicos para Categoría y Subcategoría
       if (catalogId) {
         postOperations.push(
-          (async () => {
-            try {
-              const setsRes = await fetch(`https://graph.facebook.com/${apiVersion}/${catalogId}/product_sets?fields=id,name`, {
-                headers: { Authorization: `Bearer ${metaToken}` },
-              });
-              const setsData: any = await setsRes.json();
-              const existingSets = setsData?.data || [];
-
-              const setOps: Promise<any>[] = [];
-              if (catNombre && !existingSets.some((s: any) => s.name?.toLowerCase() === catNombre.toLowerCase())) {
-                setOps.push(
-                  fetch(`https://graph.facebook.com/${apiVersion}/${catalogId}/product_sets`, {
-                    method: 'POST',
-                    headers: { Authorization: `Bearer ${metaToken}`, 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                      name: catNombre,
-                      filter: { product_type: { contains: catNombre } },
-                    }),
-                  })
-                );
-              }
-
-              if (subcatNombre && !existingSets.some((s: any) => s.name?.toLowerCase() === subcatNombre.toLowerCase())) {
-                setOps.push(
-                  fetch(`https://graph.facebook.com/${apiVersion}/${catalogId}/product_sets`, {
-                    method: 'POST',
-                    headers: { Authorization: `Bearer ${metaToken}`, 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                      name: subcatNombre,
-                      filter: { category: { eq: subcatNombre } },
-                    }),
-                  })
-                );
-              }
-              await Promise.all(setOps);
-            } catch (setErr: any) {
-              this.logger.warn(`[MetaCatalog] Advertencia gestionando colecciones: ${setErr.message}`);
-            }
-          })()
+          this.asegurarProductSets(catalogId, catNombre, subcatNombre, metaToken, apiVersion)
         );
       }
 
@@ -2998,17 +3178,9 @@ export class ProductoRepository {
       }
 
       // C. Activar Tienda y Carrito en WhatsApp
-      if (phoneId) {
+      if (phoneId && catalogId) {
         postOperations.push(
-          fetch(`https://graph.facebook.com/${apiVersion}/${phoneId}/whatsapp_commerce_settings`, {
-            method: 'POST',
-            headers: { Authorization: `Bearer ${metaToken}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              is_cart_enabled: true,
-              is_catalog_visible: true,
-              catalog_id: catalogId,
-            }),
-          }).catch((phoneErr: any) => this.logger.warn(`[MetaCatalog] Advertencia configurando WhatsApp Commerce: ${phoneErr.message}`))
+          this.activarComercioWhatsApp(phoneId, catalogId, metaToken, apiVersion, wabaId)
         );
       }
 
@@ -3042,4 +3214,162 @@ export class ProductoRepository {
       return { success: false, error: err.message };
     }
   }
+
+  /**
+   * Activa inmediatamente el comercio y carrito de WhatsApp para refrescar la caché del dispositivo
+   */
+  private async activarComercioWhatsApp(
+    phoneId: string,
+    catalogId: string,
+    metaToken: string,
+    apiVersion: string,
+    wabaId?: string,
+  ) {
+    if (!phoneId || !catalogId) return;
+    try {
+      // 1. Re-vincular Catálogo a WABA para forzar re-indexación en la cuenta comercial
+      if (wabaId) {
+        await fetch(`https://graph.facebook.com/${apiVersion}/${wabaId}/product_catalogs`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${metaToken}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ catalog_id: catalogId }),
+        }).catch(() => null);
+      }
+
+      // 2. Toggle rápido de visibilidad para invalidar la caché de los servidores edge de WhatsApp
+      await fetch(
+        `https://graph.facebook.com/${apiVersion}/${phoneId}/whatsapp_commerce_settings`,
+        {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${metaToken}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ is_catalog_visible: false }),
+        },
+      ).catch(() => null);
+
+      const res = await fetch(
+        `https://graph.facebook.com/${apiVersion}/${phoneId}/whatsapp_commerce_settings`,
+        {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${metaToken}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            is_cart_enabled: true,
+            is_catalog_visible: true,
+          }),
+        },
+      );
+      const data: any = await res.json();
+      if (data?.success) {
+        this.logger.log(`✓ [MetaCatalog] WhatsApp Commerce activado y caché refrescada inmediatamente`);
+      }
+    } catch (err: any) {
+      this.logger.warn(`[MetaCatalog] Advertencia activando WhatsApp Commerce: ${err.message}`);
+    }
+  }
+
+  /**
+   * Garantiza que las colecciones (Product Sets) aparezcan en WhatsApp de forma estructurada y jerárquica:
+   * 1. Colección de Categoría: "${catNombre}"
+   * 2. Colección de Subcategoría: "${catNombre} › ${subcatNombre}"
+   */
+  private async asegurarProductSets(
+    catalogId: string,
+    catNombre: string,
+    subcatNombre: string,
+    metaToken: string,
+    apiVersion: string,
+  ) {
+    if (!catalogId || (!catNombre && !subcatNombre)) return;
+    try {
+      const setsRes = await fetch(
+        `https://graph.facebook.com/${apiVersion}/${catalogId}/product_sets?fields=id,name,filter`,
+        { headers: { Authorization: `Bearer ${metaToken}` } },
+      );
+      const setsData: any = await setsRes.json();
+      const existingSets: any[] = setsData?.data || [];
+
+      // A. Colección para Categoría Principal
+      if (catNombre) {
+        const catSet = existingSets.find(
+          (s: any) => s.name?.toLowerCase().trim() === catNombre.toLowerCase().trim(),
+        );
+        if (!catSet) {
+          const createCatRes = await fetch(
+            `https://graph.facebook.com/${apiVersion}/${catalogId}/product_sets`,
+            {
+              method: 'POST',
+              headers: { Authorization: `Bearer ${metaToken}`, 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                name: catNombre,
+                filter: { product_type: { contains: catNombre } },
+              }),
+            },
+          );
+          const createCatData: any = await createCatRes.json();
+          if (createCatData?.id) {
+            this.logger.log(`✓ [MetaCatalog] Colección Categoría "${catNombre}" creada en WhatsApp`);
+          } else if (createCatData?.error?.code === 100) {
+            await new Promise(r => setTimeout(r, 1200));
+            await fetch(`https://graph.facebook.com/${apiVersion}/${catalogId}/product_sets`, {
+              method: 'POST',
+              headers: { Authorization: `Bearer ${metaToken}`, 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                name: catNombre,
+                filter: { product_type: { contains: catNombre } },
+              }),
+            }).catch(() => null);
+          }
+        }
+      }
+
+      // B. Colección para Subcategoría (formato jerárquico visual: "Categoría › Subcategoría")
+      if (subcatNombre) {
+        const subcatSetName = catNombre ? `${catNombre} › ${subcatNombre}` : subcatNombre;
+        const exactSubSet = existingSets.find(
+          (s: any) => s.name?.toLowerCase().trim() === subcatSetName.toLowerCase().trim(),
+        );
+        const legacySubSet = existingSets.find(
+          (s: any) => s.name?.toLowerCase().trim() === subcatNombre.toLowerCase().trim(),
+        );
+
+        if (legacySubSet && !exactSubSet) {
+          // Renombrar a formato jerárquico si existía con el nombre simple anterior
+          await fetch(`https://graph.facebook.com/${apiVersion}/${legacySubSet.id}`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${metaToken}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: subcatSetName }),
+          });
+          this.logger.log(`✓ [MetaCatalog] Colección renombrada a jerarquía: "${subcatSetName}"`);
+        } else if (!exactSubSet) {
+          const createSubRes = await fetch(
+            `https://graph.facebook.com/${apiVersion}/${catalogId}/product_sets`,
+            {
+              method: 'POST',
+              headers: { Authorization: `Bearer ${metaToken}`, 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                name: subcatSetName,
+                filter: { category: { eq: subcatNombre } },
+              }),
+            },
+          );
+          const createSubData: any = await createSubRes.json();
+          if (createSubData?.id) {
+            this.logger.log(`✓ [MetaCatalog] Colección Subcategoría "${subcatSetName}" creada en WhatsApp`);
+          } else if (createSubData?.error?.code === 100) {
+            await new Promise(r => setTimeout(r, 1200));
+            await fetch(`https://graph.facebook.com/${apiVersion}/${catalogId}/product_sets`, {
+              method: 'POST',
+              headers: { Authorization: `Bearer ${metaToken}`, 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                name: subcatSetName,
+                filter: { category: { eq: subcatNombre } },
+              }),
+            }).catch(() => null);
+          }
+        }
+      }
+    } catch (setErr: any) {
+      this.logger.warn(`[MetaCatalog] Advertencia gestionando colecciones jerárquicas: ${setErr.message}`);
+    }
+  }
 }
+

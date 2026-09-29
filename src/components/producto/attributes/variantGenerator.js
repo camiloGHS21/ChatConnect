@@ -19,7 +19,7 @@ export const regenerateVariants = (assignedAttrs, attrsPool, formData) => {
   variantAttrs.forEach(attr => {
     const meta = attrsPool.find(item =>
       String(item.id_atributo) === String(attr.id_atributo) ||
-      (item.codigo && a.codigo && item.codigo.toUpperCase() === a.codigo.toUpperCase())
+      (item.codigo && attr.codigo && item.codigo.toUpperCase() === attr.codigo.toUpperCase())
     );
     const selectedComps = (meta?.componentes || []).filter(c => {
       const sel = (attr.componentes_seleccionados || []).map(String);
