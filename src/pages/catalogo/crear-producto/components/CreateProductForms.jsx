@@ -6,23 +6,21 @@ import WizardTabsHeader from '@/components/producto/wizard/WizardTabsHeader';
 import WizardNavigation from '@/components/producto/wizard/WizardNavigation';
 import { buildProductWizardSteps } from '@/components/producto/wizard/buildProductWizardSteps';
 import { getInitialProductState } from '@/components/producto/wizard/initialProductState';
-import { validateStep, validateAllProductData } from '@/components/producto/wizard/productValidation';
+import { validateStep } from '@/components/producto/wizard/productValidation';
 import useProductCatalogs from '@/components/producto/wizard/useProductCatalogs';
+import useProductSaveHandler from '@/components/producto/wizard/useProductSaveHandler';
 import productoService from '@/services/productoService';
 import ProductSubmittedForm from './ProductSubmittedForm';
 
 /**
- * Asistente de Creación de Producto (5 Pasos Oficiales Reback)
- * Con validaciones por paso y pre-guardado según reglas de PostgreSQL.
+ * Asistente de Creación y Edición de Producto (5 Pasos Oficiales Reback)
+ * Con soporte para edición y actualización diferencial en Meta WhatsApp.
  */
-const CreateProductForms = () => {
+const CreateProductForms = ({ productId }) => {
   const [activeStep, setActiveStep] = useState(1);
-  const [isSubmitted, setIsSubmitted] = useState(false);
   const [productData, setProductData] = useState(() => getInitialProductState());
   const [validationErrors, setValidationErrors] = useState({});
   const [stepError, setStepError] = useState('');
-  const [saveError, setSaveError] = useState('');
-  const [isSaving, setIsSaving] = useState(false);
   const [deleteModalConfig, setDeleteModalConfig] = useState({ show: false });
 
   const { control, setValue, reset } = useForm({ defaultValues: productData, mode: 'onChange' });
@@ -37,6 +35,23 @@ const CreateProductForms = () => {
   };
 
   const { catalogs, setCatalogs } = useProductCatalogs(updateField);
+
+  const {
+    isSubmitted,
+    isSaving,
+    isLoadingProduct,
+    saveError,
+    handleSaveProduct,
+    handleResetForm,
+  } = useProductSaveHandler({
+    productId,
+    productData,
+    setProductData,
+    reset,
+    setActiveStep,
+    setValidationErrors,
+    setStepError,
+  });
 
   const handleNext = () => {
     const val = validateStep(activeStep, productData);
@@ -55,42 +70,6 @@ const CreateProductForms = () => {
     setActiveStep(target);
   };
 
-  const handleSaveProduct = async () => {
-    const check = validateAllProductData(productData);
-    if (!check.isValid) {
-      setActiveStep(check.firstInvalidStep);
-      setValidationErrors(check.errors);
-      setStepError(check.message);
-      return;
-    }
-    try {
-      setIsSaving(true);
-      setSaveError('');
-      setStepError('');
-      const res = await productoService.crearProducto(productData, 1);
-      if (res?.producto) {
-        setProductData(prev => ({
-          ...prev,
-          id: res.producto.id_producto || res.producto.id,
-          codigo_interno: res.producto.codigo_interno || prev.codigo_interno,
-        }));
-      }
-      setIsSubmitted(true);
-    } catch (e) {
-      const msg = e.response?.data?.message || e.message || 'Error al persistir producto';
-      setSaveError(typeof msg === 'string' ? msg : JSON.stringify(msg));
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleResetForm = async () => {
-    setSaveError(''); setStepError(''); setValidationErrors({});
-    const nextCode = await productoService.getSiguienteCodigo(1).catch(() => '');
-    const fresh = getInitialProductState(nextCode);
-    reset(fresh); setProductData(fresh); setIsSubmitted(false); setActiveStep(1);
-  };
-
   const formSteps = buildProductWizardSteps({
     productData,
     updateField,
@@ -107,16 +86,28 @@ const CreateProductForms = () => {
   });
 
   if (isSubmitted) {
-    return <ProductSubmittedForm productData={productData} onCreateAnother={handleResetForm} />;
+    return (
+      <ProductSubmittedForm
+        productData={productData}
+        onCreateAnother={productId ? null : handleResetForm}
+        isEditing={!!productId}
+      />
+    );
   }
 
   return (
     <>
       <FullPageLoader
-        show={isSaving}
-        title="Subiendo y sincronizando producto..."
-        message="Guardando en la base de datos y publicando en el catálogo de Meta WhatsApp Business..."
-        badge="Meta WhatsApp Commerce Sync"
+        show={isSaving || isLoadingProduct}
+        title={isLoadingProduct ? 'Cargando producto...' : productId ? 'Actualizando producto...' : 'Subiendo producto...'}
+        message={
+          isLoadingProduct
+            ? 'Cargando datos desde la base de datos...'
+            : productId
+            ? 'Guardando cambios en PostgreSQL y actualizando en WhatsApp Meta solo lo que cambió...'
+            : 'Guardando en la base de datos y publicando en el catálogo de Meta WhatsApp...'
+        }
+        badge="Meta WhatsApp Sync"
       />
       {stepError && (
         <div className="alert alert-warning py-2 px-3 fs-13 mb-3 d-flex align-items-center shadow-sm">
@@ -136,6 +127,7 @@ const CreateProductForms = () => {
         stepName={formSteps[activeStep - 1]?.name}
         onSave={handleSaveProduct}
         isSaving={isSaving}
+        saveButtonText={productId ? 'Guardar Cambios' : 'Guardar y Crear Producto'}
       />
       <DeleteConfirmationModal
         show={deleteModalConfig.show}

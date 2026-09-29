@@ -13,7 +13,8 @@ const WizardNavigation = ({
   onPrev,
   onNext,
   onSave,
-  isSaving
+  isSaving,
+  saveButtonText,
 }) => {
   const handlePrev = () => {
     if (onPrev) {
@@ -71,7 +72,7 @@ const WizardNavigation = ({
             className="btn btn-success d-inline-flex align-items-center gap-2 fw-bold"
           >
             <IconifyIcon icon={isSaving ? 'bx:loader-alt' : 'bx:check-double'} className={clsx('fs-18', { 'bx-spin': isSaving })} />
-            {isSaving ? 'Guardando en BD...' : 'Guardar y Crear Producto'}
+            {isSaving ? 'Guardando...' : (saveButtonText || 'Guardar y Crear Producto')}
           </button>
         )}
       </div>

@@ -1,6 +1,7 @@
 import { Controller, Get, Post, Put, Patch, Delete, Body, Query, Param, HttpCode, HttpStatus } from '@nestjs/common';
 import { ProductoRepository } from '../repositories/producto.repository.js';
 import { CreateProductoDto } from '../dto/create-producto.dto.js';
+import { UpdateProductoDto } from '../dto/update-producto.dto.js';
 
 /**
  * ============================================================================
@@ -100,6 +101,34 @@ export class ProductoController {
   async getProductos(@Query('empresa_id') empresaId?: string) {
     const id = empresaId ? parseInt(empresaId, 10) : 1;
     return await this.productoRepo.getProductos(id);
+  }
+
+  @Get(':id')
+  async getProductoPorId(@Param('id') id: string, @Query('empresa_id') empresaId?: string) {
+    const empId = empresaId ? parseInt(empresaId, 10) : 1;
+    return await this.productoRepo.getProductoPorId(parseInt(id, 10), empId);
+  }
+
+  @Put(':id')
+  @HttpCode(HttpStatus.OK)
+  async actualizarProducto(
+    @Param('id') id: string,
+    @Body() dto: UpdateProductoDto,
+    @Query('empresa_id') empresaId?: string,
+  ) {
+    const empId = dto.empresa_id || (empresaId ? parseInt(empresaId, 10) : 1);
+    return await this.productoRepo.actualizarProducto(parseInt(id, 10), dto, empId);
+  }
+
+  @Patch(':id')
+  @HttpCode(HttpStatus.OK)
+  async patchProducto(
+    @Param('id') id: string,
+    @Body() dto: UpdateProductoDto,
+    @Query('empresa_id') empresaId?: string,
+  ) {
+    const empId = dto.empresa_id || (empresaId ? parseInt(empresaId, 10) : 1);
+    return await this.productoRepo.actualizarProducto(parseInt(id, 10), dto, empId);
   }
 
   @Delete(':id')

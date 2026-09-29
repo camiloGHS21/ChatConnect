@@ -2,7 +2,7 @@ import IconifyIcon from '@/components/wrappers/IconifyIcon';
 import { Col, Row, Button, Badge, Card } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 
-const ProductSubmittedForm = ({ productData, onCreateAnother }) => {
+const ProductSubmittedForm = ({ productData, onCreateAnother, isEditing }) => {
   return (
     <Row className="d-flex justify-content-center py-4">
       <Col lg={8} md={10}>
@@ -10,9 +10,13 @@ const ProductSubmittedForm = ({ productData, onCreateAnother }) => {
           <div className="avatar-lg bg-success-subtle text-success rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3" style={{ width: '72px', height: '72px' }}>
             <IconifyIcon icon="bx:check-double" className="fs-36" />
           </div>
-          <h3 className="mt-0 fw-bold text-dark">¡Producto Creado Exitosamente!</h3>
+          <h3 className="mt-0 fw-bold text-dark">
+            {isEditing ? '¡Producto Actualizado Exitosamente!' : '¡Producto Creado Exitosamente!'}
+          </h3>
           <p className="mb-4 text-muted fs-14">
-            El producto ha sido registrado exitosamente y está listo para comercializarse en la tienda y canales.
+            {isEditing
+              ? 'Los cambios han sido guardados en PostgreSQL y actualizados en el catálogo de WhatsApp Meta (solo los campos modificados).'
+              : 'El producto ha sido registrado exitosamente y está listo para comercializarse en la tienda y canales.'}
           </p>
 
           {productData && (

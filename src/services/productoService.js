@@ -29,6 +29,22 @@ export const productoService = {
   },
 
   /**
+   * Obtiene un producto completo por su ID para edición o detalle.
+   */
+  async getProducto(id, empresaId = 1) {
+    const res = await HttpClient.get(`/productos/${id}?empresa_id=${empresaId}`);
+    return res.data;
+  },
+
+  /**
+   * Actualiza un producto existente en PostgreSQL y sincroniza el diff con Meta WhatsApp Catalog.
+   */
+  async actualizarProducto(id, datos, empresaId = 1) {
+    const res = await HttpClient.put(`/productos/${id}?empresa_id=${empresaId}`, datos, { timeout: 90000 });
+    return res.data;
+  },
+
+  /**
    * Crea una nueva categoría en PostgreSQL.
    */
   async crearCategoria(datos, empresaId = 1) {

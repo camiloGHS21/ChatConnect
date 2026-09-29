@@ -24,6 +24,7 @@ import {
   CiudadModel,
 } from '../models/producto.model.js';
 import { CreateProductoDto } from '../dto/create-producto.dto.js';
+import { UpdateProductoDto } from '../dto/update-producto.dto.js';
 
 /**
  * ============================================================================
@@ -1253,6 +1254,995 @@ export class ProductoRepository {
       this.logger.error(`Error al listar productos: ${error.message}`, error.stack);
       throw new InternalServerErrorException('Error al consultar catálogo de productos');
     }
+  }
+
+  /**
+   * Obtiene un producto completo por su ID para edición o consulta detallada.
+   */
+  async getProductoPorId(productoId: number, empresaId = 1) {
+    const prodRows = await this.dataSource.query(
+      `SELECT
+         p.*,
+         COALESCE(c.nombre, '') AS categoria_nombre,
+         COALESCE(sc.nombre, '') AS subcategoria_nombre,
+         COALESCE(m.nombre, '') AS marca_nombre,
+         (
+           SELECT pr.referencia
+           FROM public.producto_referencia pr
+           WHERE pr.producto_id = p.id_producto AND pr.estado = 'activo'
+           ORDER BY pr.id_producto_referencia ASC
+           LIMIT 1
+         ) AS referencia_principal,
+         GREATEST(0, COALESCE(inv.existencia, 0) - COALESCE(inv.reservado, 0)) AS disponible,
+         COALESCE(inv.existencia, 0) AS existencia_actual
+       FROM public.producto p
+       LEFT JOIN public.categoria c ON c.id_categoria = p.categoria_id
+       LEFT JOIN public.subcategoria sc ON sc.id_subcategoria = p.subcategoria_id
+       LEFT JOIN public.marca m ON m.id_marca = p.marca_id
+       LEFT JOIN (
+         SELECT producto_id, SUM(existencia) AS existencia, SUM(reservado) AS reservado
+         FROM public.inventario
+         WHERE empresa_id = $1
+         GROUP BY producto_id
+       ) inv ON inv.producto_id = p.id_producto
+       WHERE p.id_producto = $2 AND p.empresa_id = $1
+       LIMIT 1;`,
+      [empresaId, productoId],
+    );
+
+    const prod = prodRows[0];
+    if (!prod) {
+      throw new NotFoundException(`El producto con ID ${productoId} no fue encontrado`);
+    }
+
+    const [
+      impuestosCompra,
+      impuestosVenta,
+      listasPrecios,
+      retenciones,
+      referencias,
+      codigosBarras,
+      proveedores,
+      seoIa,
+      imagenes,
+      atributosAsignados,
+      variantes,
+    ] = await Promise.all([
+      this.dataSource.query(
+        `SELECT pic.impuesto_id, i.codigo, i.nombre, i.porcentaje, i.valor AS valor_fijo, i.tipo AS tipo_calculo, pic.valor_impuesto
+         FROM public.producto_impuesto_compra pic
+         JOIN public.impuesto i ON i.id_impuesto = pic.impuesto_id
+         WHERE pic.producto_id = $1 AND pic.estado = 'activo'
+         ORDER BY pic.impuesto_id ASC;`,
+        [productoId],
+      ),
+      this.dataSource.query(
+        `SELECT piv.impuesto_id, i.codigo, i.nombre, i.porcentaje, i.valor AS valor_fijo, i.tipo AS tipo_calculo, piv.valor_impuesto
+         FROM public.producto_impuesto_venta piv
+         JOIN public.impuesto i ON i.id_impuesto = piv.impuesto_id
+         WHERE piv.producto_id = $1 AND piv.estado = 'activo'
+         ORDER BY piv.impuesto_id ASC;`,
+        [productoId],
+      ),
+      this.dataSource.query(
+        `SELECT plp.lista_precio_id, lp.nombre AS nombre_lista, plp.precio_base, plp.utilidad_porcentaje, plp.utilidad_valor, plp.precio_venta, plp.estado
+         FROM public.producto_lista_precio plp
+         JOIN public.lista_precio lp ON lp.id_lista_precio = plp.lista_precio_id
+         WHERE plp.producto_id = $1 AND plp.estado = 'activo'
+         ORDER BY plp.lista_precio_id ASC;`,
+        [productoId],
+      ),
+      this.dataSource.query(
+        `SELECT pr.retencion_id, r.nombre AS nombre_retencion, pr.tipo, pr.porcentaje, pr.valor_fijo, pr.estado
+         FROM public.producto_retencion pr
+         JOIN public.retencion r ON r.id_retencion = pr.retencion_id
+         WHERE pr.producto_id = $1 AND pr.estado = 'activo'
+         ORDER BY pr.retencion_id ASC;`,
+        [productoId],
+      ),
+      this.dataSource.query(
+        `SELECT id_producto_referencia AS id, referencia, descripcion, estado
+         FROM public.producto_referencia
+         WHERE producto_id = $1 AND estado = 'activo'
+         ORDER BY id_producto_referencia ASC;`,
+        [productoId],
+      ),
+      this.dataSource.query(
+        `SELECT id_producto_codigo_barras AS id, codigo_barras, descripcion, principal, estado
+         FROM public.producto_codigo_barras
+         WHERE producto_id = $1 AND estado = 'activo'
+         ORDER BY id_producto_codigo_barras ASC;`,
+        [productoId],
+      ),
+      this.dataSource.query(
+        `SELECT pp.proveedor_id, COALESCE(t.razon_social, t.nombre || ' ' || COALESCE(t.apellido, '')) AS nombre_proveedor, pp.referencia_proveedor, pp.principal
+         FROM public.producto_proveedor pp
+         JOIN public.tercero t ON t.id_tercero = pp.proveedor_id
+         WHERE pp.producto_id = $1;`,
+        [productoId],
+      ),
+      this.dataSource.query(
+        `SELECT titulo_seo, slug, descripcion_seo, palabras_clave, indexable
+         FROM public.producto_seo_ia
+         WHERE producto_id = $1
+         LIMIT 1;`,
+        [productoId],
+      ),
+      this.dataSource.query(
+        `SELECT id_producto_imagen AS id, url, nombre, orden, principal
+         FROM public.producto_imagen
+         WHERE producto_id = $1 AND estado = 'activo'
+         ORDER BY principal DESC, orden ASC, id_producto_imagen ASC;`,
+        [productoId],
+      ),
+      this.dataSource.query(
+        `SELECT
+           pa.id_producto_atributo,
+           pa.atributo_id AS id_atributo,
+           a.nombre,
+           a.codigo,
+           pa.obligatorio,
+           pa.orden,
+           COALESCE(
+             ARRAY_AGG(pac.atributo_componente_id) FILTER (WHERE pac.atributo_componente_id IS NOT NULL),
+             '{}'
+           ) AS componentes_seleccionados
+         FROM public.producto_atributo pa
+         JOIN public.atributo a ON a.id_atributo = pa.atributo_id
+         LEFT JOIN public.producto_atributo_componente pac ON pac.producto_atributo_id = pa.id_producto_atributo AND pac.estado = 'activo'
+         WHERE pa.producto_id = $1 AND pa.estado = 'activo'
+         GROUP BY pa.id_producto_atributo, pa.atributo_id, a.nombre, a.codigo, pa.obligatorio, pa.orden
+         ORDER BY pa.orden ASC;`,
+        [productoId],
+      ),
+      this.dataSource.query(
+        `SELECT
+           pv.id_producto_variante AS id,
+           pv.sku,
+           pv.codigo_barras,
+           pv.referencia,
+           pv.precio,
+           pv.estado,
+           COALESCE(
+             JSON_AGG(
+               JSON_BUILD_OBJECT(
+                 'id_atributo_componente', ac.id_atributo_componente,
+                 'componenteId', ac.id_atributo_componente,
+                 'nombre', ac.nombre,
+                 'atributoId', a.id_atributo,
+                 'atributoNombre', a.nombre
+               )
+             ) FILTER (WHERE ac.id_atributo_componente IS NOT NULL),
+             '[]'::json
+           ) AS componentes
+         FROM public.producto_variante pv
+         LEFT JOIN public.variante_componente vc ON vc.producto_variante_id = pv.id_producto_variante
+         LEFT JOIN public.atributo_componente ac ON ac.id_atributo_componente = vc.atributo_componente_id
+         LEFT JOIN public.atributo a ON a.id_atributo = ac.atributo_id
+         WHERE pv.producto_id = $1 AND pv.estado = 'activo'
+         GROUP BY pv.id_producto_variante, pv.sku, pv.codigo_barras, pv.referencia, pv.precio, pv.estado
+         ORDER BY pv.id_producto_variante ASC;`,
+        [productoId],
+      ),
+    ]);
+
+    const seo = seoIa[0] || {};
+
+    return {
+      id: Number(prod.id_producto),
+      id_producto: Number(prod.id_producto),
+      codigo_interno: prod.codigo_interno || '',
+      nombre: prod.nombre || '',
+      referencia: prod.referencia_principal || prod.codigo_interno || '',
+      categoria_id: prod.categoria_id ? String(prod.categoria_id) : '',
+      categoria: prod.categoria_nombre || '',
+      subcategoria_id: prod.subcategoria_id ? String(prod.subcategoria_id) : '',
+      subcategoria: prod.subcategoria_nombre || '',
+      marca_id: prod.marca_id ? String(prod.marca_id) : '',
+      marca: prod.marca_nombre || '',
+      descripcion_corta: prod.descripcion_corta || '',
+      descripcion_larga: prod.descripcion_larga || '',
+      ficha_tecnica: prod.ficha_tecnica || '',
+      estado_producto: prod.estado_producto || 'activo',
+      estado_publicacion: prod.estado_publicacion || 'publicado',
+
+      costo_base: Number(prod.costo_base) || 0,
+      costo_impuesto: Number(prod.costo_impuesto) || 0,
+      precio_base: Number(prod.precio_base) || 0,
+      precio_impuesto: Number(prod.precio_impuesto) || 0,
+      utilidad_valor: Number(prod.utilidad_valor) || 0,
+      utilidad_porcentaje: Number(prod.utilidad_porcentaje) || 0,
+
+      impuestos_compra: impuestosCompra.map((i: any) => ({
+        id: Number(i.impuesto_id),
+        impuesto_id: Number(i.impuesto_id),
+        codigo: i.codigo,
+        nombre: i.nombre,
+        tipo_calculo: i.tipo_calculo || 'PORCENTAJE',
+        porcentaje: Number(i.porcentaje) || 0,
+        valor_fijo: Number(i.valor_fijo) || 0,
+        valor_impuesto: Number(i.valor_impuesto) || 0,
+      })),
+      impuestos_venta: impuestosVenta.map((i: any) => ({
+        id: Number(i.impuesto_id),
+        impuesto_id: Number(i.impuesto_id),
+        codigo: i.codigo,
+        nombre: i.nombre,
+        tipo_calculo: i.tipo_calculo || 'PORCENTAJE',
+        porcentaje: Number(i.porcentaje) || 0,
+        valor_fijo: Number(i.valor_fijo) || 0,
+        valor_impuesto: Number(i.valor_impuesto) || 0,
+      })),
+      listas_precios: listasPrecios.map((lp: any) => ({
+        id: Number(lp.lista_precio_id),
+        lista_precio_id: String(lp.lista_precio_id),
+        nombre_lista: lp.nombre_lista,
+        precio_base: Number(lp.precio_base) || 0,
+        utilidad_porcentaje: Number(lp.utilidad_porcentaje) || 0,
+        utilidad_valor: Number(lp.utilidad_valor) || 0,
+        precio_venta: Number(lp.precio_venta) || 0,
+        estado: lp.estado,
+      })),
+      retenciones: retenciones.map((r: any) => ({
+        id: Number(r.retencion_id),
+        retencion_id: String(r.retencion_id),
+        nombre_retencion: r.nombre_retencion,
+        tipo: r.tipo || 'PORCENTAJE',
+        porcentaje: Number(r.porcentaje) || 0,
+        valor_fijo: Number(r.valor_fijo) || 0,
+        estado: r.estado,
+      })),
+
+      maneja_inventario: Boolean(prod.maneja_inventario),
+      tipo_inventario_id: prod.tipo_inventario_id ? String(prod.tipo_inventario_id) : '',
+      medida_id: prod.medida_id ? String(prod.medida_id) : '',
+      presentacion: prod.presentacion || '',
+      stock_minimo: Number(prod.stock_minimo) || 0,
+      stock_maximo: Number(prod.stock_maximo) || 0,
+      existencia_inicial: Number(prod.existencia_actual) || 0,
+
+      referencias: referencias.map((r: any) => ({
+        id: Number(r.id),
+        referencia: r.referencia,
+        descripcion: r.descripcion || '',
+        estado: r.estado || 'activo',
+      })),
+      codigos_barras: codigosBarras.map((cb: any) => ({
+        id: Number(cb.id),
+        codigo_barras: cb.codigo_barras,
+        tipo: cb.tipo || 'EAN-13 Comercial',
+        descripcion: cb.descripcion || '',
+        principal: Boolean(cb.principal),
+        estado: cb.estado || 'activo',
+      })),
+      proveedores: proveedores.map((pv: any) => ({
+        id: Number(pv.proveedor_id),
+        proveedor_id: String(pv.proveedor_id),
+        nombre_proveedor: pv.nombre_proveedor,
+        referencia_proveedor: pv.referencia_proveedor || '',
+        principal: Boolean(pv.principal),
+      })),
+
+      atributos_asignados: atributosAsignados.map((a: any) => ({
+        id_atributo: Number(a.id_atributo),
+        nombre: a.nombre,
+        codigo: a.codigo,
+        obligatorio: Boolean(a.obligatorio),
+        orden: Number(a.orden) || 1,
+        componentes_seleccionados: (a.componentes_seleccionados || []).map(Number),
+      })),
+      variantes: variantes.map((v: any) => ({
+        id: Number(v.id),
+        sku: v.sku,
+        combinacion: Array.isArray(v.componentes)
+          ? v.componentes.map((c: any) => `${c.atributoNombre || ''}: ${c.nombre || ''}`).filter(Boolean).join(' | ')
+          : '',
+        componentes: v.componentes,
+        codigo_barras: v.codigo_barras || '',
+        referencia: v.referencia || '',
+        precio: Number(v.precio) || 0,
+        stock: Number(prod.disponible) || 0,
+        estado: v.estado || 'activo',
+      })),
+
+      titulo_seo: seo.titulo_seo || '',
+      slug: seo.slug || '',
+      descripcion_seo: seo.descripcion_seo || '',
+      palabras_clave: seo.palabras_clave || '',
+      indexable: seo.indexable !== undefined ? Boolean(seo.indexable) : true,
+
+      imagenes: imagenes.map((img: any) => ({
+        id: Number(img.id),
+        url: img.url,
+        nombre: img.nombre || '',
+        principal: Boolean(img.principal),
+        orden: Number(img.orden) || 1,
+      })),
+
+      fb_product_id: prod.fb_product_id,
+      meta_sync_status: prod.meta_sync_status,
+      meta_sync_error: prod.meta_sync_error,
+      meta_synced_at: prod.meta_synced_at,
+    };
+  }
+
+  /**
+   * Actualiza un producto existente en PostgreSQL y sincroniza en Meta WhatsApp
+   * ÚNICAMENTE los campos que hayan cambiado (diff update granular).
+   */
+  async actualizarProducto(productoId: number, dto: UpdateProductoDto, empresaId = 1) {
+    const oldRows = await this.dataSource.query(
+      `SELECT
+         p.*,
+         COALESCE(c.nombre, '') AS categoria_nombre,
+         COALESCE(sc.nombre, '') AS subcategoria_nombre,
+         COALESCE(m.nombre, '') AS marca_nombre,
+         (
+           SELECT pr.referencia
+           FROM public.producto_referencia pr
+           WHERE pr.producto_id = p.id_producto AND pr.estado = 'activo'
+           ORDER BY pr.id_producto_referencia ASC
+           LIMIT 1
+         ) AS referencia_principal,
+         GREATEST(0, COALESCE(inv.existencia, 0) - COALESCE(inv.reservado, 0)) AS disponible,
+         img.url AS imagen_url
+       FROM public.producto p
+       LEFT JOIN public.categoria c ON c.id_categoria = p.categoria_id
+       LEFT JOIN public.subcategoria sc ON sc.id_subcategoria = p.subcategoria_id
+       LEFT JOIN public.marca m ON m.id_marca = p.marca_id
+       LEFT JOIN (
+         SELECT DISTINCT ON (producto_id) producto_id, url
+         FROM public.producto_imagen
+         WHERE estado = 'activo'
+         ORDER BY producto_id, principal DESC, orden ASC, id_producto_imagen ASC
+       ) img ON img.producto_id = p.id_producto
+       LEFT JOIN (
+         SELECT producto_id, SUM(existencia) AS existencia, SUM(reservado) AS reservado
+         FROM public.inventario
+         WHERE empresa_id = $1
+         GROUP BY producto_id
+       ) inv ON inv.producto_id = p.id_producto
+       WHERE p.id_producto = $2 AND p.empresa_id = $1
+       LIMIT 1;`,
+      [empresaId, productoId],
+    );
+
+    const oldProd = oldRows[0];
+    if (!oldProd) {
+      throw new NotFoundException(`El producto con ID ${productoId} no fue encontrado`);
+    }
+
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      const costoBase = dto.costo_base !== undefined ? Number(dto.costo_base) : Number(oldProd.costo_base);
+      const costoImpuesto = dto.costo_impuesto !== undefined ? Number(dto.costo_impuesto) : Number(oldProd.costo_impuesto);
+      const precioBase = dto.precio_base !== undefined ? Number(dto.precio_base) : Number(oldProd.precio_base);
+      const precioImpuesto = dto.precio_impuesto !== undefined ? Number(dto.precio_impuesto) : Number(oldProd.precio_impuesto);
+      const utilidadValor = dto.utilidad_valor !== undefined ? Number(dto.utilidad_valor) : Number(oldProd.utilidad_valor);
+      const utilidadPorcentaje = dto.utilidad_porcentaje !== undefined ? Number(dto.utilidad_porcentaje) : Number(oldProd.utilidad_porcentaje);
+
+      // 1. Actualizar tabla principal producto
+      await queryRunner.query(
+        `UPDATE public.producto SET
+           categoria_id = CASE WHEN $1::int IS NOT NULL THEN $1::int ELSE categoria_id END,
+           subcategoria_id = CASE WHEN $2::int IS NOT NULL THEN $2::int ELSE subcategoria_id END,
+           marca_id = CASE WHEN $3::int IS NOT NULL THEN $3::int ELSE marca_id END,
+           nombre = COALESCE($4, nombre),
+           descripcion_corta = COALESCE($5, descripcion_corta),
+           descripcion_larga = COALESCE($6, descripcion_larga),
+           ficha_tecnica = COALESCE($7, ficha_tecnica),
+           costo_base = $8,
+           costo_impuesto = $9,
+           precio_base = $10,
+           precio_impuesto = $11,
+           utilidad_valor = $12,
+           utilidad_porcentaje = $13,
+           maneja_inventario = CASE WHEN $14::boolean IS NOT NULL THEN $14::boolean ELSE maneja_inventario END,
+           tipo_inventario_id = CASE WHEN $15::int IS NOT NULL THEN $15::int ELSE tipo_inventario_id END,
+           stock_minimo = CASE WHEN $16::numeric IS NOT NULL THEN $16::numeric ELSE stock_minimo END,
+           stock_maximo = CASE WHEN $17::numeric IS NOT NULL THEN $17::numeric ELSE stock_maximo END,
+           medida_id = CASE WHEN $18::int IS NOT NULL THEN $18::int ELSE medida_id END,
+           presentacion = COALESCE($19, presentacion),
+           estado_producto = COALESCE($20, estado_producto),
+           estado_publicacion = COALESCE($21, estado_publicacion),
+           updated_at = NOW()
+         WHERE id_producto = $22 AND empresa_id = $23;`,
+        [
+          dto.categoria_id !== undefined ? (dto.categoria_id ? Number(dto.categoria_id) : null) : null,
+          dto.subcategoria_id !== undefined ? (dto.subcategoria_id ? Number(dto.subcategoria_id) : null) : null,
+          dto.marca_id !== undefined ? (dto.marca_id ? Number(dto.marca_id) : null) : null,
+          dto.nombre ? dto.nombre.trim() : null,
+          dto.descripcion_corta !== undefined ? dto.descripcion_corta : null,
+          dto.descripcion_larga !== undefined ? dto.descripcion_larga : null,
+          dto.ficha_tecnica !== undefined ? dto.ficha_tecnica : null,
+          costoBase,
+          costoImpuesto,
+          precioBase,
+          precioImpuesto,
+          utilidadValor,
+          utilidadPorcentaje,
+          dto.maneja_inventario !== undefined ? Boolean(dto.maneja_inventario) : null,
+          dto.tipo_inventario_id !== undefined ? (dto.tipo_inventario_id ? Number(dto.tipo_inventario_id) : null) : null,
+          dto.stock_minimo !== undefined ? Number(dto.stock_minimo) : null,
+          dto.stock_maximo !== undefined ? Number(dto.stock_maximo) : null,
+          dto.medida_id !== undefined ? (dto.medida_id ? Number(dto.medida_id) : null) : null,
+          dto.presentacion !== undefined ? dto.presentacion : null,
+          dto.estado_producto !== undefined ? dto.estado_producto : null,
+          dto.estado_publicacion !== undefined ? dto.estado_publicacion : null,
+          productoId,
+          empresaId,
+        ],
+      );
+
+      // 2. Inventario
+      if (dto.existencia_inicial !== undefined) {
+        await queryRunner.query(
+          `INSERT INTO public.inventario (empresa_id, producto_id, existencia, reservado)
+           VALUES ($1, $2, $3, 0)
+           ON CONFLICT (empresa_id, producto_id) DO UPDATE SET existencia = EXCLUDED.existencia, updated_at = NOW();`,
+          [empresaId, productoId, Number(dto.existencia_inicial) || 0],
+        );
+      }
+
+      // 3. Impuestos Compra
+      if (dto.impuestos_compra !== undefined) {
+        await queryRunner.query(`DELETE FROM public.producto_impuesto_compra WHERE producto_id = $1;`, [productoId]);
+        for (const imp of dto.impuestos_compra) {
+          if (imp.impuesto_id) {
+            await queryRunner.query(
+              `INSERT INTO public.producto_impuesto_compra (producto_id, impuesto_id, valor_impuesto, estado)
+               VALUES ($1, $2, $3, 'activo')
+               ON CONFLICT (producto_id, impuesto_id) DO UPDATE SET valor_impuesto = EXCLUDED.valor_impuesto;`,
+              [productoId, Number(imp.impuesto_id), Number(imp.valor_impuesto) || 0],
+            );
+          }
+        }
+      }
+
+      // 4. Impuestos Venta
+      if (dto.impuestos_venta !== undefined) {
+        await queryRunner.query(`DELETE FROM public.producto_impuesto_venta WHERE producto_id = $1;`, [productoId]);
+        for (const imp of dto.impuestos_venta) {
+          if (imp.impuesto_id) {
+            await queryRunner.query(
+              `INSERT INTO public.producto_impuesto_venta (producto_id, impuesto_id, valor_impuesto, estado)
+               VALUES ($1, $2, $3, 'activo')
+               ON CONFLICT (producto_id, impuesto_id) DO UPDATE SET valor_impuesto = EXCLUDED.valor_impuesto;`,
+              [productoId, Number(imp.impuesto_id), Number(imp.valor_impuesto) || 0],
+            );
+          }
+        }
+      }
+
+      // 5. Listas de Precios
+      if (dto.listas_precios !== undefined) {
+        await queryRunner.query(`DELETE FROM public.producto_lista_precio WHERE producto_id = $1;`, [productoId]);
+        for (const lp of dto.listas_precios) {
+          if (lp.lista_precio_id) {
+            await queryRunner.query(
+              `INSERT INTO public.producto_lista_precio (
+                 producto_id, lista_precio_id, precio_base, utilidad_valor, utilidad_porcentaje, precio_venta, estado
+               ) VALUES ($1, $2, $3, $4, $5, $6, 'activo');`,
+              [
+                productoId,
+                Number(lp.lista_precio_id),
+                Number(lp.precio_base) || precioBase,
+                Number(lp.utilidad_valor) || utilidadValor,
+                Number(lp.utilidad_porcentaje) || utilidadPorcentaje,
+                Number(lp.precio_venta) || precioImpuesto,
+              ],
+            );
+          }
+        }
+      }
+
+      // 6. Retenciones
+      if (dto.retenciones !== undefined) {
+        await queryRunner.query(`DELETE FROM public.producto_retencion WHERE producto_id = $1;`, [productoId]);
+        for (const ret of dto.retenciones) {
+          if (ret.retencion_id) {
+            await queryRunner.query(
+              `INSERT INTO public.producto_retencion (producto_id, retencion_id, tipo, porcentaje, valor_fijo, estado)
+               VALUES ($1, $2, $3, $4, $5, 'activo');`,
+              [
+                productoId,
+                Number(ret.retencion_id),
+                ret.tipo || 'PORCENTAJE',
+                ret.tipo === 'PORCENTAJE' ? Number(ret.porcentaje) || 0 : null,
+                ret.tipo === 'VALOR_FIJO' ? Number(ret.valor_fijo) || 0 : null,
+              ],
+            );
+          }
+        }
+      }
+
+      // 7. Referencias
+      if (dto.referencias !== undefined || dto.referencia !== undefined) {
+        await queryRunner.query(`DELETE FROM public.producto_referencia WHERE producto_id = $1;`, [productoId]);
+        const refsToInsert: { referencia: string; descripcion?: string | null; estado?: string | null }[] = [];
+        if (dto.referencia && typeof dto.referencia === 'string' && dto.referencia.trim()) {
+          refsToInsert.push({ referencia: dto.referencia.trim(), descripcion: 'Referencia principal', estado: 'activo' });
+        }
+        if (dto.referencias && Array.isArray(dto.referencias)) {
+          for (const r of dto.referencias) {
+            const code = (r.referencia || '').trim();
+            if (code && !refsToInsert.some(item => item.referencia.toLowerCase() === code.toLowerCase())) {
+              refsToInsert.push({ referencia: code, descripcion: r.descripcion || null, estado: r.estado || 'activo' });
+            }
+          }
+        }
+        for (const ref of refsToInsert) {
+          await queryRunner.query(
+            `INSERT INTO public.producto_referencia (producto_id, referencia, descripcion, estado)
+             VALUES ($1, $2, $3, $4)
+             ON CONFLICT (producto_id, referencia) DO NOTHING;`,
+            [productoId, ref.referencia, ref.descripcion || null, ref.estado || 'activo'],
+          );
+        }
+      }
+
+      // 8. Códigos de barras
+      if (dto.codigos_barras !== undefined) {
+        await queryRunner.query(`DELETE FROM public.producto_codigo_barras WHERE producto_id = $1;`, [productoId]);
+        for (const cb of dto.codigos_barras) {
+          if (cb.codigo_barras && cb.codigo_barras.trim()) {
+            await queryRunner.query(
+              `INSERT INTO public.producto_codigo_barras (producto_id, codigo_barras, descripcion, principal, estado)
+               VALUES ($1, $2, $3, $4, 'activo');`,
+              [productoId, cb.codigo_barras.trim(), cb.descripcion || null, Boolean(cb.principal)],
+            );
+          }
+        }
+      }
+
+      // 9. Proveedores
+      if (dto.proveedores !== undefined) {
+        await queryRunner.query(`DELETE FROM public.producto_proveedor WHERE producto_id = $1;`, [productoId]);
+        for (const prov of dto.proveedores) {
+          if (prov.proveedor_id) {
+            await queryRunner.query(
+              `INSERT INTO public.producto_proveedor (producto_id, proveedor_id, referencia_proveedor, principal)
+               VALUES ($1, $2, $3, $4);`,
+              [
+                productoId,
+                Number(prov.proveedor_id),
+                prov.referencia_proveedor || null,
+                prov.principal !== undefined ? Boolean(prov.principal) : true,
+              ],
+            );
+          }
+        }
+      }
+
+      // 10. SEO
+      if (dto.titulo_seo || dto.descripcion_seo || dto.palabras_clave || dto.slug) {
+        const slug =
+          dto.slug && dto.slug.trim()
+            ? dto.slug.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-')
+            : `${(dto.nombre || oldProd.nombre).toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${productoId}`;
+
+        await queryRunner.query(
+          `INSERT INTO public.producto_seo_ia (
+             producto_id, titulo_seo, descripcion_seo, palabras_clave, slug, indexable
+           ) VALUES ($1, $2, $3, $4, $5, true)
+           ON CONFLICT (producto_id) DO UPDATE SET
+             titulo_seo = EXCLUDED.titulo_seo,
+             descripcion_seo = EXCLUDED.descripcion_seo,
+             palabras_clave = EXCLUDED.palabras_clave,
+             slug = EXCLUDED.slug;`,
+          [productoId, dto.titulo_seo || dto.nombre || oldProd.nombre, dto.descripcion_seo || null, dto.palabras_clave || null, slug],
+        );
+      }
+
+      // 11. Imágenes
+      if (dto.imagenes !== undefined && dto.imagenes.length > 0) {
+        await queryRunner.query(`DELETE FROM public.producto_imagen WHERE producto_id = $1;`, [productoId]);
+        for (let i = 0; i < dto.imagenes.length; i++) {
+          const img = dto.imagenes[i];
+          if (img.url) {
+            const publicUrl = await this.resolverUrlPublicaImagen(img.url);
+            await queryRunner.query(
+              `INSERT INTO public.producto_imagen (producto_id, url, nombre, orden, principal, estado)
+               VALUES ($1, $2, $3, $4, $5, 'activo');`,
+              [
+                productoId,
+                publicUrl || img.url,
+                img.nombre || `Imagen ${i + 1}`,
+                Number(img.orden) || i + 1,
+                Boolean(img.principal !== undefined ? img.principal : i === 0),
+              ],
+            );
+          }
+        }
+      }
+
+      // 12. Atributos y componentes
+      if (dto.atributos_asignados !== undefined) {
+        const oldProdAttrs = await queryRunner.query(
+          `SELECT id_producto_atributo FROM public.producto_atributo WHERE producto_id = $1;`,
+          [productoId],
+        );
+        for (const pa of oldProdAttrs) {
+          await queryRunner.query(
+            `DELETE FROM public.producto_atributo_componente WHERE producto_atributo_id = $1;`,
+            [pa.id_producto_atributo],
+          );
+        }
+        await queryRunner.query(`DELETE FROM public.producto_atributo WHERE producto_id = $1;`, [productoId]);
+
+        for (const attr of dto.atributos_asignados) {
+          if (attr.id_atributo) {
+            const attrRes = await queryRunner.query(
+              `INSERT INTO public.producto_atributo (producto_id, atributo_id, obligatorio, orden, estado)
+               VALUES ($1, $2, $3, $4, 'activo')
+               RETURNING id_producto_atributo;`,
+              [productoId, Number(attr.id_atributo), Boolean(attr.obligatorio), Number(attr.orden) || 1],
+            );
+            const prodAttrId = attrRes[0]?.id_producto_atributo;
+            if (prodAttrId && attr.componentes_seleccionados && attr.componentes_seleccionados.length > 0) {
+              for (let ci = 0; ci < attr.componentes_seleccionados.length; ci++) {
+                const cId = Number(attr.componentes_seleccionados[ci]);
+                if (!isNaN(cId)) {
+                  await queryRunner.query(
+                    `INSERT INTO public.producto_atributo_componente (producto_atributo_id, atributo_componente_id, orden, estado)
+                     VALUES ($1, $2, $3, 'activo')
+                     ON CONFLICT DO NOTHING;`,
+                    [prodAttrId, cId, ci + 1],
+                  );
+                }
+              }
+            }
+          }
+        }
+      }
+
+      // 13. Variantes
+      if (dto.variantes !== undefined) {
+        const currentVars = await queryRunner.query(
+          `SELECT id_producto_variante FROM public.producto_variante WHERE producto_id = $1;`,
+          [productoId],
+        );
+        for (const cv of currentVars) {
+          await queryRunner.query(
+            `DELETE FROM public.variante_componente WHERE producto_variante_id = $1;`,
+            [cv.id_producto_variante],
+          );
+        }
+        await queryRunner.query(`DELETE FROM public.producto_variante WHERE producto_id = $1;`, [productoId]);
+
+        for (const v of dto.variantes) {
+          if (v.sku) {
+            const varRes = await queryRunner.query(
+              `INSERT INTO public.producto_variante (producto_id, sku, codigo_barras, referencia, precio, estado)
+               VALUES ($1, $2, $3, $4, $5, $6)
+               RETURNING id_producto_variante;`,
+              [
+                productoId,
+                v.sku.trim(),
+                v.codigo_barras || null,
+                v.referencia || null,
+                Number(v.precio) || precioImpuesto,
+                v.estado || 'activo',
+              ],
+            );
+            const varId = varRes[0]?.id_producto_variante;
+            if (varId && v.componentes && Array.isArray(v.componentes)) {
+              for (const c of v.componentes) {
+                const compId = Number(c.componenteId || c.id_atributo_componente);
+                if (compId && !isNaN(compId)) {
+                  await queryRunner.query(
+                    `INSERT INTO public.variante_componente (producto_variante_id, atributo_componente_id)
+                     VALUES ($1, $2)
+                     ON CONFLICT DO NOTHING;`,
+                    [varId, compId],
+                  );
+                }
+              }
+            }
+          }
+        }
+      }
+
+      await queryRunner.commitTransaction();
+      this.logger.log(`✓ Producto ${productoId} actualizado en PostgreSQL.`);
+    } catch (error: any) {
+      if (queryRunner.isTransactionActive) {
+        await queryRunner.rollbackTransaction();
+      }
+      this.logger.error(`Error al actualizar producto ${productoId}: ${error.message}`, error.stack);
+      throw new BadRequestException(error.message || 'Error al actualizar el producto en la base de datos');
+    } finally {
+      if (!queryRunner.isReleased) {
+        await queryRunner.release();
+      }
+    }
+
+    // 14. Sincronización en Meta / WhatsApp Catalog: ÚNICAMENTE los campos modificados
+    const metaModificaciones: Record<string, any> = {};
+    const metaToken =
+      process.env.META_PERMANENT_TOKEN ||
+      process.env.META_SYSTEM_TOKEN ||
+      process.env.META_ACCESS_TOKEN;
+    const businessId = process.env.META_BUSINESS_ID;
+    const apiVersion = process.env.META_API_VERSION || 'v21.0';
+
+    if (metaToken && businessId) {
+      try {
+        const updatedRows = await this.dataSource.query(
+          `SELECT
+             p.*,
+             COALESCE(c.nombre, '') AS categoria_nombre,
+             COALESCE(sc.nombre, '') AS subcategoria_nombre,
+             COALESCE(m.nombre, '') AS marca_nombre,
+             (
+               SELECT pr.referencia
+               FROM public.producto_referencia pr
+               WHERE pr.producto_id = p.id_producto AND pr.estado = 'activo'
+               ORDER BY pr.id_producto_referencia ASC
+               LIMIT 1
+             ) AS referencia_principal,
+             GREATEST(0, COALESCE(inv.existencia, 0) - COALESCE(inv.reservado, 0)) AS disponible,
+             img.url AS imagen_url
+           FROM public.producto p
+           LEFT JOIN public.categoria c ON c.id_categoria = p.categoria_id
+           LEFT JOIN public.subcategoria sc ON sc.id_subcategoria = p.subcategoria_id
+           LEFT JOIN public.marca m ON m.id_marca = p.marca_id
+           LEFT JOIN (
+             SELECT DISTINCT ON (producto_id) producto_id, url
+             FROM public.producto_imagen
+             WHERE estado = 'activo'
+             ORDER BY producto_id, principal DESC, orden ASC, id_producto_imagen ASC
+           ) img ON img.producto_id = p.id_producto
+           LEFT JOIN (
+             SELECT producto_id, SUM(existencia) AS existencia, SUM(reservado) AS reservado
+             FROM public.inventario
+             WHERE empresa_id = $1
+             GROUP BY producto_id
+           ) inv ON inv.producto_id = p.id_producto
+           WHERE p.id_producto = $2 AND p.empresa_id = $1
+           LIMIT 1;`,
+          [empresaId, productoId],
+        );
+        const newProd = updatedRows[0];
+
+        const canalRows = await this.dataSource.query(
+          `SELECT catalog_id FROM public.canal WHERE empresa_id = $1 AND tipo = 'whatsapp' LIMIT 1;`,
+          [empresaId],
+        );
+        const catalogId = canalRows[0]?.catalog_id;
+
+        if (!catalogId) {
+          await this.sincronizarConMetaCatalog(productoId, empresaId);
+        } else {
+          // Consultar productos del catálogo en Meta
+          const metaProductsRes = await fetch(
+            `https://graph.facebook.com/${apiVersion}/${catalogId}/products?fields=id,retailer_id,name,description,price,sale_price,image_url,availability,inventory,brand,category,product_type,color,size,item_group_id`,
+            { headers: { Authorization: `Bearer ${metaToken}` } },
+          );
+          const metaProductsData: any = await metaProductsRes.json();
+          const metaItems: any[] = metaProductsData?.data || [];
+          const metaByRetailer = new Map<string, any>();
+          for (const item of metaItems) {
+            if (item.retailer_id) metaByRetailer.set(item.retailer_id, item);
+          }
+
+          const varRows = await this.dataSource.query(
+            `SELECT
+               pv.id_producto_variante,
+               pv.sku,
+               pv.codigo_barras,
+               pv.referencia,
+               pv.precio,
+               pv.estado,
+               COALESCE(
+                 JSON_AGG(
+                   JSON_BUILD_OBJECT(
+                     'attr_nombre', a.nombre,
+                     'comp_nombre', ac.nombre
+                   )
+                 ) FILTER (WHERE a.id_atributo IS NOT NULL),
+                 '[]'::json
+               ) AS componentes
+             FROM public.producto_variante pv
+             LEFT JOIN public.variante_componente vc ON vc.producto_variante_id = pv.id_producto_variante
+             LEFT JOIN public.atributo_componente ac ON ac.id_atributo_componente = vc.atributo_componente_id
+             LEFT JOIN public.atributo a ON a.id_atributo = ac.atributo_id
+             WHERE pv.producto_id = $1 AND pv.estado = 'activo'
+             GROUP BY pv.id_producto_variante, pv.sku, pv.codigo_barras, pv.referencia, pv.precio, pv.estado
+             ORDER BY pv.id_producto_variante ASC;`,
+            [productoId],
+          );
+
+          const itemGroupId = newProd.codigo_interno || `PROD-${newProd.id_producto}`;
+          const taxonomyBreadcrumb = [newProd.categoria_nombre, newProd.subcategoria_nombre].filter(Boolean).join(' > ') || 'General';
+          const newPrecioFinal = Number(newProd.precio_impuesto || newProd.precio_base) || 0;
+          const newPriceInCents = Math.round(newPrecioFinal * 100);
+
+          if (varRows && varRows.length > 0) {
+            const currentRetailerIds = new Set(varRows.map((v: any) => (v.sku || v.referencia || '').trim()).filter(Boolean));
+
+            for (const v of varRows) {
+              const vRetailerId = (v.sku || v.referencia || `${itemGroupId}-VAR-${v.id_producto_variante}`).trim();
+              const existingMetaItem = metaByRetailer.get(vRetailerId);
+
+              const vPrecio = Number(v.precio || newPrecioFinal);
+              const vPriceInCents = Math.round(vPrecio * 100);
+
+              let vColor: string | undefined = undefined;
+              let vSize: string | undefined = undefined;
+              const comps: any[] = Array.isArray(v.componentes) ? v.componentes : [];
+              for (const c of comps) {
+                const attrName = (c.attr_nombre || '').toLowerCase();
+                if (attrName.includes('color')) vColor = c.comp_nombre;
+                if (attrName.includes('talla') || attrName.includes('tamaño') || attrName.includes('tamano')) vSize = c.comp_nombre;
+              }
+
+              if (existingMetaItem) {
+                const diff: Record<string, any> = {};
+
+                // Solo si el nombre cambió
+                if (newProd.nombre && newProd.nombre !== oldProd.nombre) {
+                  diff.title = newProd.nombre.substring(0, 100);
+                  diff.name = newProd.nombre.substring(0, 100);
+                }
+                // Solo si la descripción cambió
+                if (
+                  newProd.descripcion_corta !== oldProd.descripcion_corta ||
+                  newProd.descripcion_larga !== oldProd.descripcion_larga ||
+                  newProd.ficha_tecnica !== oldProd.ficha_tecnica
+                ) {
+                  const descBase = (newProd.descripcion_corta || newProd.descripcion_larga || newProd.nombre || '').trim();
+                  diff.description = `${descBase}\n\nVariante: ${vRetailerId}`.substring(0, 5000);
+                }
+                // Solo si el precio cambió
+                const rawMetaDigits = String(existingMetaItem.price || '').replace(/[^0-9]/g, '');
+                const metaPriceNum = rawMetaDigits ? Number(rawMetaDigits) : 0;
+                const isVarPriceChanged = metaPriceNum > 0
+                  ? (metaPriceNum !== Math.round(vPrecio) && metaPriceNum !== vPriceInCents)
+                  : true;
+                if (isVarPriceChanged) {
+                  diff.price = vPriceInCents;
+                  diff.sale_price = vPriceInCents;
+                }
+                // Solo si la marca cambió
+                if (newProd.marca_nombre && newProd.marca_nombre !== oldProd.marca_nombre) {
+                  diff.brand = newProd.marca_nombre;
+                }
+                // Solo si categoría o subcategoría cambiaron
+                if (
+                  newProd.categoria_nombre !== oldProd.categoria_nombre ||
+                  newProd.subcategoria_nombre !== oldProd.subcategoria_nombre
+                ) {
+                  diff.category = newProd.subcategoria_nombre || newProd.categoria_nombre || 'General';
+                  diff.product_type = taxonomyBreadcrumb;
+                  diff.custom_label_0 = newProd.categoria_nombre.substring(0, 100);
+                  diff.custom_label_1 = newProd.subcategoria_nombre.substring(0, 100);
+                }
+                // Solo si la imagen cambió
+                if (newProd.imagen_url && newProd.imagen_url !== oldProd.imagen_url) {
+                  diff.image_url = newProd.imagen_url;
+                }
+                // Color o talla
+                if (vColor && vColor !== existingMetaItem.color) diff.color = vColor;
+                if (vSize && vSize !== existingMetaItem.size) diff.size = vSize;
+
+                if (Object.keys(diff).length > 0) {
+                  this.logger.log(`[MetaCatalog] Actualizando en Meta variante "${vRetailerId}" (Campos modificados: ${Object.keys(diff).join(', ')})`);
+                  await fetch(`https://graph.facebook.com/${apiVersion}/${existingMetaItem.id}`, {
+                    method: 'POST',
+                    headers: { Authorization: `Bearer ${metaToken}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify(diff),
+                  });
+                  metaModificaciones[vRetailerId] = Object.keys(diff);
+                } else {
+                  this.logger.log(`[MetaCatalog] Sin cambios para variante "${vRetailerId}" en Meta. Omitiendo llamada.`);
+                }
+              } else {
+                await this.sincronizarConMetaCatalog(productoId, empresaId);
+                metaModificaciones[vRetailerId] = ['creada_en_meta'];
+                break;
+              }
+            }
+
+            for (const item of metaItems) {
+              if (item.item_group_id === itemGroupId && item.retailer_id && !currentRetailerIds.has(item.retailer_id)) {
+                this.logger.log(`[MetaCatalog] Retirando variante obsoleta de Meta: ${item.retailer_id} (ID: ${item.id})`);
+                await fetch(`https://graph.facebook.com/${apiVersion}/${item.id}`, {
+                  method: 'DELETE',
+                  headers: { Authorization: `Bearer ${metaToken}` },
+                });
+                metaModificaciones[item.retailer_id] = ['eliminada_de_meta'];
+              }
+            }
+          } else {
+            const retailerId = (newProd.referencia_principal || newProd.codigo_interno || `PROD-${newProd.id_producto}`).trim();
+            const existingMetaItem = metaByRetailer.get(retailerId) || metaItems.find(it => it.id === newProd.fb_product_id);
+
+            if (existingMetaItem) {
+              const diff: Record<string, any> = {};
+              if (newProd.nombre && newProd.nombre !== oldProd.nombre) {
+                diff.title = newProd.nombre.substring(0, 100);
+                diff.name = newProd.nombre.substring(0, 100);
+              }
+              if (
+                newProd.descripcion_corta !== oldProd.descripcion_corta ||
+                newProd.descripcion_larga !== oldProd.descripcion_larga ||
+                newProd.ficha_tecnica !== oldProd.ficha_tecnica
+              ) {
+                diff.description = (newProd.descripcion_corta || newProd.descripcion_larga || newProd.nombre || '').substring(0, 5000);
+              }
+              const rawSimpleDigits = String(existingMetaItem.price || '').replace(/[^0-9]/g, '');
+              const metaSimplePriceNum = rawSimpleDigits ? Number(rawSimpleDigits) : 0;
+              const isSimplePriceChanged = metaSimplePriceNum > 0
+                ? (metaSimplePriceNum !== Math.round(newPrecioFinal) && metaSimplePriceNum !== newPriceInCents)
+                : true;
+              if (isSimplePriceChanged) {
+                diff.price = newPriceInCents;
+                diff.sale_price = newPriceInCents;
+              }
+              if (newProd.marca_nombre && newProd.marca_nombre !== oldProd.marca_nombre) {
+                diff.brand = newProd.marca_nombre;
+              }
+              if (
+                newProd.categoria_nombre !== oldProd.categoria_nombre ||
+                newProd.subcategoria_nombre !== oldProd.subcategoria_nombre
+              ) {
+                diff.category = newProd.subcategoria_nombre || newProd.categoria_nombre || 'General';
+                diff.product_type = taxonomyBreadcrumb;
+                diff.custom_label_0 = newProd.categoria_nombre.substring(0, 100);
+                diff.custom_label_1 = newProd.subcategoria_nombre.substring(0, 100);
+              }
+              if (newProd.imagen_url && newProd.imagen_url !== oldProd.imagen_url) {
+                diff.image_url = newProd.imagen_url;
+              }
+
+              if (Object.keys(diff).length > 0) {
+                this.logger.log(`[MetaCatalog] Actualizando producto simple ${productoId} en Meta (Campos: ${Object.keys(diff).join(', ')})`);
+                await fetch(`https://graph.facebook.com/${apiVersion}/${existingMetaItem.id}`, {
+                  method: 'POST',
+                  headers: { Authorization: `Bearer ${metaToken}`, 'Content-Type': 'application/json' },
+                  body: JSON.stringify(diff),
+                });
+                metaModificaciones['producto_simple'] = Object.keys(diff);
+              } else {
+                this.logger.log(`[MetaCatalog] Producto simple sin cambios para Meta. Omitiendo llamada.`);
+              }
+            } else {
+              await this.sincronizarConMetaCatalog(productoId, empresaId);
+              metaModificaciones['producto_simple'] = ['creado_en_meta'];
+            }
+          }
+
+          await this.dataSource.query(
+            `UPDATE public.producto
+             SET meta_sync_status = 'sincronizado',
+                 meta_sync_error = NULL,
+                 meta_synced_at = NOW()
+             WHERE id_producto = $1;`,
+            [productoId],
+          );
+        }
+      } catch (metaErr: any) {
+        this.logger.error(`[MetaCatalog] Error al actualizar en Meta: ${metaErr.message}`, metaErr.stack);
+        await this.dataSource.query(
+          `UPDATE public.producto
+           SET meta_sync_status = 'error',
+               meta_sync_error = $1
+           WHERE id_producto = $2;`,
+          [`Error actualizando en Meta: ${metaErr.message}`, productoId],
+        );
+      }
+    }
+
+    const updatedProd = await this.getProductoPorId(productoId, empresaId);
+    return {
+      success: true,
+      producto: updatedProd,
+      meta_diff_actualizados: metaModificaciones,
+    };
   }
 
   /**
