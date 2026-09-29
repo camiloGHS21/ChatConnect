@@ -101,6 +101,14 @@ export const productoService = {
   },
 
   /**
+   * Elimina un producto de la base de datos y de WhatsApp / Meta Commerce Catalog.
+   */
+  async eliminarProducto(id, empresaId = 1) {
+    const res = await HttpClient.delete(`/productos/${id}?empresa_id=${empresaId}`);
+    return res.data;
+  },
+
+  /**
    * Sincroniza manualmente un producto con Meta Catalog (Facebook / WhatsApp).
    */
   async syncMeta(productoId, empresaId = 1) {

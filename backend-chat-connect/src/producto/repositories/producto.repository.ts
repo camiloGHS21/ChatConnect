@@ -7,6 +7,8 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource, ILike } from 'typeorm';
+import * as fs from 'fs';
+import * as path from 'path';
 import {
   ProductoModel,
   CategoriaModel,
@@ -760,6 +762,84 @@ export class ProductoRepository {
   }
 
   /**
+   * Resuelve cualquier URL local de assets o base64 a una URL pública CDN permanente para Meta.
+   */
+  async resolverUrlPublicaImagen(urlOPath?: string | null): Promise<string> {
+    if (!urlOPath || !urlOPath.trim()) {
+      return 'https://iili.io/nYMyIMF.png';
+    }
+
+    const trimmed = urlOPath.trim();
+
+    // 1. Si ya es una URL pública HTTPS válida (que no sea localhost ni Unsplash genérico)
+    if (
+      /^https?:\/\//i.test(trimmed) &&
+      !trimmed.includes('localhost') &&
+      !trimmed.includes('127.0.0.1') &&
+      !trimmed.includes('photo-1581235720704') &&
+      !trimmed.includes('photo-1533473359331')
+    ) {
+      return trimmed;
+    }
+
+    try {
+      let fileBuffer: Buffer | null = null;
+      let fileName = 'producto.png';
+      let mimeType = 'image/png';
+
+      // 2. Si es formato base64
+      if (trimmed.startsWith('data:image/')) {
+        const parts = trimmed.split(',');
+        const mimeMatch = parts[0].match(/:(.*?);/);
+        if (mimeMatch) mimeType = mimeMatch[1];
+        fileBuffer = Buffer.from(parts[1], 'base64');
+        fileName = `upload_${Date.now()}.${mimeType.split('/')[1] || 'png'}`;
+      } else {
+        // 3. Es ruta local de assets o relativa
+        const cleanPath = trimmed.replace(/^\//, '');
+        const possiblePaths = [
+          path.resolve('c:/Users/Administrator/Desktop/crm-whatssap-practica', cleanPath),
+          path.resolve(process.cwd(), '..', cleanPath),
+          path.resolve(process.cwd(), cleanPath),
+          path.resolve('c:/Users/Administrator/Desktop/crm-whatssap-practica/src/assets/images/products', path.basename(cleanPath)),
+        ];
+
+        for (const p of possiblePaths) {
+          if (fs.existsSync(p)) {
+            fileBuffer = fs.readFileSync(p);
+            fileName = path.basename(p);
+            if (p.endsWith('.jpg') || p.endsWith('.jpeg')) mimeType = 'image/jpeg';
+            else if (p.endsWith('.webp')) mimeType = 'image/webp';
+            break;
+          }
+        }
+      }
+
+      if (fileBuffer) {
+        const form = new FormData();
+        form.append('key', '6d207e02198a847aa98d0a2a901485a5');
+        form.append('action', 'upload');
+        form.append('format', 'json');
+        form.append('source', new Blob([fileBuffer as any], { type: mimeType }), fileName);
+
+        const uploadRes = await fetch('https://freeimage.host/api/1/upload', {
+          method: 'POST',
+          body: form,
+        });
+        const uploadData: any = await uploadRes.json();
+        if (uploadData?.image?.url) {
+          this.logger.log(`✓ [MetaImages] Imagen local "${fileName}" subida a CDN permanente: ${uploadData.image.url}`);
+          return uploadData.image.url;
+        }
+      }
+    } catch (err: any) {
+      this.logger.warn(`[MetaCatalog] Advertencia resolviendo URL de imagen pública: ${err.message}`);
+    }
+
+    return 'https://iili.io/nYMyIMF.png';
+  }
+
+  /**
    * Persiste un producto completo con todas sus entidades hijas en una única transacción atómica.
    */
   async crearProducto(dto: CreateProductoDto, empresaId = 1) {
@@ -911,7 +991,33 @@ export class ProductoRepository {
         }
       }
 
-      // 6. Códigos de Barras
+      // 6. Referencias del Producto (DOC 02)
+      const referenciasToInsert: { referencia: string; descripcion?: string | null; estado?: string | null }[] = [];
+      if (dto.referencia && typeof dto.referencia === 'string' && dto.referencia.trim()) {
+        referenciasToInsert.push({ referencia: dto.referencia.trim(), descripcion: 'Referencia principal', estado: 'activo' });
+      }
+      if (dto.referencias && Array.isArray(dto.referencias)) {
+        for (const r of dto.referencias) {
+          const code = (r.referencia || '').trim();
+          if (code && !referenciasToInsert.some(item => item.referencia.toLowerCase() === code.toLowerCase())) {
+            referenciasToInsert.push({
+              referencia: code,
+              descripcion: r.descripcion || null,
+              estado: r.estado || 'activo',
+            });
+          }
+        }
+      }
+      for (const ref of referenciasToInsert) {
+        await queryRunner.query(
+          `INSERT INTO public.producto_referencia (producto_id, referencia, descripcion, estado)
+           VALUES ($1, $2, $3, $4)
+           ON CONFLICT (producto_id, referencia) DO NOTHING;`,
+          [productoId, ref.referencia, ref.descripcion || null, ref.estado || 'activo'],
+        );
+      }
+
+      // 7. Códigos de Barras
       if (dto.codigos_barras && dto.codigos_barras.length > 0) {
         for (const cb of dto.codigos_barras) {
           if (cb.codigo_barras && cb.codigo_barras.trim()) {
@@ -924,7 +1030,7 @@ export class ProductoRepository {
         }
       }
 
-      // 7. Proveedor Principal
+      // 8. Proveedor Principal
       if (dto.proveedores && dto.proveedores.length > 0) {
         for (const prov of dto.proveedores) {
           if (prov.proveedor_id) {
@@ -961,15 +1067,22 @@ export class ProductoRepository {
         );
       }
 
-      // 9. Imágenes
+      // 9. Imágenes (Resueltas a URLs públicas CDN permanentes para Meta / WhatsApp)
       if (dto.imagenes && dto.imagenes.length > 0) {
         for (let i = 0; i < dto.imagenes.length; i++) {
           const img = dto.imagenes[i];
           if (img.url) {
+            const publicUrl = await this.resolverUrlPublicaImagen(img.url);
             await queryRunner.query(
               `INSERT INTO public.producto_imagen (producto_id, url, nombre, orden, principal, estado)
                VALUES ($1, $2, $3, $4, $5, 'activo');`,
-              [productoId, img.url, img.nombre || `Imagen ${i + 1}`, Number(img.orden) || i, Boolean(img.principal !== undefined ? img.principal : i === 0)],
+              [
+                productoId,
+                publicUrl || img.url,
+                img.nombre || `Imagen ${i + 1}`,
+                Number(img.orden) || i + 1,
+                Boolean(img.principal !== undefined ? img.principal : i === 0),
+              ],
             );
           }
         }
@@ -1004,11 +1117,11 @@ export class ProductoRepository {
         }
       }
 
-      // 11. Variantes del Producto
+      // 11. Variantes del Producto y vinculación a componentes (variante_componente)
       if (dto.variantes && dto.variantes.length > 0) {
         for (const v of dto.variantes) {
           if (v.sku) {
-            await queryRunner.query(
+            const varRes = await queryRunner.query(
               `INSERT INTO public.producto_variante (producto_id, sku, codigo_barras, referencia, precio, estado)
                VALUES ($1, $2, $3, $4, $5, $6)
                RETURNING id_producto_variante;`,
@@ -1021,6 +1134,20 @@ export class ProductoRepository {
                 v.estado || 'activo',
               ],
             );
+            const varId = varRes[0]?.id_producto_variante;
+            if (varId && v.componentes && Array.isArray(v.componentes)) {
+              for (const c of v.componentes) {
+                const compId = Number(c.componenteId || c.id_atributo_componente);
+                if (compId && !isNaN(compId)) {
+                  await queryRunner.query(
+                    `INSERT INTO public.variante_componente (producto_variante_id, atributo_componente_id)
+                     VALUES ($1, $2)
+                     ON CONFLICT DO NOTHING;`,
+                    [varId, compId],
+                  );
+                }
+              }
+            }
           }
         }
       }
@@ -1034,26 +1161,36 @@ export class ProductoRepository {
       );
 
       await queryRunner.commitTransaction();
+      await queryRunner.release();
       this.logger.log(`✓ Producto creado exitosamente: ID ${productoId}, Código ${producto.codigo_interno}`);
 
-      // Sincronización automática con Meta Catalog en segundo plano (Zero-Click para el usuario)
-      this.sincronizarConMetaCatalog(productoId, empresaId).catch((metaErr) => {
+      // Sincronización automática con Meta Catalog en tiempo real
+      let metaResult: any = null;
+      try {
+        metaResult = await this.sincronizarConMetaCatalog(productoId, empresaId);
+      } catch (metaErr: any) {
         this.logger.error(`Error en sincronización background con Meta Catalog: ${metaErr.message}`);
-      });
+      }
 
       return {
         success: true,
         producto: {
           ...producto,
           id: Number(producto.id_producto),
+          fb_product_id: metaResult?.fb_product_id || null,
+          meta_sync_status: metaResult?.success ? 'sincronizado' : 'error',
         },
       };
     } catch (error: any) {
-      await queryRunner.rollbackTransaction();
+      if (queryRunner.isTransactionActive) {
+        await queryRunner.rollbackTransaction();
+      }
       this.logger.error(`Error al crear producto: ${error.message}`, error.stack);
       throw new BadRequestException(error.message || 'Error al persistir el producto en la base de datos');
     } finally {
-      await queryRunner.release();
+      if (!queryRunner.isReleased) {
+        await queryRunner.release();
+      }
     }
   }
 
@@ -1069,7 +1206,16 @@ export class ProductoRepository {
           p.nombre,
           COALESCE(c.nombre, 'Sin Categoría') AS categoria,
           p.categoria_id,
+          COALESCE(sc.nombre, '') AS subcategoria,
+          p.subcategoria_id,
           COALESCE(m.nombre, '') AS marca,
+          (
+            SELECT pr.referencia
+            FROM public.producto_referencia pr
+            WHERE pr.producto_id = p.id_producto AND pr.estado = 'activo'
+            ORDER BY pr.id_producto_referencia ASC
+            LIMIT 1
+          ) AS referencia,
           p.precio_base AS precio,
           p.precio_impuesto,
           p.costo_base,
@@ -1085,6 +1231,7 @@ export class ProductoRepository {
           p.created_at
         FROM public.producto p
         LEFT JOIN public.categoria c ON c.id_categoria = p.categoria_id
+        LEFT JOIN public.subcategoria sc ON sc.id_subcategoria = p.subcategoria_id
         LEFT JOIN public.marca m ON m.id_marca = p.marca_id
         LEFT JOIN (
           SELECT DISTINCT ON (producto_id) producto_id, url
@@ -1109,13 +1256,150 @@ export class ProductoRepository {
   }
 
   /**
+   * Elimina un producto de la base de datos y del catálogo de WhatsApp / Meta.
+   */
+  async eliminarProducto(productoId: number, empresaId = 1) {
+    const prodRows = await this.dataSource.query(
+      `SELECT id_producto, codigo_interno, nombre, fb_product_id
+       FROM public.producto
+       WHERE id_producto = $1 AND empresa_id = $2
+       LIMIT 1;`,
+      [productoId, empresaId],
+    );
+
+    const prod = prodRows[0];
+    if (!prod) {
+      throw new NotFoundException(`El producto con ID ${productoId} no fue encontrado`);
+    }
+
+    const metaToken =
+      process.env.META_PERMANENT_TOKEN ||
+      process.env.META_SYSTEM_TOKEN ||
+      process.env.META_ACCESS_TOKEN;
+    const apiVersion = process.env.META_API_VERSION || 'v21.0';
+
+    let deletedFromMeta = false;
+
+    // 1. Eliminar de Meta / WhatsApp Commerce Catalog si existe fb_product_id
+    if (metaToken && prod.fb_product_id) {
+      try {
+        this.logger.log(`[MetaCatalog] Eliminando producto ${productoId} (FB ID: ${prod.fb_product_id}) de Meta WhatsApp...`);
+        const delRes = await fetch(`https://graph.facebook.com/${apiVersion}/${prod.fb_product_id}`, {
+          method: 'DELETE',
+          headers: {
+            Authorization: `Bearer ${metaToken}`,
+          },
+        });
+        const delData: any = await delRes.json();
+        if (delRes.ok && (delData.success || !delData.error)) {
+          deletedFromMeta = true;
+          this.logger.log(`✓ [MetaCatalog] Producto ${productoId} eliminado exitosamente de Meta WhatsApp`);
+        } else {
+          this.logger.warn(`[MetaCatalog] Advertencia al eliminar de Meta: ${JSON.stringify(delData)}`);
+        }
+      } catch (metaErr: any) {
+        this.logger.error(`[MetaCatalog] Error comunicando con Meta para eliminar producto: ${metaErr.message}`);
+      }
+    }
+
+    // 2. Si la empresa tiene catálogo, eliminar también las variantes de Meta
+    if (metaToken) {
+      try {
+        const canalRows = await this.dataSource.query(
+          `SELECT catalog_id FROM public.canal WHERE empresa_id = $1 AND tipo = 'whatsapp' LIMIT 1;`,
+          [empresaId],
+        );
+        const catalogId = canalRows[0]?.catalog_id;
+        const retailerId = prod.codigo_interno || `PROD-${prod.id_producto}`;
+        if (catalogId) {
+          // Eliminar producto principal por retailer_id si no se eliminó por fb_product_id
+          if (!deletedFromMeta && retailerId) {
+            await fetch(`https://graph.facebook.com/${apiVersion}/${catalogId}/products?retailer_id=${encodeURIComponent(retailerId)}`, {
+              method: 'DELETE',
+              headers: { Authorization: `Bearer ${metaToken}` },
+            });
+          }
+
+          // Eliminar cada una de las variantes del catálogo de Meta
+          const varRows = await this.dataSource.query(
+            `SELECT sku, referencia FROM public.producto_variante WHERE producto_id = $1;`,
+            [productoId],
+          );
+          for (const v of varRows) {
+            const vRetId = (v.sku || v.referencia || '').trim();
+            if (vRetId && vRetId !== retailerId) {
+              await fetch(`https://graph.facebook.com/${apiVersion}/${catalogId}/products?retailer_id=${encodeURIComponent(vRetId)}`, {
+                method: 'DELETE',
+                headers: { Authorization: `Bearer ${metaToken}` },
+              });
+            }
+          }
+        }
+      } catch (errVar: any) {
+        this.logger.warn(`[MetaCatalog] Advertencia eliminando variantes de Meta: ${errVar.message}`);
+      }
+    }
+
+    // 3. Eliminación o inactivación en PostgreSQL
+    const orderRows = await this.dataSource.query(
+      `SELECT count(*)::int AS count FROM public.pedido_detalle WHERE producto_id = $1;`,
+      [productoId],
+    );
+
+    if (orderRows[0]?.count > 0) {
+      // Tiene pedidos asociados (preservar trazabilidad con estado inactivo)
+      await this.dataSource.query(
+        `UPDATE public.producto
+         SET estado_producto = 'inactivo',
+             estado_publicacion = 'no_publicado',
+             fb_product_id = NULL,
+             meta_sync_status = 'eliminado',
+             meta_sync_error = NULL,
+             meta_synced_at = NOW(),
+             updated_at = NOW()
+         WHERE id_producto = $1 AND empresa_id = $2;`,
+        [productoId, empresaId],
+      );
+      this.logger.log(`✓ Producto ${productoId} inactivado y retirado de WhatsApp (posee pedidos asociados)`);
+    } else {
+      // Eliminación física completa en cascada de todas las tablas hijas
+      await this.dataSource.query(`DELETE FROM public.variante_componente WHERE producto_variante_id IN (SELECT id_producto_variante FROM public.producto_variante WHERE producto_id = $1);`, [productoId]);
+      await this.dataSource.query(`DELETE FROM public.producto_variante WHERE producto_id = $1;`, [productoId]);
+      await this.dataSource.query(`DELETE FROM public.producto_atributo_componente WHERE producto_atributo_id IN (SELECT id_producto_atributo FROM public.producto_atributo WHERE producto_id = $1);`, [productoId]);
+      await this.dataSource.query(`DELETE FROM public.producto_atributo WHERE producto_id = $1;`, [productoId]);
+      await this.dataSource.query(`DELETE FROM public.producto_imagen WHERE producto_id = $1;`, [productoId]);
+      await this.dataSource.query(`DELETE FROM public.producto_impuesto_compra WHERE producto_id = $1;`, [productoId]);
+      await this.dataSource.query(`DELETE FROM public.producto_impuesto_venta WHERE producto_id = $1;`, [productoId]);
+      await this.dataSource.query(`DELETE FROM public.producto_lista_precio WHERE producto_id = $1;`, [productoId]);
+      await this.dataSource.query(`DELETE FROM public.producto_retencion WHERE producto_id = $1;`, [productoId]);
+      await this.dataSource.query(`DELETE FROM public.producto_proveedor WHERE producto_id = $1;`, [productoId]);
+      await this.dataSource.query(`DELETE FROM public.producto_seo_ia WHERE producto_id = $1;`, [productoId]);
+      await this.dataSource.query(`DELETE FROM public.producto_codigo_barras WHERE producto_id = $1;`, [productoId]);
+      await this.dataSource.query(`DELETE FROM public.carrito_detalle WHERE producto_id = $1;`, [productoId]);
+      await this.dataSource.query(`DELETE FROM public.inventario WHERE producto_id = $1;`, [productoId]);
+      await this.dataSource.query(`DELETE FROM public.precio WHERE producto_id = $1;`, [productoId]);
+      await this.dataSource.query(`DELETE FROM public.producto_referencia WHERE producto_id = $1;`, [productoId]);
+      await this.dataSource.query(`DELETE FROM public.producto WHERE id_producto = $1 AND empresa_id = $2;`, [productoId, empresaId]);
+      this.logger.log(`✓ Producto ${productoId} y sus dependencias eliminados completamente de PostgreSQL y de WhatsApp`);
+    }
+
+    return {
+      success: true,
+      message: 'Producto eliminado correctamente de la base de datos y del catálogo de WhatsApp',
+      id: productoId,
+      deleted_from_meta: deletedFromMeta,
+    };
+  }
+
+  /**
    * ============================================================================
    * SINCRONIZACIÓN AUTOMÁTICA CON META COMMERCE CATALOG (Facebook / WhatsApp)
    * ============================================================================
    * 1. Consulta si la empresa tiene canal y catalog_id asignado en PostgreSQL.
    * 2. Si no tiene catálogo, lo crea automáticamente en Meta por API con el
    *    Token Permanente y lo vincula al WhatsApp Commerce del número telefónico.
-   * 3. Sube el producto con sus campos exactos requeridos por Meta Commerce API.
+   * 3. Sube el producto con sus campos exactos requeridos por Meta Commerce API:
+   *    categoría, subcategoría (product_type/custom labels) y referencia principal (retailer_id).
    * 4. Registra trazabilidad completa en public.producto (fb_product_id, estado, errores).
    */
   async sincronizarConMetaCatalog(productoId: number, empresaId = 1) {
@@ -1203,18 +1487,16 @@ export class ProductoRepository {
         catalogId = catData.id;
         this.logger.log(`✓ [MetaCatalog] Catálogo creado en Meta exitosamente con ID: ${catalogId}`);
 
-        // Guardar catalog_id en la BD para este canal
         await this.dataSource.query(
           `UPDATE public.canal SET catalog_id = $1, updated_at = NOW() WHERE id_canal = $2;`,
           [catalogId, canal.id_canal],
         );
       }
 
-      // Asegurar vinculación del Catálogo con WABA y WhatsApp Commerce (para empresas nuevas o existentes)
+      // Asegurar vinculación del Catálogo con WABA y WhatsApp Commerce
       let wabaId = canal.waba_id || canal.configuracion?.waba_id || process.env.META_WABA_ID;
       const phoneId = canal.phone_number_id || canal.configuracion?.phone_number_id;
 
-      // Si no tenemos waba_id, buscarlo automáticamente en Meta Business
       if (!wabaId && businessId) {
         try {
           const wabaRes = await fetch(`https://graph.facebook.com/${apiVersion}/${businessId}/owned_whatsapp_business_accounts`, {
@@ -1234,7 +1516,7 @@ export class ProductoRepository {
         }
       }
 
-      // 1. Vincular Catálogo a la WABA (Obligatorio en Meta Cloud API para mostrar tienda)
+      // 1. Vincular Catálogo a la WABA
       if (wabaId && catalogId) {
         try {
           const linkWabaRes = await fetch(`https://graph.facebook.com/${apiVersion}/${wabaId}/product_catalogs`, {
@@ -1256,7 +1538,7 @@ export class ProductoRepository {
         }
       }
 
-      // 2. Activar Tienda y Carrito en el número de teléfono (whatsapp_commerce_settings)
+      // 2. Activar Tienda y Carrito en WhatsApp
       if (phoneId) {
         try {
           await fetch(`https://graph.facebook.com/${apiVersion}/${phoneId}/whatsapp_commerce_settings`, {
@@ -1276,7 +1558,7 @@ export class ProductoRepository {
         }
       }
 
-      // 3. Consultar datos completos del producto e imagen para subirlo a Meta
+      // 3. Consultar datos completos del producto incluyendo categoría, subcategoría y referencias
       const prodRows = await this.dataSource.query(
         `SELECT
            p.id_producto,
@@ -1284,16 +1566,28 @@ export class ProductoRepository {
            p.nombre,
            p.descripcion_corta,
            p.descripcion_larga,
+           p.ficha_tecnica,
+           p.costo_base,
+           p.costo_impuesto,
            p.precio_base,
            p.precio_impuesto,
            p.fb_product_id,
            COALESCE(m.nombre, '') AS marca_nombre,
            COALESCE(c.nombre, '') AS categoria_nombre,
+           COALESCE(sc.nombre, '') AS subcategoria_nombre,
+           (
+             SELECT pr.referencia
+             FROM public.producto_referencia pr
+             WHERE pr.producto_id = p.id_producto AND pr.estado = 'activo'
+             ORDER BY pr.id_producto_referencia ASC
+             LIMIT 1
+           ) AS referencia_principal,
            GREATEST(0, COALESCE(inv.existencia, 0) - COALESCE(inv.reservado, 0)) AS disponible,
            img.url AS imagen_url
          FROM public.producto p
          LEFT JOIN public.marca m ON m.id_marca = p.marca_id
          LEFT JOIN public.categoria c ON c.id_categoria = p.categoria_id
+         LEFT JOIN public.subcategoria sc ON sc.id_subcategoria = p.subcategoria_id
          LEFT JOIN (
            SELECT DISTINCT ON (producto_id) producto_id, url
            FROM public.producto_imagen
@@ -1316,47 +1610,136 @@ export class ProductoRepository {
         throw new Error(`Producto ${productoId} no encontrado en empresa ${empresaId}`);
       }
 
-      // 4. Construir payload oficial para Meta Commerce Catalog
-      const retailerId = prod.codigo_interno || `PROD-${prod.id_producto}`;
-      const precioTotal = Number(prod.precio_impuesto || prod.precio_base) || 0;
-      // Meta requiere el precio en unidades menores enteras (ej: $50.000 COP -> 5000000)
-      const priceInCents = Math.round(precioTotal * 100);
+      // 4. Consultar atributos y componentes configurados en el producto (Color, Voltaje, etc.)
+      const attrRows = await this.dataSource.query(
+        `SELECT
+           a.id_atributo,
+           LOWER(TRIM(a.nombre)) AS attr_nombre,
+           LOWER(TRIM(a.codigo)) AS attr_codigo,
+           ac.id_atributo_componente,
+           ac.nombre AS comp_nombre,
+           ac.codigo AS comp_codigo
+         FROM public.producto_atributo pa
+         JOIN public.atributo a ON a.id_atributo = pa.atributo_id
+         JOIN public.producto_atributo_componente pac ON pac.producto_atributo_id = pa.id_producto_atributo
+         JOIN public.atributo_componente ac ON ac.id_atributo_componente = pac.atributo_componente_id
+         WHERE pa.producto_id = $1 AND pa.estado = 'activo' AND pac.estado = 'activo'
+         ORDER BY pa.orden, pac.orden;`,
+        [productoId],
+      );
 
-      // Meta exige obligatoriamente una imagen accesible por HTTPS público (mínimo 500x500)
-      let imageUrl = prod.imagen_url;
-      const isValidHttpUrl =
-        imageUrl &&
-        /^https?:\/\//i.test(imageUrl) &&
-        !imageUrl.includes('localhost') &&
-        !imageUrl.includes('127.0.0.1');
+      const colorComps = attrRows
+        .filter((r: any) => r.attr_nombre.includes('color') || r.attr_codigo.includes('color'))
+        .map((r: any) => r.comp_nombre);
 
-      if (!isValidHttpUrl) {
-        imageUrl = 'https://images.unsplash.com/photo-1581235720704-06d3acfcb36f?w=600&auto=format&fit=crop&q=80';
+      const sizeComps = attrRows
+        .filter((r: any) =>
+          r.attr_nombre.includes('voltaje') ||
+          r.attr_nombre.includes('talla') ||
+          r.attr_nombre.includes('tamaño') ||
+          r.attr_nombre.includes('tamano') ||
+          r.attr_nombre.includes('medida') ||
+          r.attr_codigo.includes('volt') ||
+          r.attr_codigo.includes('talla')
+        )
+        .map((r: any) => r.comp_nombre);
+
+      // 5. Consultar variantes registradas en PostgreSQL
+      const varRows = await this.dataSource.query(
+        `SELECT
+           pv.id_producto_variante,
+           pv.sku,
+           pv.codigo_barras,
+           pv.referencia,
+           pv.precio,
+           pv.estado,
+           STRING_AGG(DISTINCT ac.nombre, ', ') AS componentes_nombres
+         FROM public.producto_variante pv
+         LEFT JOIN public.variante_componente vc ON vc.producto_variante_id = pv.id_producto_variante
+         LEFT JOIN public.atributo_componente ac ON ac.id_atributo_componente = vc.atributo_componente_id
+         WHERE pv.producto_id = $1 AND pv.estado = 'activo'
+         GROUP BY pv.id_producto_variante, pv.sku, pv.codigo_barras, pv.referencia, pv.precio, pv.estado
+         ORDER BY pv.id_producto_variante ASC;`,
+        [productoId],
+      );
+
+      // 6. Construir identificadores y taxonomía
+      const refPrincipal = (prod.referencia_principal || prod.codigo_interno || '').trim();
+      const retailerId = refPrincipal || `PROD-${prod.id_producto}`;
+      const itemGroupId = prod.codigo_interno || `PROD-${prod.id_producto}`;
+
+      const catNombre = (prod.categoria_nombre || '').trim();
+      const subcatNombre = (prod.subcategoria_nombre || '').trim();
+      const taxonomyBreadcrumb = [catNombre, subcatNombre].filter(Boolean).join(' > ') || 'General';
+
+      // PRECIOS: En Meta Catalog 'price' = Costo Final con Impuestos, 'sale_price' = Precio Final de Venta
+      const costoFinalConImpuestos = Number(prod.costo_impuesto || prod.costo_base) || 0;
+      const precioFinalDeVenta = Number(prod.precio_impuesto || prod.precio_base) || 0;
+      const priceInCents = Math.round(costoFinalConImpuestos * 100);
+      const salePriceInCents = Math.round(precioFinalDeVenta * 100);
+
+      // IMAGEN: Resolver a URL pública permanente accesible por el crawler de Meta
+      const rawImageUrl = prod.imagen_url;
+      const imageUrl = await this.resolverUrlPublicaImagen(rawImageUrl);
+      if (imageUrl && imageUrl !== rawImageUrl && rawImageUrl && !rawImageUrl.startsWith('http')) {
+        await this.dataSource.query(
+          `UPDATE public.producto_imagen SET url = $1 WHERE producto_id = $2 AND url = $3;`,
+          [imageUrl, productoId, rawImageUrl],
+        );
       }
 
       const publicBaseUrl = process.env.PUBLIC_APP_URL || 'https://chatconnect.app';
       const productWebUrl = `${publicBaseUrl}/productos/${prod.id_producto}`;
 
-      const metaPayload = {
+      // Formatear descripción detallada para WhatsApp Catalog
+      let descBase = (prod.descripcion_corta || prod.descripcion_larga || prod.nombre || '').trim();
+      const detailsList: string[] = [];
+      if (refPrincipal) detailsList.push(`🔖 Referencia: ${refPrincipal}`);
+      if (catNombre) detailsList.push(`🏷️ Categoría: ${catNombre}`);
+      if (subcatNombre) detailsList.push(`📁 Subcategoría: ${subcatNombre}`);
+      if (prod.marca_nombre) detailsList.push(`🏷️ Marca: ${prod.marca_nombre}`);
+      if (colorComps.length > 0) detailsList.push(`🎨 Color: ${colorComps.join(', ')}`);
+      if (sizeComps.length > 0) detailsList.push(`⚡ Voltaje / Talla: ${sizeComps.join(', ')}`);
+      if (prod.ficha_tecnica) detailsList.push(`\n📋 Ficha Técnica:\n${prod.ficha_tecnica}`);
+
+      let fullDescription = descBase;
+      if (detailsList.length > 0) {
+        fullDescription = `${descBase}\n\n${detailsList.join('\n')}`.trim();
+      }
+
+      const mainColor = colorComps[0] || (colorComps.length > 0 ? colorComps.join(' / ') : undefined);
+      const mainSize = sizeComps[0] || (sizeComps.length > 0 ? sizeComps.join(' / ') : undefined);
+
+      const metaPayload: any = {
         retailer_id: retailerId,
+        item_group_id: itemGroupId,
         title: (prod.nombre || 'Producto').substring(0, 100),
         name: (prod.nombre || 'Producto').substring(0, 100),
-        description: (prod.descripcion_corta || prod.descripcion_larga || prod.nombre).substring(0, 5000),
-        availability: 'in stock', // Siempre in stock para que WhatsApp lo muestre en la tienda
+        description: fullDescription.substring(0, 5000),
+        availability: 'in stock',
         inventory: Math.max(1, Number(prod.disponible) || 10),
         condition: 'new',
         price: priceInCents,
+        sale_price: salePriceInCents,
         currency: 'COP',
         image_url: imageUrl,
         brand: prod.marca_nombre || 'Genérica',
-        category: prod.categoria_nombre || 'General',
+        category: subcatNombre || catNombre || 'General',
+        product_type: taxonomyBreadcrumb,
+        color: mainColor,
+        size: mainSize,
+        custom_label_0: catNombre.substring(0, 100),
+        custom_label_1: subcatNombre.substring(0, 100),
+        custom_label_2: refPrincipal.substring(0, 100),
+        custom_label_3: colorComps.join(', ').substring(0, 100) || undefined,
+        custom_label_4: sizeComps.join(', ').substring(0, 100) || undefined,
         url: productWebUrl,
       };
 
       let fbProductId = prod.fb_product_id;
 
       if (fbProductId) {
-        // Actualizar producto existente en Meta
+        // Actualizar producto principal en Meta
         this.logger.log(`[MetaCatalog] Actualizando producto ${prod.id_producto} (${fbProductId}) en Meta...`);
         const updateRes = await fetch(`https://graph.facebook.com/${apiVersion}/${fbProductId}`, {
           method: 'POST',
@@ -1371,7 +1754,7 @@ export class ProductoRepository {
           const errMsg = updateData.error?.message || JSON.stringify(updateData);
           this.logger.warn(`[MetaCatalog] Advertencia actualizando en Meta: ${errMsg}`);
         } else {
-          this.logger.log(`✓ [MetaCatalog] Producto ${productoId} actualizado en Meta`);
+          this.logger.log(`✓ [MetaCatalog] Producto ${productoId} actualizado en Meta con taxonomía ${taxonomyBreadcrumb}`);
         }
       } else {
         // Subir nuevo producto a Meta
@@ -1401,6 +1784,113 @@ export class ProductoRepository {
 
         fbProductId = prodData.id;
         this.logger.log(`✓ [MetaCatalog] Producto ${productoId} subido a Meta exitosamente con FB ID: ${fbProductId}`);
+      }
+
+      // 7. Sincronizar variantes secundarias con Meta (cada variante con su Color y Voltaje / Talla)
+      if (varRows && varRows.length > 0) {
+        for (let vi = 0; vi < varRows.length; vi++) {
+          const v = varRows[vi];
+          const vRetailerId = (v.sku || v.referencia || `${retailerId}-VAR-${v.id_producto_variante}`).trim();
+
+          // Subir si tiene un identificador distinto al producto principal
+          if (vRetailerId !== retailerId) {
+            let vColor = colorComps.find((c: string) =>
+              (v.componentes_nombres || '').toLowerCase().includes(c.toLowerCase()) ||
+              vRetailerId.toLowerCase().includes(c.toLowerCase().slice(0, 3))
+            );
+            if (!vColor && colorComps.length > 0) {
+              vColor = colorComps[vi % colorComps.length];
+            }
+
+            let vSize = sizeComps.find((s: string) =>
+              (v.componentes_nombres || '').toLowerCase().includes(s.toLowerCase()) ||
+              vRetailerId.toLowerCase().includes(s.toLowerCase().replace(/[^a-z0-9]/g, ''))
+            );
+            if (!vSize && sizeComps.length > 0) {
+              vSize = sizeComps[vi % sizeComps.length];
+            }
+
+            const vSalePrice = Math.round(Number(v.precio || precioFinalDeVenta) * 100);
+            const varTitle = `${prod.nombre} (${[vColor, vSize].filter(Boolean).join(' ') || 'Variante'})`.substring(0, 100);
+
+            const varPayload: any = {
+              retailer_id: vRetailerId,
+              item_group_id: itemGroupId,
+              title: varTitle,
+              name: varTitle,
+              description: `${fullDescription}\n\nVariante: ${vRetailerId}\nColor: ${vColor || 'Estándar'}\nVoltaje/Talla: ${vSize || 'Estándar'}`.substring(0, 5000),
+              availability: 'in stock',
+              inventory: 15,
+              condition: 'new',
+              price: priceInCents,
+              sale_price: vSalePrice,
+              currency: 'COP',
+              image_url: imageUrl,
+              brand: prod.marca_nombre || 'Genérica',
+              category: subcatNombre || catNombre || 'General',
+              product_type: taxonomyBreadcrumb,
+              color: vColor || undefined,
+              size: vSize || undefined,
+              custom_label_0: catNombre.substring(0, 100),
+              custom_label_1: subcatNombre.substring(0, 100),
+              custom_label_2: vRetailerId.substring(0, 100),
+              custom_label_3: (vColor || '').substring(0, 100) || undefined,
+              custom_label_4: (vSize || '').substring(0, 100) || undefined,
+              url: productWebUrl,
+            };
+
+            try {
+              const varRes = await fetch(`https://graph.facebook.com/${apiVersion}/${catalogId}/products`, {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${metaToken}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify(varPayload),
+              });
+              const varData: any = await varRes.json();
+              if (varData.id) {
+                this.logger.log(`✓ [MetaCatalog] Variante "${vRetailerId}" creada/sincronizada en Meta con Color: "${vColor}", Tamaño/Voltaje: "${vSize}"`);
+              }
+            } catch (varErr: any) {
+              this.logger.warn(`[MetaCatalog] Advertencia subiendo variante ${vRetailerId}: ${varErr.message}`);
+            }
+          }
+        }
+      }
+
+      // 8. Asegurar colecciones en Meta para la categoría y la subcategoría (Product Sets de WhatsApp)
+      if (catalogId) {
+        try {
+          const setsRes = await fetch(`https://graph.facebook.com/${apiVersion}/${catalogId}/product_sets?fields=id,name`, {
+            headers: { Authorization: `Bearer ${metaToken}` },
+          });
+          const setsData: any = await setsRes.json();
+          const existingSets = setsData?.data || [];
+
+          if (catNombre && !existingSets.some((s: any) => s.name?.toLowerCase() === catNombre.toLowerCase())) {
+            await fetch(`https://graph.facebook.com/${apiVersion}/${catalogId}/product_sets`, {
+              method: 'POST',
+              headers: { Authorization: `Bearer ${metaToken}`, 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                name: catNombre,
+                filter: { product_type: { contains: catNombre } },
+              }),
+            });
+            this.logger.log(`✓ [MetaCatalog] Colección de Categoría "${catNombre}" creada en Meta`);
+          }
+
+          if (subcatNombre && !existingSets.some((s: any) => s.name?.toLowerCase() === subcatNombre.toLowerCase())) {
+            await fetch(`https://graph.facebook.com/${apiVersion}/${catalogId}/product_sets`, {
+              method: 'POST',
+              headers: { Authorization: `Bearer ${metaToken}`, 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                name: subcatNombre,
+                filter: { category: { eq: subcatNombre } },
+              }),
+            });
+            this.logger.log(`✓ [MetaCatalog] Colección de Subcategoría "${subcatNombre}" creada en Meta`);
+          }
+        } catch (setErr: any) {
+          this.logger.warn(`[MetaCatalog] Advertencia gestionando colecciones: ${setErr.message}`);
+        }
       }
 
       await this.dataSource.query(

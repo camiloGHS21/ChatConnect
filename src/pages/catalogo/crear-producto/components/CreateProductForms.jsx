@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import DeleteConfirmationModal from '@/components/DeleteConfirmationModal';
+import FullPageLoader from '@/components/FullPageLoader';
 import WizardTabsHeader from '@/components/producto/wizard/WizardTabsHeader';
 import WizardNavigation from '@/components/producto/wizard/WizardNavigation';
 import { buildProductWizardSteps } from '@/components/producto/wizard/buildProductWizardSteps';
@@ -39,13 +40,8 @@ const CreateProductForms = () => {
 
   const handleNext = () => {
     const val = validateStep(activeStep, productData);
-    if (!val.isValid) {
-      setValidationErrors(val.errors);
-      setStepError(val.message);
-      return;
-    }
-    setValidationErrors({});
-    setStepError('');
+    if (!val.isValid) { setValidationErrors(val.errors); setStepError(val.message); return; }
+    setValidationErrors({}); setStepError('');
     setActiveStep(prev => Math.min(5, prev + 1));
   };
 
@@ -53,14 +49,9 @@ const CreateProductForms = () => {
     const target = Number(stepNum);
     if (target > activeStep) {
       const val = validateStep(activeStep, productData);
-      if (!val.isValid) {
-        setValidationErrors(val.errors);
-        setStepError(val.message);
-        return;
-      }
+      if (!val.isValid) { setValidationErrors(val.errors); setStepError(val.message); return; }
     }
-    setValidationErrors({});
-    setStepError('');
+    setValidationErrors({}); setStepError('');
     setActiveStep(target);
   };
 
@@ -94,15 +85,10 @@ const CreateProductForms = () => {
   };
 
   const handleResetForm = async () => {
-    setSaveError('');
-    setStepError('');
-    setValidationErrors({});
+    setSaveError(''); setStepError(''); setValidationErrors({});
     const nextCode = await productoService.getSiguienteCodigo(1).catch(() => '');
     const fresh = getInitialProductState(nextCode);
-    reset(fresh);
-    setProductData(fresh);
-    setIsSubmitted(false);
-    setActiveStep(1);
+    reset(fresh); setProductData(fresh); setIsSubmitted(false); setActiveStep(1);
   };
 
   const formSteps = buildProductWizardSteps({
@@ -126,6 +112,12 @@ const CreateProductForms = () => {
 
   return (
     <>
+      <FullPageLoader
+        show={isSaving}
+        title="Subiendo y sincronizando producto..."
+        message="Guardando en la base de datos y publicando en el catálogo de Meta WhatsApp Business..."
+        badge="Meta WhatsApp Commerce Sync"
+      />
       {stepError && (
         <div className="alert alert-warning py-2 px-3 fs-13 mb-3 d-flex align-items-center shadow-sm">
           <i className="bx bx-error-circle fs-18 me-2 text-warning" />

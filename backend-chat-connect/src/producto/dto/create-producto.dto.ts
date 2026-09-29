@@ -29,6 +29,7 @@ export interface CodigoBarrasItemDto {
 export interface ReferenciaItemDto {
   referencia: string;
   descripcion?: string;
+  estado?: string;
 }
 
 export interface ProveedorItemDto {
@@ -56,6 +57,7 @@ export interface AtributoAsignadoDto {
 export interface VarianteItemDto {
   sku?: string;
   combinacion?: string;
+  componentes?: any[];
   codigo_barras?: string;
   referencia?: string;
   precio?: number;
@@ -99,6 +101,7 @@ export class CreateProductoDto {
   listas_precios?: ListaPrecioItemDto[];
   retenciones?: RetencionItemDto[];
   codigos_barras?: CodigoBarrasItemDto[];
+  referencia?: string;
   referencias?: ReferenciaItemDto[];
   proveedores?: ProveedorItemDto[];
   imagenes?: ImagenItemDto[];

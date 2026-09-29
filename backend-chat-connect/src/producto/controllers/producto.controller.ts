@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Patch, Body, Query, Param, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Post, Put, Patch, Delete, Body, Query, Param, HttpCode, HttpStatus } from '@nestjs/common';
 import { ProductoRepository } from '../repositories/producto.repository.js';
 import { CreateProductoDto } from '../dto/create-producto.dto.js';
 
@@ -100,6 +100,13 @@ export class ProductoController {
   async getProductos(@Query('empresa_id') empresaId?: string) {
     const id = empresaId ? parseInt(empresaId, 10) : 1;
     return await this.productoRepo.getProductos(id);
+  }
+
+  @Delete(':id')
+  @HttpCode(HttpStatus.OK)
+  async eliminarProducto(@Param('id') id: string, @Query('empresa_id') empresaId?: string) {
+    const empId = empresaId ? parseInt(empresaId, 10) : 1;
+    return await this.productoRepo.eliminarProducto(parseInt(id, 10), empId);
   }
 
   // ==========================================================================

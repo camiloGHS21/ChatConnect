@@ -1,3 +1,4 @@
+import React, { useMemo } from 'react';
 import clsx from 'clsx';
 import { Link } from 'react-router-dom';
 import ReactTable from '@/components/Table';
@@ -6,16 +7,18 @@ import { currency } from '@/context/constants';
 import { getCalculatedPrice, resolveProductImageUrl } from '@/helpers/product';
 import { getStockStatus } from '@/utils/other';
 
-const columns = [
+const buildColumns = (onDeleteProduct) => [
   {
     header: 'Product Name',
     cell: ({
       row: {
-        original: { id, images, name, description },
+        original: { id, images, name, description, referencia, fb_product_id, meta_sync_status },
       },
     }) => {
       const rawSrc = Array.isArray(images) && images.length > 0 ? images[0] : null;
       const imgSrc = resolveProductImageUrl(rawSrc);
+      const isSyncedWhatsApp = !!fb_product_id || meta_sync_status === 'sincronizado';
+
       return (
         <div className="d-flex align-items-center">
           <div className="flex-shrink-0 me-3">
@@ -24,7 +27,7 @@ const columns = [
                 <img
                   src={imgSrc}
                   alt={name}
-                  className="img-fluid avatar-sm object-fit-contain rounded"
+                  className="img-fluid avatar-sm object-fit-contain rounded border"
                   onError={(e) => {
                     e.currentTarget.style.display = 'none';
                   }}
@@ -37,12 +40,21 @@ const columns = [
             </Link>
           </div>
           <div className="flex-grow-1">
-            <h5 className="mt-0 mb-1">
+            <h5 className="mt-0 mb-1 d-flex align-items-center gap-1">
               <Link to={`/catalogo/crear-producto?id=${id}`} className="text-reset">
                 {name}
               </Link>
+              {isSyncedWhatsApp && (
+                <span className="badge bg-success-subtle text-success fs-10" title="Sincronizado con WhatsApp Catalog">
+                  <IconifyIcon icon="bxl:whatsapp" className="me-1" />
+                  WhatsApp
+                </span>
+              )}
             </h5>
-            <span className="fs-13 text-muted">{description}</span>
+            <span className="fs-13 text-muted d-block">
+              {description}
+              {referencia ? ` | Ref: ${referencia}` : ''}
+            </span>
           </div>
         </div>
       );
@@ -81,6 +93,14 @@ const columns = [
     header: 'Action',
     cell: ({ row: { original } }) => (
       <>
+        <button
+          type="button"
+          className="btn btn-sm btn-soft-success me-1"
+          title="Sincronizar con WhatsApp"
+          onClick={() => onSyncProduct && onSyncProduct(original)}
+        >
+          <IconifyIcon icon="bxl:whatsapp" className="fs-18" />
+        </button>
         <Link
           to={`/catalogo/crear-producto?id=${original.id}`}
           className="btn btn-sm btn-soft-secondary me-1"
@@ -91,8 +111,8 @@ const columns = [
         <button
           type="button"
           className="btn btn-sm btn-soft-danger"
-          title="Eliminar Producto"
-          onClick={() => { }}
+          title="Eliminar de BD y WhatsApp"
+          onClick={() => onDeleteProduct && onDeleteProduct(original)}
         >
           <IconifyIcon icon="bx:trash" className="fs-18" />
         </button>
@@ -101,8 +121,10 @@ const columns = [
   },
 ];
 
-const CatalogoProductsTable = ({ products }) => {
+const CatalogoProductsTable = ({ products, onDeleteProduct, onSyncProduct }) => {
   const pageSizeList = [2, 5, 10, 20, 50];
+  const columns = useMemo(() => buildColumns(onDeleteProduct, onSyncProduct), [onDeleteProduct, onSyncProduct]);
+
   return (
     <ReactTable
       columns={columns}

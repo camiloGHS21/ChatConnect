@@ -6,6 +6,7 @@ export const getInitialProductState = (siguienteCodigo = '') => ({
   // SECCIÓN 1 — Información general (Código interno dinámico/limpio)
   codigo_interno: siguienteCodigo || '',
   nombre: 'Taladro Percutor Inalámbrico 20V MAX XR',
+  referencia: 'DW-DCD996B-2026',
   categoria: 'Herramientas Eléctricas',
   categoria_id: '1',
   subcategoria: 'Taladros y Perforación',

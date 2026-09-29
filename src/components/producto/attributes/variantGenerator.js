@@ -38,7 +38,16 @@ export const regenerateVariants = (assignedAttrs, attrsPool, formData) => {
         else if (comp.nombre === '42') safeCode = 'T42';
         else if (!safeCode) safeCode = (comp.nombre.replace(/[^a-zA-Z0-9]/g, '').slice(0, 4) || 'VAL').toUpperCase();
 
-        nextCombos.push([...existing, { attrNombre: attr.nombre, compNombre: comp.nombre, compCodigo: safeCode }]);
+        nextCombos.push([
+          ...existing,
+          {
+            atributoId: Number(attr.id_atributo || meta?.id_atributo || meta?.id),
+            componenteId: Number(comp.id_atributo_componente || comp.id),
+            attrNombre: attr.nombre,
+            compNombre: comp.nombre,
+            compCodigo: safeCode,
+          },
+        ]);
       });
     });
     combinations = nextCombos;
@@ -59,6 +68,7 @@ export const regenerateVariants = (assignedAttrs, attrsPool, formData) => {
       id: idx + 1,
       sku,
       combinacion: comboName,
+      componentes: combo,
       codigo_barras: matched?.codigo_barras || `770999${String(idx + 1).padStart(4, '0')}`,
       referencia: matched?.referencia || `VAR-${skuSuffix}`,
       precio: matched?.precio ?? basePrice,
