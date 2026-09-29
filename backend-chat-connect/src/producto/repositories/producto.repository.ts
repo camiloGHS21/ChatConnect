@@ -1302,7 +1302,7 @@ export class ProductoRepository {
       }
     }
 
-    // 2. Si la empresa tiene catálogo, eliminar también las variantes de Meta
+    // 2. Si la empresa tiene catálogo, eliminar también todas las variantes y productos asociados de Meta
     if (metaToken) {
       try {
         const canalRows = await this.dataSource.query(
@@ -1312,26 +1312,30 @@ export class ProductoRepository {
         const catalogId = canalRows[0]?.catalog_id;
         const retailerId = prod.codigo_interno || `PROD-${prod.id_producto}`;
         if (catalogId) {
-          // Eliminar producto principal por retailer_id si no se eliminó por fb_product_id
-          if (!deletedFromMeta && retailerId) {
-            await fetch(`https://graph.facebook.com/${apiVersion}/${catalogId}/products?retailer_id=${encodeURIComponent(retailerId)}`, {
-              method: 'DELETE',
-              headers: { Authorization: `Bearer ${metaToken}` },
-            });
-          }
-
-          // Eliminar cada una de las variantes del catálogo de Meta
           const varRows = await this.dataSource.query(
             `SELECT sku, referencia FROM public.producto_variante WHERE producto_id = $1;`,
             [productoId],
           );
+          const retailerIdsToDelete = new Set<string>();
+          if (retailerId) retailerIdsToDelete.add(retailerId);
           for (const v of varRows) {
             const vRetId = (v.sku || v.referencia || '').trim();
-            if (vRetId && vRetId !== retailerId) {
-              await fetch(`https://graph.facebook.com/${apiVersion}/${catalogId}/products?retailer_id=${encodeURIComponent(vRetId)}`, {
+            if (vRetId) retailerIdsToDelete.add(vRetId);
+          }
+
+          // Consultar productos del catálogo de Meta para obtener los FB IDs exactos y eliminarlos
+          const metaItemsRes = await fetch(`https://graph.facebook.com/${apiVersion}/${catalogId}/products?fields=id,retailer_id,item_group_id`, {
+            headers: { Authorization: `Bearer ${metaToken}` },
+          });
+          const metaItemsData: any = await metaItemsRes.json();
+          const metaItems = metaItemsData?.data || [];
+          for (const item of metaItems) {
+            if (retailerIdsToDelete.has(item.retailer_id) || item.item_group_id === retailerId || item.id === prod.fb_product_id) {
+              await fetch(`https://graph.facebook.com/${apiVersion}/${item.id}`, {
                 method: 'DELETE',
                 headers: { Authorization: `Bearer ${metaToken}` },
               });
+              this.logger.log(`✓ [MetaCatalog] Item ${item.id} (${item.retailer_id}) eliminado de Meta`);
             }
           }
         }
@@ -1516,49 +1520,7 @@ export class ProductoRepository {
         }
       }
 
-      // 1. Vincular Catálogo a la WABA
-      if (wabaId && catalogId) {
-        try {
-          const linkWabaRes = await fetch(`https://graph.facebook.com/${apiVersion}/${wabaId}/product_catalogs`, {
-            method: 'POST',
-            headers: {
-              Authorization: `Bearer ${metaToken}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ catalog_id: catalogId }),
-          });
-          const linkWabaData: any = await linkWabaRes.json();
-          if (linkWabaData.success || !linkWabaData.error) {
-            this.logger.log(`✓ [MetaCatalog] Catálogo ${catalogId} vinculado a WABA ${wabaId}`);
-          } else {
-            this.logger.warn(`[MetaCatalog] Respuesta al vincular catálogo con WABA: ${JSON.stringify(linkWabaData)}`);
-          }
-        } catch (wabaLinkErr: any) {
-          this.logger.warn(`[MetaCatalog] Error vinculando catálogo a WABA: ${wabaLinkErr.message}`);
-        }
-      }
-
-      // 2. Activar Tienda y Carrito en WhatsApp
-      if (phoneId) {
-        try {
-          await fetch(`https://graph.facebook.com/${apiVersion}/${phoneId}/whatsapp_commerce_settings`, {
-            method: 'POST',
-            headers: {
-              Authorization: `Bearer ${metaToken}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              is_cart_enabled: true,
-              is_catalog_visible: true,
-            }),
-          });
-          this.logger.log(`✓ [MetaCatalog] Tienda y carrito activados en WhatsApp phone_number_id ${phoneId}`);
-        } catch (phoneErr: any) {
-          this.logger.warn(`[MetaCatalog] Advertencia configurando WhatsApp Commerce: ${phoneErr.message}`);
-        }
-      }
-
-      // 3. Consultar datos completos del producto incluyendo categoría, subcategoría y referencias
+      // 1. Consultar datos completos del producto incluyendo categoría, subcategoría y referencias
       const prodRows = await this.dataSource.query(
         `SELECT
            p.id_producto,
@@ -1672,11 +1634,9 @@ export class ProductoRepository {
       const subcatNombre = (prod.subcategoria_nombre || '').trim();
       const taxonomyBreadcrumb = [catNombre, subcatNombre].filter(Boolean).join(' > ') || 'General';
 
-      // PRECIOS: En Meta Catalog 'price' = Costo Final con Impuestos, 'sale_price' = Precio Final de Venta
-      const costoFinalConImpuestos = Number(prod.costo_impuesto || prod.costo_base) || 0;
+      // PRECIOS: En Meta WhatsApp Catalog 'price' debe ser estrictamente el Precio Final de Venta
       const precioFinalDeVenta = Number(prod.precio_impuesto || prod.precio_base) || 0;
-      const priceInCents = Math.round(costoFinalConImpuestos * 100);
-      const salePriceInCents = Math.round(precioFinalDeVenta * 100);
+      const priceInCents = Math.round(precioFinalDeVenta * 100);
 
       // IMAGEN: Resolver a URL pública permanente accesible por el crawler de Meta
       const rawImageUrl = prod.imagen_url;
@@ -1709,154 +1669,158 @@ export class ProductoRepository {
 
       const mainColor = colorComps[0] || (colorComps.length > 0 ? colorComps.join(' / ') : undefined);
       const mainSize = sizeComps[0] || (sizeComps.length > 0 ? sizeComps.join(' / ') : undefined);
-
-      const metaPayload: any = {
-        retailer_id: retailerId,
-        item_group_id: itemGroupId,
-        title: (prod.nombre || 'Producto').substring(0, 100),
-        name: (prod.nombre || 'Producto').substring(0, 100),
-        description: fullDescription.substring(0, 5000),
-        availability: 'in stock',
-        inventory: Math.max(1, Number(prod.disponible) || 10),
-        condition: 'new',
-        price: priceInCents,
-        sale_price: salePriceInCents,
-        currency: 'COP',
-        image_url: imageUrl,
-        brand: prod.marca_nombre || 'Genérica',
-        category: subcatNombre || catNombre || 'General',
-        product_type: taxonomyBreadcrumb,
-        color: mainColor,
-        size: mainSize,
-        custom_label_0: catNombre.substring(0, 100),
-        custom_label_1: subcatNombre.substring(0, 100),
-        custom_label_2: refPrincipal.substring(0, 100),
-        custom_label_3: colorComps.join(', ').substring(0, 100) || undefined,
-        custom_label_4: sizeComps.join(', ').substring(0, 100) || undefined,
-        url: productWebUrl,
-      };
+      const productTitle = (prod.nombre || 'Producto').substring(0, 100);
 
       let fbProductId = prod.fb_product_id;
 
-      if (fbProductId) {
-        // Actualizar producto principal en Meta
-        this.logger.log(`[MetaCatalog] Actualizando producto ${prod.id_producto} (${fbProductId}) en Meta...`);
-        const updateRes = await fetch(`https://graph.facebook.com/${apiVersion}/${fbProductId}`, {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${metaToken}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(metaPayload),
-        });
-        const updateData: any = await updateRes.json();
-        if (!updateRes.ok || updateData.error) {
-          const errMsg = updateData.error?.message || JSON.stringify(updateData);
-          this.logger.warn(`[MetaCatalog] Advertencia actualizando en Meta: ${errMsg}`);
-        } else {
-          this.logger.log(`✓ [MetaCatalog] Producto ${productoId} actualizado en Meta con taxonomía ${taxonomyBreadcrumb}`);
-        }
-      } else {
-        // Subir nuevo producto a Meta
-        this.logger.log(`[MetaCatalog] Subiendo producto ${prod.id_producto} (${retailerId}) a catálogo ${catalogId}...`);
-        const prodRes = await fetch(`https://graph.facebook.com/${apiVersion}/${catalogId}/products`, {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${metaToken}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(metaPayload),
-        });
-
-        const prodData: any = await prodRes.json();
-        if (!prodRes.ok || !prodData.id) {
-          const errMsg = prodData.error?.message || JSON.stringify(prodData);
-          this.logger.error(`[MetaCatalog] Error de Meta al subir producto: ${errMsg}`);
-          await this.dataSource.query(
-            `UPDATE public.producto
-             SET meta_sync_status = 'error',
-                 meta_sync_error = $1
-             WHERE id_producto = $2;`,
-            [`Error Meta: ${errMsg}`, productoId],
-          );
-          return { success: false, error: errMsg };
-        }
-
-        fbProductId = prodData.id;
-        this.logger.log(`✓ [MetaCatalog] Producto ${productoId} subido a Meta exitosamente con FB ID: ${fbProductId}`);
+      // 4. Consultar productos existentes en Meta para mapear FB IDs por retailer_id
+      const existingMetaRes = await fetch(`https://graph.facebook.com/${apiVersion}/${catalogId}/products?fields=id,retailer_id,name,item_group_id`, {
+        headers: { Authorization: `Bearer ${metaToken}` },
+      });
+      const existingMetaData: any = await existingMetaRes.json();
+      const existingItems: any[] = existingMetaData?.data || [];
+      const existingByRetailer = new Map<string, string>();
+      for (const it of existingItems) {
+        if (it.retailer_id) existingByRetailer.set(it.retailer_id, it.id);
       }
 
-      // 7. Sincronizar variantes secundarias con Meta (cada variante con su Color y Voltaje / Talla)
       if (varRows && varRows.length > 0) {
+        // EL PRODUCTO TIENE VARIANTES:
+        // Cada variante se sube con el MISMO título ('name' y 'title') y el MISMO 'item_group_id',
+        // con su 'color', 'size' y 'price' correspondientes para que WhatsApp las agrupe bajo una sola ficha.
+        this.logger.log(`[MetaCatalog] Sincronizando ${varRows.length} variantes para producto ${productoId} ("${productTitle}")...`);
+
+        // Si existe un producto base huérfano con retailer_id que no corresponde a una variante activa, eliminarlo de Meta
+        const activeVarRetailerIds = new Set(varRows.map((v: any) => (v.sku || v.referencia || '').trim()).filter(Boolean));
+        for (const it of existingItems) {
+          if (it.retailer_id === retailerId && !activeVarRetailerIds.has(retailerId)) {
+            await fetch(`https://graph.facebook.com/${apiVersion}/${it.id}`, {
+              method: 'DELETE',
+              headers: { Authorization: `Bearer ${metaToken}` },
+            });
+            this.logger.log(`✓ [MetaCatalog] Producto base duplicado ${it.id} retirado de Meta`);
+          }
+        }
+
         for (let vi = 0; vi < varRows.length; vi++) {
           const v = varRows[vi];
           const vRetailerId = (v.sku || v.referencia || `${retailerId}-VAR-${v.id_producto_variante}`).trim();
 
-          // Subir si tiene un identificador distinto al producto principal
-          if (vRetailerId !== retailerId) {
-            let vColor = colorComps.find((c: string) =>
-              (v.componentes_nombres || '').toLowerCase().includes(c.toLowerCase()) ||
-              vRetailerId.toLowerCase().includes(c.toLowerCase().slice(0, 3))
-            );
-            if (!vColor && colorComps.length > 0) {
-              vColor = colorComps[vi % colorComps.length];
-            }
+          let vColor = colorComps.find((c: string) =>
+            (v.componentes_nombres || '').toLowerCase().includes(c.toLowerCase()) ||
+            vRetailerId.toLowerCase().includes(c.toLowerCase().slice(0, 3))
+          );
+          if (!vColor && colorComps.length > 0) {
+            vColor = colorComps[vi % colorComps.length];
+          }
 
-            let vSize = sizeComps.find((s: string) =>
-              (v.componentes_nombres || '').toLowerCase().includes(s.toLowerCase()) ||
-              vRetailerId.toLowerCase().includes(s.toLowerCase().replace(/[^a-z0-9]/g, ''))
-            );
-            if (!vSize && sizeComps.length > 0) {
-              vSize = sizeComps[vi % sizeComps.length];
-            }
+          let vSize = sizeComps.find((s: string) =>
+            (v.componentes_nombres || '').toLowerCase().includes(s.toLowerCase()) ||
+            vRetailerId.toLowerCase().includes(s.toLowerCase().replace(/[^a-z0-9]/g, ''))
+          );
+          if (!vSize && sizeComps.length > 0) {
+            vSize = sizeComps[vi % sizeComps.length];
+          }
 
-            const vSalePrice = Math.round(Number(v.precio || precioFinalDeVenta) * 100);
-            const varTitle = `${prod.nombre} (${[vColor, vSize].filter(Boolean).join(' ') || 'Variante'})`.substring(0, 100);
+          const vPrecio = Number(v.precio || precioFinalDeVenta);
+          const vPriceInCents = Math.round(vPrecio * 100);
 
-            const varPayload: any = {
-              retailer_id: vRetailerId,
-              item_group_id: itemGroupId,
-              title: varTitle,
-              name: varTitle,
-              description: `${fullDescription}\n\nVariante: ${vRetailerId}\nColor: ${vColor || 'Estándar'}\nVoltaje/Talla: ${vSize || 'Estándar'}`.substring(0, 5000),
-              availability: 'in stock',
-              inventory: 15,
-              condition: 'new',
-              price: priceInCents,
-              sale_price: vSalePrice,
-              currency: 'COP',
-              image_url: imageUrl,
-              brand: prod.marca_nombre || 'Genérica',
-              category: subcatNombre || catNombre || 'General',
-              product_type: taxonomyBreadcrumb,
-              color: vColor || undefined,
-              size: vSize || undefined,
-              custom_label_0: catNombre.substring(0, 100),
-              custom_label_1: subcatNombre.substring(0, 100),
-              custom_label_2: vRetailerId.substring(0, 100),
-              custom_label_3: (vColor || '').substring(0, 100) || undefined,
-              custom_label_4: (vSize || '').substring(0, 100) || undefined,
-              url: productWebUrl,
-            };
+          const varPayload: any = {
+            retailer_id: vRetailerId,
+            item_group_id: itemGroupId,
+            title: productTitle, // EXACTAMENTE el mismo título para agrupación nativa de variantes en WhatsApp
+            name: productTitle,
+            description: `${fullDescription}\n\nVariante: ${vRetailerId}\nColor: ${vColor || 'Estándar'}\nVoltaje/Talla: ${vSize || 'Estándar'}`.substring(0, 5000),
+            availability: 'in stock',
+            inventory: 15,
+            condition: 'new',
+            price: vPriceInCents,
+            sale_price: vPriceInCents,
+            currency: 'COP',
+            image_url: imageUrl,
+            brand: prod.marca_nombre || 'Genérica',
+            category: subcatNombre || catNombre || 'General',
+            product_type: taxonomyBreadcrumb,
+            color: vColor || undefined,
+            size: vSize || undefined,
+            custom_label_0: catNombre.substring(0, 100),
+            custom_label_1: subcatNombre.substring(0, 100),
+            custom_label_2: vRetailerId.substring(0, 100),
+            custom_label_3: (vColor || '').substring(0, 100) || undefined,
+            custom_label_4: (vSize || '').substring(0, 100) || undefined,
+            url: productWebUrl,
+          };
 
-            try {
-              const varRes = await fetch(`https://graph.facebook.com/${apiVersion}/${catalogId}/products`, {
-                method: 'POST',
-                headers: { Authorization: `Bearer ${metaToken}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify(varPayload),
-              });
-              const varData: any = await varRes.json();
-              if (varData.id) {
-                this.logger.log(`✓ [MetaCatalog] Variante "${vRetailerId}" creada/sincronizada en Meta con Color: "${vColor}", Tamaño/Voltaje: "${vSize}"`);
-              }
-            } catch (varErr: any) {
-              this.logger.warn(`[MetaCatalog] Advertencia subiendo variante ${vRetailerId}: ${varErr.message}`);
+          const existingVarId = existingByRetailer.get(vRetailerId);
+          if (existingVarId) {
+            await fetch(`https://graph.facebook.com/${apiVersion}/${existingVarId}`, {
+              method: 'POST',
+              headers: { Authorization: `Bearer ${metaToken}`, 'Content-Type': 'application/json' },
+              body: JSON.stringify(varPayload),
+            });
+            if (vi === 0) fbProductId = existingVarId;
+            this.logger.log(`✓ [MetaCatalog] Variante "${vRetailerId}" (${existingVarId}) actualizada con Precio de Venta COP ${vPrecio}`);
+          } else {
+            const createVarRes = await fetch(`https://graph.facebook.com/${apiVersion}/${catalogId}/products`, {
+              method: 'POST',
+              headers: { Authorization: `Bearer ${metaToken}`, 'Content-Type': 'application/json' },
+              body: JSON.stringify(varPayload),
+            });
+            const createVarData: any = await createVarRes.json();
+            if (createVarData?.id) {
+              if (vi === 0) fbProductId = createVarData.id;
+              this.logger.log(`✓ [MetaCatalog] Variante "${vRetailerId}" subida exitosamente con FB ID: ${createVarData.id}`);
             }
           }
         }
+      } else {
+        // PRODUCTO SIMPLE (Sin variantes):
+        const metaPayload: any = {
+          retailer_id: retailerId,
+          item_group_id: itemGroupId,
+          title: productTitle,
+          name: productTitle,
+          description: fullDescription.substring(0, 5000),
+          availability: 'in stock',
+          inventory: Math.max(1, Number(prod.disponible) || 10),
+          condition: 'new',
+          price: priceInCents,
+          sale_price: priceInCents,
+          currency: 'COP',
+          image_url: imageUrl,
+          brand: prod.marca_nombre || 'Genérica',
+          category: subcatNombre || catNombre || 'General',
+          product_type: taxonomyBreadcrumb,
+          color: mainColor,
+          size: mainSize,
+          custom_label_0: catNombre.substring(0, 100),
+          custom_label_1: subcatNombre.substring(0, 100),
+          custom_label_2: refPrincipal.substring(0, 100),
+          custom_label_3: colorComps.join(', ').substring(0, 100) || undefined,
+          custom_label_4: sizeComps.join(', ').substring(0, 100) || undefined,
+          url: productWebUrl,
+        };
+
+        if (fbProductId) {
+          await fetch(`https://graph.facebook.com/${apiVersion}/${fbProductId}`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${metaToken}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify(metaPayload),
+          });
+          this.logger.log(`✓ [MetaCatalog] Producto simple ${productoId} actualizado en Meta con Precio de Venta COP ${precioFinalDeVenta}`);
+        } else {
+          const prodRes = await fetch(`https://graph.facebook.com/${apiVersion}/${catalogId}/products`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${metaToken}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify(metaPayload),
+          });
+          const prodData: any = await prodRes.json();
+          if (prodData?.id) fbProductId = prodData.id;
+          this.logger.log(`✓ [MetaCatalog] Producto simple ${productoId} subido en Meta con FB ID: ${fbProductId}`);
+        }
       }
 
-      // 8. Asegurar colecciones en Meta para la categoría y la subcategoría (Product Sets de WhatsApp)
+      // 5. Asegurar colecciones en Meta para la categoría y la subcategoría (Product Sets de WhatsApp)
       if (catalogId) {
         try {
           const setsRes = await fetch(`https://graph.facebook.com/${apiVersion}/${catalogId}/product_sets?fields=id,name`, {
@@ -1890,6 +1854,38 @@ export class ProductoRepository {
           }
         } catch (setErr: any) {
           this.logger.warn(`[MetaCatalog] Advertencia gestionando colecciones: ${setErr.message}`);
+        }
+      }
+
+      // 6. ACTIVAR TIENDA Y CARRITO EN WHATSAPP (Se ejecuta DESPUÉS de subir/actualizar los productos)
+      // Esto asegura que Meta evalúe la tienda con productos reales (>0) y nunca la oculte o desvincule.
+      if (wabaId && catalogId) {
+        try {
+          await fetch(`https://graph.facebook.com/${apiVersion}/${wabaId}/product_catalogs`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${metaToken}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ catalog_id: catalogId }),
+          });
+          this.logger.log(`✓ [MetaCatalog] Catálogo ${catalogId} vinculado a WABA ${wabaId}`);
+        } catch (wabaLinkErr: any) {
+          this.logger.warn(`[MetaCatalog] Error vinculando catálogo a WABA: ${wabaLinkErr.message}`);
+        }
+      }
+
+      if (phoneId) {
+        try {
+          await fetch(`https://graph.facebook.com/${apiVersion}/${phoneId}/whatsapp_commerce_settings`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${metaToken}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              is_cart_enabled: true,
+              is_catalog_visible: true,
+              catalog_id: catalogId,
+            }),
+          });
+          this.logger.log(`✓ [MetaCatalog] Tienda y carrito activados en WhatsApp phone_number_id ${phoneId} con catalog_id ${catalogId}`);
+        } catch (phoneErr: any) {
+          this.logger.warn(`[MetaCatalog] Advertencia configurando WhatsApp Commerce: ${phoneErr.message}`);
         }
       }
 

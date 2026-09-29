@@ -7,7 +7,7 @@ import { currency } from '@/context/constants';
 import { getCalculatedPrice, resolveProductImageUrl } from '@/helpers/product';
 import { getStockStatus } from '@/utils/other';
 
-const buildColumns = (onDeleteProduct) => [
+const buildColumns = (onDeleteProduct, onSyncProduct) => [
   {
     header: 'Product Name',
     cell: ({
