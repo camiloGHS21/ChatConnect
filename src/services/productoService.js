@@ -117,10 +117,27 @@ export const productoService = {
   },
 
   /**
+   * Ejecuta el seed integral de ferretería: 48 productos con categorías,
+   * marcas, variantes, inventario, imágenes y SEO en PostgreSQL.
+   */
+  async seedFerreteria(empresaId = 1) {
+    const res = await HttpClient.post(`/productos/seed-ferreteria?empresa_id=${empresaId}`, {}, { timeout: 120000 });
+    return res.data;
+  },
+
+  /**
    * Elimina un producto de la base de datos y de WhatsApp / Meta Commerce Catalog.
    */
   async eliminarProducto(id, empresaId = 1) {
     const res = await HttpClient.delete(`/productos/${id}?empresa_id=${empresaId}`);
+    return res.data;
+  },
+
+  /**
+   * Elimina todos los productos de la empresa en PostgreSQL y en el catálogo de WhatsApp.
+   */
+  async eliminarTodosLosProductos(empresaId = 1) {
+    const res = await HttpClient.delete(`/productos/todos?empresa_id=${empresaId}`, { timeout: 120000 });
     return res.data;
   },
 

@@ -1,5 +1,5 @@
 import IconifyIcon from '@/components/wrappers/IconifyIcon';
-import { Col, Row, Button, Badge, Card } from 'react-bootstrap';
+import { Col, Row, Button, Badge, Card, Alert } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 
 const ProductSubmittedForm = ({ productData, onCreateAnother, isEditing }) => {
@@ -13,18 +13,37 @@ const ProductSubmittedForm = ({ productData, onCreateAnother, isEditing }) => {
           <h3 className="mt-0 fw-bold text-dark">
             {isEditing ? '¡Producto Actualizado Exitosamente!' : '¡Producto Creado Exitosamente!'}
           </h3>
-          <p className="mb-4 text-muted fs-14">
+          <p className="mb-3 text-muted fs-14">
             {isEditing
-              ? 'Los cambios han sido guardados en PostgreSQL y actualizados en el catálogo de WhatsApp Meta (solo los campos modificados).'
-              : 'El producto ha sido registrado exitosamente y está listo para comercializarse en la tienda y canales.'}
+              ? 'Los cambios han sido guardados en PostgreSQL y enviados al catálogo de WhatsApp (Meta).'
+              : 'El producto ha sido registrado exitosamente en PostgreSQL y enviado al catálogo de WhatsApp.'}
           </p>
+
+          {/* Banner de Transparencia y Experiencia de Usuario WhatsApp */}
+          <Alert variant="info" className="text-start border-info-subtle bg-info-subtle p-3 mb-4 rounded-3">
+            <div className="d-flex align-items-start gap-2">
+              <IconifyIcon icon="bxl:whatsapp" className="fs-24 text-success flex-shrink-0 mt-1" />
+              <div>
+                <h6 className="fw-bold text-dark mb-1 d-flex align-items-center gap-2">
+                  <span>Enviado al Catálogo de WhatsApp</span>
+                  <Badge bg="success" className="fs-11">Sincronizado</Badge>
+                </h6>
+                <p className="fs-13 text-secondary mb-2">
+                  Meta valida automáticamente las políticas de comercio e imágenes. Este proceso suele demorar entre <strong>2 y 10 minutos</strong>.
+                </p>
+                <div className="p-2 bg-white rounded border border-light-subtle fs-12 text-secondary">
+                  💡 <strong>¿No lo ves en tu teléfono?</strong> WhatsApp móvil guarda el catálogo anterior en caché. <strong>Cierra la app de WhatsApp</strong> (de apps recientes) y ábrela de nuevo para actualizarlo.
+                </div>
+              </div>
+            </div>
+          </Alert>
 
           {productData && (
             <Card className="border shadow-none bg-light text-start mb-4">
               <Card.Body className="p-3">
                 <Row className="g-2 fs-13">
                   <Col sm={6}>
-                    <span className="text-muted">Código Interno:</span>{' '}
+                    <span className="text-muted">Código:</span>{' '}
                     <strong className="font-monospace text-dark">{productData.codigo_interno || 'PRD-0001'}</strong>
                   </Col>
                   <Col sm={6}>
@@ -32,12 +51,12 @@ const ProductSubmittedForm = ({ productData, onCreateAnother, isEditing }) => {
                     <strong className="text-dark">{productData.nombre || 'Producto'}</strong>
                   </Col>
                   <Col sm={6}>
-                    <span className="text-muted">Precio con Impuesto:</span>{' '}
+                    <span className="text-muted">Precio:</span>{' '}
                     <strong className="text-success">${Number(productData.precio_impuesto || 0).toLocaleString('es-CO')}</strong>
                   </Col>
                   <Col sm={6}>
-                    <span className="text-muted">Estado:</span>{' '}
-                    <Badge bg="success" className="px-2">{productData.estado_producto || 'activo'}</Badge>
+                    <span className="text-muted">WhatsApp Meta:</span>{' '}
+                    <Badge bg="success" className="px-2">Enviado a Meta</Badge>
                   </Col>
                 </Row>
               </Card.Body>

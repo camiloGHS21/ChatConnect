@@ -6,6 +6,7 @@ import IconifyIcon from '@/components/wrappers/IconifyIcon';
 import { currency } from '@/context/constants';
 import { getCalculatedPrice, resolveProductImageUrl } from '@/helpers/product';
 import { getStockStatus } from '@/utils/other';
+import WhatsAppStatusBadge from './WhatsAppStatusBadge';
 
 const buildColumns = (onDeleteProduct, onSyncProduct) => [
   {
@@ -17,7 +18,6 @@ const buildColumns = (onDeleteProduct, onSyncProduct) => [
     }) => {
       const rawSrc = Array.isArray(images) && images.length > 0 ? images[0] : null;
       const imgSrc = resolveProductImageUrl(rawSrc);
-      const isSyncedWhatsApp = !!fb_product_id || meta_sync_status === 'sincronizado';
 
       return (
         <div className="d-flex align-items-center">
@@ -44,12 +44,7 @@ const buildColumns = (onDeleteProduct, onSyncProduct) => [
               <Link to={`/catalogo/crear-producto?id=${id}`} className="text-reset">
                 {name}
               </Link>
-              {isSyncedWhatsApp && (
-                <span className="badge bg-success-subtle text-success fs-10" title="Sincronizado con WhatsApp Catalog">
-                  <IconifyIcon icon="bxl:whatsapp" className="me-1" />
-                  WhatsApp
-                </span>
-              )}
+              <WhatsAppStatusBadge status={meta_sync_status} fbId={fb_product_id} />
             </h5>
             <span className="fs-13 text-muted d-block">
               {description}

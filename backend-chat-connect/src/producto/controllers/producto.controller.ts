@@ -26,6 +26,13 @@ export class ProductoController {
     return await this.productoRepo.getSiguienteCodigo(id);
   }
 
+  @Post('seed-ferreteria')
+  @HttpCode(HttpStatus.OK)
+  async seedFerreteria(@Query('empresa_id') empresaId?: string) {
+    const id = empresaId ? parseInt(empresaId, 10) : 1;
+    return await this.productoRepo.seedFerreteria(id);
+  }
+
   @Post()
   @HttpCode(HttpStatus.CREATED)
   async crearProducto(@Body() dto: CreateProductoDto, @Query('empresa_id') empresaId?: string) {
@@ -129,6 +136,20 @@ export class ProductoController {
   ) {
     const empId = dto.empresa_id || (empresaId ? parseInt(empresaId, 10) : 1);
     return await this.productoRepo.actualizarProducto(parseInt(id, 10), dto, empId);
+  }
+
+  @Delete('todos')
+  @HttpCode(HttpStatus.OK)
+  async eliminarTodos(@Query('empresa_id') empresaId?: string) {
+    const empId = empresaId ? parseInt(empresaId, 10) : 1;
+    return await this.productoRepo.eliminarTodosLosProductos(empId);
+  }
+
+  @Post('eliminar-todos')
+  @HttpCode(HttpStatus.OK)
+  async postEliminarTodos(@Query('empresa_id') empresaId?: string) {
+    const empId = empresaId ? parseInt(empresaId, 10) : 1;
+    return await this.productoRepo.eliminarTodosLosProductos(empId);
   }
 
   @Delete(':id')

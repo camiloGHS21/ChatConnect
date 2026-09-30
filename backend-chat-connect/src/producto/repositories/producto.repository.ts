@@ -772,11 +772,13 @@ export class ProductoRepository {
 
     const trimmed = urlOPath.trim();
 
-    // 1. Si ya es una URL pública HTTPS válida (que no sea localhost ni Unsplash genérico)
+    // 1. Si ya es una URL pública HTTPS válida (que no sea localhost, dummy example.com ni Unsplash genérico)
     if (
       /^https?:\/\//i.test(trimmed) &&
       !trimmed.includes('localhost') &&
       !trimmed.includes('127.0.0.1') &&
+      !trimmed.includes('example.com') &&
+      !trimmed.includes('cdn.example.com') &&
       !trimmed.includes('photo-1581235720704') &&
       !trimmed.includes('photo-1533473359331')
     ) {
@@ -2545,6 +2547,118 @@ export class ProductoRepository {
   }
 
   /**
+   * Elimina TODOS los productos de la empresa tanto en PostgreSQL como en el catálogo de Meta WhatsApp.
+   */
+  async eliminarTodosLosProductos(empresaId = 1): Promise<{ ok: boolean; eliminados: number; meta_eliminados: number; message: string }> {
+    this.logger.log(`[EliminarTodos] Iniciando vaciado total de productos para empresa ${empresaId}...`);
+
+    let metaEliminados = 0;
+    try {
+      const metaToken =
+        process.env.META_PERMANENT_TOKEN ||
+        process.env.META_SYSTEM_TOKEN ||
+        process.env.META_ACCESS_TOKEN;
+      const apiVersion = process.env.META_API_VERSION || 'v21.0';
+
+      const canalRows = await this.dataSource.query(
+        `SELECT catalog_id FROM public.canal WHERE empresa_id = $1 AND tipo = 'whatsapp' LIMIT 1;`,
+        [empresaId],
+      );
+      const catalogId = canalRows[0]?.catalog_id || process.env.META_CATALOG_ID || '912267985057130';
+
+      // 1. Eliminar todos los productos y grupos del catálogo de Meta WhatsApp
+      if (metaToken && catalogId) {
+        this.logger.log(`[EliminarTodos] Consultando productos y grupos en catálogo Meta ${catalogId}...`);
+        const [metaProdsRes, metaGroupsRes] = await Promise.all([
+          fetch(`https://graph.facebook.com/${apiVersion}/${catalogId}/products?limit=1000&fields=id`, {
+            headers: { Authorization: `Bearer ${metaToken}` },
+          }),
+          fetch(`https://graph.facebook.com/${apiVersion}/${catalogId}/product_groups?limit=1000&fields=id`, {
+            headers: { Authorization: `Bearer ${metaToken}` },
+          }),
+        ]);
+
+        const metaProdsData: any = await metaProdsRes.json();
+        const metaGroupsData: any = await metaGroupsRes.json();
+        const items: any[] = metaProdsData?.data || [];
+        const groups: any[] = metaGroupsData?.data || [];
+
+        this.logger.log(`[EliminarTodos] Eliminando ${items.length} productos y ${groups.length} grupos de Meta WhatsApp...`);
+
+        // Eliminar productos en bloques concurrentes de 10
+        const chunkSize = 10;
+        for (let i = 0; i < items.length; i += chunkSize) {
+          const chunk = items.slice(i, i + chunkSize);
+          await Promise.all(
+            chunk.map(it =>
+              fetch(`https://graph.facebook.com/${apiVersion}/${it.id}`, {
+                method: 'DELETE',
+                headers: { Authorization: `Bearer ${metaToken}` },
+              }).catch(() => null)
+            )
+          );
+          metaEliminados += chunk.length;
+        }
+
+        // Eliminar grupos de variantes
+        for (let i = 0; i < groups.length; i += chunkSize) {
+          const chunk = groups.slice(i, i + chunkSize);
+          await Promise.all(
+            chunk.map(g =>
+              fetch(`https://graph.facebook.com/${apiVersion}/${g.id}`, {
+                method: 'DELETE',
+                headers: { Authorization: `Bearer ${metaToken}` },
+              }).catch(() => null)
+            )
+          );
+        }
+
+        // Refrescar caché de WhatsApp Commerce
+        const phoneId = process.env.META_PHONE_NUMBER_ID || '1305340429332213';
+        await fetch(`https://graph.facebook.com/${apiVersion}/${phoneId}/whatsapp_commerce_settings`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${metaToken}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ is_catalog_visible: true, is_cart_enabled: true }),
+        }).catch(() => null);
+
+        this.logger.log(`✓ [EliminarTodos] Catálogo de Meta vaciado exitosamente (${metaEliminados} items eliminados)`);
+      }
+    } catch (metaErr: any) {
+      this.logger.error(`[EliminarTodos] Error vaciando catálogo en Meta: ${metaErr.message}`);
+    }
+
+    // 2. Eliminar en PostgreSQL: todas las tablas hijas y productos de la empresa
+    await this.dataSource.query(`DELETE FROM public.variante_componente WHERE producto_variante_id IN (SELECT id_producto_variante FROM public.producto_variante WHERE producto_id IN (SELECT id_producto FROM public.producto WHERE empresa_id = $1));`, [empresaId]).catch(() => null);
+    await this.dataSource.query(`DELETE FROM public.producto_variante WHERE producto_id IN (SELECT id_producto FROM public.producto WHERE empresa_id = $1);`, [empresaId]).catch(() => null);
+    await this.dataSource.query(`DELETE FROM public.producto_atributo_componente WHERE producto_atributo_id IN (SELECT id_producto_atributo FROM public.producto_atributo WHERE producto_id IN (SELECT id_producto FROM public.producto WHERE empresa_id = $1));`, [empresaId]).catch(() => null);
+    await this.dataSource.query(`DELETE FROM public.producto_atributo WHERE producto_id IN (SELECT id_producto FROM public.producto WHERE empresa_id = $1);`, [empresaId]).catch(() => null);
+    await this.dataSource.query(`DELETE FROM public.producto_imagen WHERE producto_id IN (SELECT id_producto FROM public.producto WHERE empresa_id = $1);`, [empresaId]).catch(() => null);
+    await this.dataSource.query(`DELETE FROM public.producto_impuesto_compra WHERE producto_id IN (SELECT id_producto FROM public.producto WHERE empresa_id = $1);`, [empresaId]).catch(() => null);
+    await this.dataSource.query(`DELETE FROM public.producto_impuesto_venta WHERE producto_id IN (SELECT id_producto FROM public.producto WHERE empresa_id = $1);`, [empresaId]).catch(() => null);
+    await this.dataSource.query(`DELETE FROM public.producto_lista_precio WHERE producto_id IN (SELECT id_producto FROM public.producto WHERE empresa_id = $1);`, [empresaId]).catch(() => null);
+    await this.dataSource.query(`DELETE FROM public.producto_retencion WHERE producto_id IN (SELECT id_producto FROM public.producto WHERE empresa_id = $1);`, [empresaId]).catch(() => null);
+    await this.dataSource.query(`DELETE FROM public.producto_proveedor WHERE producto_id IN (SELECT id_producto FROM public.producto WHERE empresa_id = $1);`, [empresaId]).catch(() => null);
+    await this.dataSource.query(`DELETE FROM public.producto_seo_ia WHERE producto_id IN (SELECT id_producto FROM public.producto WHERE empresa_id = $1);`, [empresaId]).catch(() => null);
+    await this.dataSource.query(`DELETE FROM public.producto_codigo_barras WHERE producto_id IN (SELECT id_producto FROM public.producto WHERE empresa_id = $1);`, [empresaId]).catch(() => null);
+    await this.dataSource.query(`DELETE FROM public.carrito_detalle WHERE producto_id IN (SELECT id_producto FROM public.producto WHERE empresa_id = $1);`, [empresaId]).catch(() => null);
+    await this.dataSource.query(`DELETE FROM public.inventario WHERE empresa_id = $1;`, [empresaId]).catch(() => null);
+    await this.dataSource.query(`DELETE FROM public.precio WHERE empresa_id = $1;`, [empresaId]).catch(() => null);
+    await this.dataSource.query(`DELETE FROM public.producto_referencia WHERE producto_id IN (SELECT id_producto FROM public.producto WHERE empresa_id = $1);`, [empresaId]).catch(() => null);
+
+    const deleteRes = await this.dataSource.query(`DELETE FROM public.producto WHERE empresa_id = $1 RETURNING id_producto;`, [empresaId]);
+    const totalEliminados = deleteRes.length;
+
+    this.logger.log(`✓ [EliminarTodos] ${totalEliminados} productos eliminados de PostgreSQL`);
+
+    return {
+      ok: true,
+      eliminados: totalEliminados,
+      meta_eliminados: metaEliminados,
+      message: `Se eliminaron ${totalEliminados} productos de la base de datos y ${metaEliminados} del catálogo de WhatsApp.`,
+    };
+  }
+
+  /**
    * ============================================================================
    * SINCRONIZACIÓN AUTOMÁTICA CON META COMMERCE CATALOG (Facebook / WhatsApp)
    * ============================================================================
@@ -2555,13 +2669,28 @@ export class ProductoRepository {
    *    categoría, subcategoría (product_type/custom labels) y referencia principal (retailer_id).
    * 4. Registra trazabilidad completa en public.producto (fb_product_id, estado, errores).
    */
-  async sincronizarConMetaCatalog(productoId: number, empresaId = 1) {
+  async sincronizarConMetaCatalog(
+    productoId: number,
+    empresaId = 1,
+    cachedContext?: {
+      metaToken?: string;
+      businessId?: string;
+      apiVersion?: string;
+      catalogId?: string;
+      wabaId?: string;
+      phoneId?: string;
+      existingByRetailer?: Map<string, string>;
+      existingGroupByRetailer?: Map<string, string>;
+      skipPostOperations?: boolean;
+    },
+  ) {
     const metaToken =
+      cachedContext?.metaToken ||
       process.env.META_PERMANENT_TOKEN ||
       process.env.META_SYSTEM_TOKEN ||
       process.env.META_ACCESS_TOKEN;
-    const businessId = process.env.META_BUSINESS_ID;
-    const apiVersion = process.env.META_API_VERSION || 'v21.0';
+    const businessId = cachedContext?.businessId || process.env.META_BUSINESS_ID;
+    const apiVersion = cachedContext?.apiVersion || process.env.META_API_VERSION || 'v21.0';
 
     if (!metaToken || !businessId) {
       await this.dataSource.query(
@@ -2576,101 +2705,107 @@ export class ProductoRepository {
     }
 
     try {
-      // 1. Obtener o crear el canal para esta empresa
-      const canalRows = await this.dataSource.query(
-        `SELECT id_canal, phone_number, phone_number_id, waba_id, catalog_id, configuracion
-         FROM public.canal
-         WHERE empresa_id = $1 AND tipo = 'whatsapp'
-         ORDER BY id_canal ASC
-         LIMIT 1;`,
-        [empresaId],
-      );
+      let catalogId = cachedContext?.catalogId;
+      let wabaId = cachedContext?.wabaId;
+      let phoneId = cachedContext?.phoneId;
 
-      let canal = canalRows[0];
-      if (!canal) {
-        // Auto-crear el canal por defecto para la empresa si aún no existe
-        const empRows = await this.dataSource.query(
-          `SELECT nombre_comercial, whatsapp FROM public.empresa WHERE id_empresa = $1 LIMIT 1;`,
-          [empresaId],
-        );
-        const emp = empRows[0];
-        const newCanal = await this.dataSource.query(
-          `INSERT INTO public.canal (empresa_id, tipo, proveedor, phone_number, estado, configuracion)
-           VALUES ($1, 'whatsapp', 'meta', $2, 'activo', '{}')
-           RETURNING id_canal, phone_number, phone_number_id, waba_id, catalog_id, configuracion;`,
-          [empresaId, emp?.whatsapp || null],
-        );
-        canal = newCanal[0];
-      }
-
-      let catalogId = canal.catalog_id;
-
-      // 2. Si la empresa aún no tiene catálogo en Meta, crearlo automáticamente por API
       if (!catalogId) {
-        const empRows = await this.dataSource.query(
-          `SELECT nombre_comercial FROM public.empresa WHERE id_empresa = $1 LIMIT 1;`,
+        // 1. Obtener o crear el canal para esta empresa
+        const canalRows = await this.dataSource.query(
+          `SELECT id_canal, phone_number, phone_number_id, waba_id, catalog_id, configuracion
+           FROM public.canal
+           WHERE empresa_id = $1 AND tipo = 'whatsapp'
+           ORDER BY id_canal ASC
+           LIMIT 1;`,
           [empresaId],
         );
-        const catalogName = `Catálogo - ${empRows[0]?.nombre_comercial || `Empresa ${empresaId}`}`;
 
-        this.logger.log(`[MetaCatalog] Creando catálogo en Meta para empresa ${empresaId}: "${catalogName}"...`);
-        const catRes = await fetch(`https://graph.facebook.com/${apiVersion}/${businessId}/owned_product_catalogs`, {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${metaToken}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ name: catalogName }),
-        });
-
-        const catData: any = await catRes.json();
-        if (!catRes.ok || !catData.id) {
-          const errMsg = catData.error?.message || JSON.stringify(catData);
-          this.logger.error(`[MetaCatalog] Error al crear catálogo en Meta: ${errMsg}`);
-          await this.dataSource.query(
-            `UPDATE public.producto
-             SET meta_sync_status = 'error',
-                 meta_sync_error = $1
-             WHERE id_producto = $2;`,
-            [`Error al crear catálogo en Meta: ${errMsg}`, productoId],
+        let canal = canalRows[0];
+        if (!canal) {
+          // Auto-crear el canal por defecto para la empresa si aún no existe
+          const empRows = await this.dataSource.query(
+            `SELECT nombre_comercial, whatsapp FROM public.empresa WHERE id_empresa = $1 LIMIT 1;`,
+            [empresaId],
           );
-          return { success: false, error: errMsg };
+          const emp = empRows[0];
+          const newCanal = await this.dataSource.query(
+            `INSERT INTO public.canal (empresa_id, tipo, proveedor, phone_number, estado, configuracion)
+             VALUES ($1, 'whatsapp', 'meta', $2, 'activo', '{}')
+             RETURNING id_canal, phone_number, phone_number_id, waba_id, catalog_id, configuracion;`,
+            [empresaId, emp?.whatsapp || null],
+          );
+          canal = newCanal[0];
         }
 
-        catalogId = catData.id;
-        this.logger.log(`✓ [MetaCatalog] Catálogo creado en Meta exitosamente con ID: ${catalogId}`);
+        catalogId = canal.catalog_id;
 
-        await this.dataSource.query(
-          `UPDATE public.canal SET catalog_id = $1, updated_at = NOW() WHERE id_canal = $2;`,
-          [catalogId, canal.id_canal],
-        );
-      }
+        // 2. Si la empresa aún no tiene catálogo en Meta, crearlo automáticamente por API
+        if (!catalogId) {
+          const empRows = await this.dataSource.query(
+            `SELECT nombre_comercial FROM public.empresa WHERE id_empresa = $1 LIMIT 1;`,
+            [empresaId],
+          );
+          const catalogName = `Catálogo - ${empRows[0]?.nombre_comercial || `Empresa ${empresaId}`}`;
 
-      // Asegurar vinculación del Catálogo con WABA y WhatsApp Commerce
-      let wabaId = canal.waba_id || canal.configuracion?.waba_id || process.env.META_WABA_ID;
-      const phoneId = canal.phone_number_id || canal.configuracion?.phone_number_id || process.env.META_PHONE_NUMBER_ID;
-
-      // Acelerar activación de WhatsApp Commerce inmediatamente al inicio
-      if (phoneId && catalogId) {
-        this.activarComercioWhatsApp(phoneId, catalogId, metaToken, apiVersion, wabaId);
-      }
-
-      if (!wabaId && businessId) {
-        try {
-          const wabaRes = await fetch(`https://graph.facebook.com/${apiVersion}/${businessId}/owned_whatsapp_business_accounts`, {
-            headers: { Authorization: `Bearer ${metaToken}` },
+          this.logger.log(`[MetaCatalog] Creando catálogo en Meta para empresa ${empresaId}: "${catalogName}"...`);
+          const catRes = await fetch(`https://graph.facebook.com/${apiVersion}/${businessId}/owned_product_catalogs`, {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${metaToken}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ name: catalogName }),
           });
-          const wabaData: any = await wabaRes.json();
-          if (wabaData?.data && wabaData.data.length > 0) {
-            wabaId = wabaData.data[0].id;
+
+          const catData: any = await catRes.json();
+          if (!catRes.ok || !catData.id) {
+            const errMsg = catData.error?.message || JSON.stringify(catData);
+            this.logger.error(`[MetaCatalog] Error al crear catálogo en Meta: ${errMsg}`);
             await this.dataSource.query(
-              `UPDATE public.canal SET waba_id = $1, updated_at = NOW() WHERE id_canal = $2;`,
-              [wabaId, canal.id_canal],
+              `UPDATE public.producto
+               SET meta_sync_status = 'error',
+                   meta_sync_error = $1
+               WHERE id_producto = $2;`,
+              [`Error al crear catálogo en Meta: ${errMsg}`, productoId],
             );
-            this.logger.log(`✓ [MetaCatalog] WABA detectada y asignada automáticamente: ${wabaId}`);
+            return { success: false, error: errMsg };
           }
-        } catch (wabaErr: any) {
-          this.logger.warn(`[MetaCatalog] No se pudo auto-detectar WABA: ${wabaErr.message}`);
+
+          catalogId = catData.id;
+          this.logger.log(`✓ [MetaCatalog] Catálogo creado en Meta exitosamente con ID: ${catalogId}`);
+
+          await this.dataSource.query(
+            `UPDATE public.canal SET catalog_id = $1, updated_at = NOW() WHERE id_canal = $2;`,
+            [catalogId, canal.id_canal],
+          );
+        }
+
+        // Asegurar vinculación del Catálogo con WABA y WhatsApp Commerce
+        wabaId = canal.waba_id || canal.configuracion?.waba_id || process.env.META_WABA_ID;
+        phoneId = canal.phone_number_id || canal.configuracion?.phone_number_id || process.env.META_PHONE_NUMBER_ID;
+
+        if (!wabaId && businessId) {
+          try {
+            const wabaRes = await fetch(`https://graph.facebook.com/${apiVersion}/${businessId}/owned_whatsapp_business_accounts`, {
+              headers: { Authorization: `Bearer ${metaToken}` },
+            });
+            const wabaData: any = await wabaRes.json();
+            if (wabaData?.data && wabaData.data.length > 0) {
+              wabaId = wabaData.data[0].id;
+              await this.dataSource.query(
+                `UPDATE public.canal SET waba_id = $1, updated_at = NOW() WHERE id_canal = $2;`,
+                [wabaId, canal.id_canal],
+              );
+              this.logger.log(`✓ [MetaCatalog] WABA detectada y asignada automáticamente: ${wabaId}`);
+            }
+          } catch (wabaErr: any) {
+            this.logger.warn(`[MetaCatalog] No se pudo auto-detectar WABA: ${wabaErr.message}`);
+          }
+        }
+
+        // Acelerar activación de WhatsApp Commerce inmediatamente al inicio
+        if (phoneId && catalogId && !cachedContext?.skipPostOperations) {
+          this.activarComercioWhatsApp(phoneId, catalogId, metaToken, apiVersion, wabaId);
         }
       }
 
@@ -2815,11 +2950,44 @@ export class ProductoRepository {
         );
       }
 
-      const publicBaseUrl = process.env.PUBLIC_APP_URL || 'https://chatconnect.app';
-      const productWebUrl = `${publicBaseUrl}/productos/${prod.id_producto}`;
+      // Sanitización profunda para el robot y políticas de comercio de Meta (WhatsApp)
+      const sanitizeMetaText = (txt: string, isTitle: boolean = false): string => {
+        if (!txt) return '';
+        let clean = txt
+          // 1. Eliminar URLs, dominios y enlaces de WhatsApp
+          .replace(/https?:\/\/\S+/gi, '')
+          .replace(/\b(www\.[a-z0-9.-]+\.[a-z]{2,})/gi, '')
+          .replace(/wa\.me\/\S+/gi, '')
+          // 2. Eliminar números de teléfono y correos que activan filtros de contacto en catálogo
+          .replace(/[\w.-]+@[\w.-]+\.[a-zA-Z]{2,}/g, '')
+          // 3. Neutralizar términos de alto riesgo comercial (falsificaciones y marcas)
+          .replace(/\b(r[eé]plica|copia\s+exacta|imitaci[oó]n|clon|falsificaci[oó]n)\b/gi, 'Compatible con')
+          // 4. Neutralizar términos químicos / tóxicos en ferretería para evitar falsos positivos
+          .replace(/\b[aá]cido\s+muri[aá]tico\b/gi, 'Limpiador Desincrustante')
+          .replace(/\bveneno(\s+para\s+ratas)?\b/gi, 'Cebo de Control')
+          .replace(/\bpesticida|plaguicida\b/gi, 'Protector de Cultivo')
+          .replace(/\bp[oó]lvora\b/gi, 'Material Propulsor')
+          .replace(/\bfulminante\b/gi, 'Dispositivo de Fijación')
+          .replace(/\b(droga|estupefaciente|narc[oó]tico|marihuana|cannabis|cigarrillo|vapeador|vape)\b/gi, '')
+          // 5. Limpieza de espaciado y puntuación repetitiva
+          .replace(/[!¡?¿$]{2,}/g, '!')
+          .replace(/[ \t]+/g, ' ')
+          .trim();
 
-      // Formatear descripción detallada para WhatsApp Catalog
-      let descBase = (prod.descripcion_corta || prod.descripcion_larga || prod.nombre || '').trim();
+        // 6. Si es título y está en MAYÚSCULAS sostenidas, convertir a formato estándar Capitalizado
+        if (isTitle) {
+          const lettersOnly = clean.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ]/g, '');
+          if (lettersOnly.length > 5 && lettersOnly === lettersOnly.toUpperCase()) {
+            clean = clean.toLowerCase().replace(/(^|\s)\S/g, (l) => l.toUpperCase());
+          }
+          return clean.substring(0, 100);
+        }
+
+        return clean.substring(0, 5000);
+      };
+
+      // Formatear descripción detallada para WhatsApp Catalog (estrictamente limpia para Meta)
+      let descBase = sanitizeMetaText(prod.descripcion_corta || prod.descripcion_larga || prod.nombre || '');
       const detailsList: string[] = [];
       if (refPrincipal) detailsList.push(`🔖 Referencia: ${refPrincipal}`);
       if (catNombre) detailsList.push(`🏷️ Categoría: ${catNombre}`);
@@ -2835,39 +3003,45 @@ export class ProductoRepository {
         }
       }
 
-      if (prod.ficha_tecnica) detailsList.push(`\n📋 Ficha Técnica:\n${prod.ficha_tecnica}`);
+      if (prod.ficha_tecnica) detailsList.push(`\n📋 Ficha Técnica:\n${sanitizeMetaText(prod.ficha_tecnica)}`);
 
       let fullDescription = descBase;
       if (detailsList.length > 0) {
         fullDescription = `${descBase}\n\n${detailsList.join('\n')}`.trim();
       }
 
-      const productTitle = (prod.nombre || 'Producto').substring(0, 100);
+      const productTitle = sanitizeMetaText(prod.nombre || 'Producto', true);
 
       let fbProductId = prod.fb_product_id;
 
       // 4. Consultar productos y grupos existentes en Meta en paralelo
-      const [existingMetaRes, existingGroupsRes] = await Promise.all([
-        fetch(`https://graph.facebook.com/${apiVersion}/${catalogId}/products?fields=id,retailer_id,name,item_group_id`, {
-          headers: { Authorization: `Bearer ${metaToken}` },
-        }),
-        fetch(`https://graph.facebook.com/${apiVersion}/${catalogId}/product_groups?fields=id,retailer_id`, {
-          headers: { Authorization: `Bearer ${metaToken}` },
-        }),
-      ]);
+      let existingByRetailer = cachedContext?.existingByRetailer;
+      let existingGroupByRetailer = cachedContext?.existingGroupByRetailer;
+      let existingItems: any[] = [];
 
-      const existingMetaData: any = await existingMetaRes.json();
-      const existingItems: any[] = existingMetaData?.data || [];
-      const existingByRetailer = new Map<string, string>();
-      for (const it of existingItems) {
-        if (it.retailer_id) existingByRetailer.set(it.retailer_id, it.id);
-      }
+      if (!existingByRetailer || !existingGroupByRetailer) {
+        const [existingMetaRes, existingGroupsRes] = await Promise.all([
+          fetch(`https://graph.facebook.com/${apiVersion}/${catalogId}/products?limit=1000&fields=id,retailer_id,name,item_group_id`, {
+            headers: { Authorization: `Bearer ${metaToken}` },
+          }),
+          fetch(`https://graph.facebook.com/${apiVersion}/${catalogId}/product_groups?limit=1000&fields=id,retailer_id`, {
+            headers: { Authorization: `Bearer ${metaToken}` },
+          }),
+        ]);
 
-      const existingGroupsData: any = await existingGroupsRes.json();
-      const existingGroups: any[] = existingGroupsData?.data || [];
-      const existingGroupByRetailer = new Map<string, string>();
-      for (const g of existingGroups) {
-        if (g.retailer_id) existingGroupByRetailer.set(g.retailer_id, g.id);
+        const existingMetaData: any = await existingMetaRes.json();
+        existingItems = existingMetaData?.data || [];
+        existingByRetailer = new Map<string, string>();
+        for (const it of existingItems) {
+          if (it.retailer_id) existingByRetailer.set(it.retailer_id, it.id);
+        }
+
+        const existingGroupsData: any = await existingGroupsRes.json();
+        const existingGroups: any[] = existingGroupsData?.data || [];
+        existingGroupByRetailer = new Map<string, string>();
+        for (const g of existingGroups) {
+          if (g.retailer_id) existingGroupByRetailer.set(g.retailer_id, g.id);
+        }
       }
 
       if (varRows && varRows.length > 0) {
@@ -3037,11 +3211,11 @@ export class ProductoRepository {
           if (prod.marca_nombre) vBreadcrumbs.push(`🏷️ Marca: ${prod.marca_nombre}`);
           if (vSpecsDetails.length > 0) vBreadcrumbs.push(...vSpecsDetails);
 
-          const variantDesc = [
+          const variantDesc = sanitizeMetaText([
             descBase,
             vBreadcrumbs.join('\n'),
-            prod.ficha_tecnica ? `📋 Ficha Técnica:\n${prod.ficha_tecnica}` : '',
-          ].filter(Boolean).join('\n\n').substring(0, 5000);
+            prod.ficha_tecnica ? `📋 Ficha Técnica:\n${sanitizeMetaText(prod.ficha_tecnica)}` : '',
+          ].filter(Boolean).join('\n\n'));
 
           const varPayload: any = {
             retailer_id: vRetailerId,
@@ -3070,7 +3244,6 @@ export class ProductoRepository {
             custom_label_2: vRetailerId.substring(0, 100),
             custom_label_3: (vColor || '').substring(0, 100) || undefined,
             custom_label_4: (vSize || Object.values(vAdditionalAttrs)[0] || '').substring(0, 100) || undefined,
-            url: productWebUrl,
           };
 
           const existingVarId = existingByRetailer.get(vRetailerId);
@@ -3106,11 +3279,11 @@ export class ProductoRepository {
         if (retailerId) simpleBreadcrumbs.push(`🔖 Referencia: ${retailerId}`);
         if (prod.marca_nombre) simpleBreadcrumbs.push(`🏷️ Marca: ${prod.marca_nombre}`);
 
-        const simpleDesc = [
+        const simpleDesc = sanitizeMetaText([
           descBase,
           simpleBreadcrumbs.join('\n'),
-          prod.ficha_tecnica ? `📋 Ficha Técnica:\n${prod.ficha_tecnica}` : '',
-        ].filter(Boolean).join('\n\n').substring(0, 5000);
+          prod.ficha_tecnica ? `📋 Ficha Técnica:\n${sanitizeMetaText(prod.ficha_tecnica)}` : '',
+        ].filter(Boolean).join('\n\n'));
 
         const metaPayload: any = {
           retailer_id: retailerId,
@@ -3134,7 +3307,6 @@ export class ProductoRepository {
           custom_label_0: catNombre.substring(0, 100),
           custom_label_1: subcatNombre.substring(0, 100),
           custom_label_2: refPrincipal.substring(0, 100),
-          url: productWebUrl,
         };
 
         if (fbProductId) {
@@ -3151,41 +3323,46 @@ export class ProductoRepository {
             body: JSON.stringify(metaPayload),
           });
           const prodData: any = await prodRes.json();
-          if (prodData?.id) fbProductId = prodData.id;
+          if (prodData?.id) {
+            fbProductId = prodData.id;
+            existingByRetailer?.set(retailerId, fbProductId);
+          }
           this.logger.log(`✓ [MetaCatalog] Producto simple ${productoId} subido en Meta con FB ID: ${fbProductId}`);
         }
       }
 
-      // 5. Colecciones en Meta (Product Sets) y Activación de Comercio en paralelo
-      const postOperations: Promise<any>[] = [];
+      // 5. Colecciones en Meta (Product Sets) y Activación de Comercio en paralelo (si no se omiten en lote)
+      if (!cachedContext?.skipPostOperations) {
+        const postOperations: Promise<any>[] = [];
 
-      // A. Crear o asegurar Sets jerárquicos para Categoría y Subcategoría
-      if (catalogId) {
-        postOperations.push(
-          this.asegurarProductSets(catalogId, catNombre, subcatNombre, metaToken, apiVersion)
-        );
+        // A. Crear o asegurar Sets jerárquicos para Categoría y Subcategoría
+        if (catalogId) {
+          postOperations.push(
+            this.asegurarProductSets(catalogId, catNombre, subcatNombre, metaToken, apiVersion)
+          );
+        }
+
+        // B. Vincular Catálogo a WABA
+        if (wabaId && catalogId) {
+          postOperations.push(
+            fetch(`https://graph.facebook.com/${apiVersion}/${wabaId}/product_catalogs`, {
+              method: 'POST',
+              headers: { Authorization: `Bearer ${metaToken}`, 'Content-Type': 'application/json' },
+              body: JSON.stringify({ catalog_id: catalogId }),
+            }).catch((wabaLinkErr: any) => this.logger.warn(`[MetaCatalog] Error vinculando catálogo a WABA: ${wabaLinkErr.message}`))
+          );
+        }
+
+        // C. Activar Tienda y Carrito en WhatsApp
+        if (phoneId && catalogId) {
+          postOperations.push(
+            this.activarComercioWhatsApp(phoneId, catalogId, metaToken, apiVersion, wabaId)
+          );
+        }
+
+        await Promise.all(postOperations);
+        this.logger.log(`✓ [MetaCatalog] Operaciones post-sincronización completadas`);
       }
-
-      // B. Vincular Catálogo a WABA
-      if (wabaId && catalogId) {
-        postOperations.push(
-          fetch(`https://graph.facebook.com/${apiVersion}/${wabaId}/product_catalogs`, {
-            method: 'POST',
-            headers: { Authorization: `Bearer ${metaToken}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ catalog_id: catalogId }),
-          }).catch((wabaLinkErr: any) => this.logger.warn(`[MetaCatalog] Error vinculando catálogo a WABA: ${wabaLinkErr.message}`))
-        );
-      }
-
-      // C. Activar Tienda y Carrito en WhatsApp
-      if (phoneId && catalogId) {
-        postOperations.push(
-          this.activarComercioWhatsApp(phoneId, catalogId, metaToken, apiVersion, wabaId)
-        );
-      }
-
-      await Promise.all(postOperations);
-      this.logger.log(`✓ [MetaCatalog] Operaciones post-sincronización completadas`);
 
       await this.dataSource.query(
         `UPDATE public.producto
@@ -3321,9 +3498,9 @@ export class ProductoRepository {
         }
       }
 
-      // B. Colección para Subcategoría (formato jerárquico visual: "Categoría › Subcategoría")
+      // B. Colección para Subcategoría (formato jerárquico visual: "Categoría - Subcategoría")
       if (subcatNombre) {
-        const subcatSetName = catNombre ? `${catNombre} › ${subcatNombre}` : subcatNombre;
+        const subcatSetName = catNombre ? `${catNombre} - ${subcatNombre}` : subcatNombre;
         const exactSubSet = existingSets.find(
           (s: any) => s.name?.toLowerCase().trim() === subcatSetName.toLowerCase().trim(),
         );
@@ -3369,6 +3546,310 @@ export class ProductoRepository {
       }
     } catch (setErr: any) {
       this.logger.warn(`[MetaCatalog] Advertencia gestionando colecciones jerárquicas: ${setErr.message}`);
+    }
+  }
+
+  // ==========================================================================
+  // SEED DE FERRETERÍA (48 productos demo con catálogos completos y Meta)
+  // ==========================================================================
+
+  /**
+   * Sincroniza un lote de productos con Meta Catalog y asegura todas las colecciones (Product Sets)
+   * correspondientes a las categorías y subcategorías activas en WhatsApp.
+   */
+  async sincronizarLoteConMetaCatalog(
+    productoIds: number[],
+    empresaId = 1,
+  ): Promise<{ total: number; exitosos: number; fallidos: number }> {
+    const metaToken =
+      process.env.META_PERMANENT_TOKEN ||
+      process.env.META_SYSTEM_TOKEN ||
+      process.env.META_ACCESS_TOKEN;
+    const businessId = process.env.META_BUSINESS_ID;
+    const apiVersion = process.env.META_API_VERSION || 'v21.0';
+
+    if (!metaToken || !businessId) {
+      this.logger.warn(`[MetaCatalog] META_BUSINESS_ID o META_PERMANENT_TOKEN no configurados en .env`);
+      return { total: productoIds.length, exitosos: 0, fallidos: productoIds.length };
+    }
+
+    try {
+      // 1. Obtener canal de la empresa
+      const canalRows = await this.dataSource.query(
+        `SELECT id_canal, phone_number, phone_number_id, waba_id, catalog_id, configuracion
+         FROM public.canal
+         WHERE empresa_id = $1 AND tipo = 'whatsapp'
+         ORDER BY id_canal ASC
+         LIMIT 1;`,
+        [empresaId],
+      );
+
+      let canal = canalRows[0];
+      if (!canal) {
+        const empRows = await this.dataSource.query(
+          `SELECT nombre_comercial, whatsapp FROM public.empresa WHERE id_empresa = $1 LIMIT 1;`,
+          [empresaId],
+        );
+        const emp = empRows[0];
+        const newCanal = await this.dataSource.query(
+          `INSERT INTO public.canal (empresa_id, tipo, proveedor, phone_number, estado, configuracion)
+           VALUES ($1, 'whatsapp', 'meta', $2, 'activo', '{}')
+           RETURNING id_canal, phone_number, phone_number_id, waba_id, catalog_id, configuracion;`,
+          [empresaId, emp?.whatsapp || null],
+        );
+        canal = newCanal[0];
+      }
+
+      let catalogId = canal?.catalog_id;
+      let wabaId = canal?.waba_id || canal?.configuracion?.waba_id || process.env.META_WABA_ID;
+      const phoneId = canal?.phone_number_id || canal?.configuracion?.phone_number_id || process.env.META_PHONE_NUMBER_ID;
+
+      if (!catalogId) {
+        const empRows = await this.dataSource.query(
+          `SELECT nombre_comercial FROM public.empresa WHERE id_empresa = $1 LIMIT 1;`,
+          [empresaId],
+        );
+        const catalogName = `Catálogo - ${empRows[0]?.nombre_comercial || `Empresa ${empresaId}`}`;
+        const catRes = await fetch(`https://graph.facebook.com/${apiVersion}/${businessId}/owned_product_catalogs`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${metaToken}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: catalogName }),
+        });
+        const catData: any = await catRes.json();
+        if (catData?.id) {
+          catalogId = catData.id;
+          await this.dataSource.query(
+            `UPDATE public.canal SET catalog_id = $1, updated_at = NOW() WHERE id_canal = $2;`,
+            [catalogId, canal.id_canal],
+          );
+        }
+      }
+
+      if (!catalogId) {
+        this.logger.error(`[MetaCatalog] No se pudo obtener ni crear catalogId en Meta`);
+        return { total: productoIds.length, exitosos: 0, fallidos: productoIds.length };
+      }
+
+      // 2. Pre-crear o asegurar todas las Colecciones (Product Sets) para Categorías y Subcategorías
+      this.logger.log(`[MetaCatalog] Asegurando colecciones jerárquicas (Product Sets) para empresa ${empresaId}...`);
+      const catSubRows = await this.dataSource.query(
+        `SELECT DISTINCT c.nombre AS categoria, sc.nombre AS subcategoria
+         FROM public.categoria c
+         LEFT JOIN public.subcategoria sc ON sc.categoria_id = c.id_categoria AND sc.empresa_id = c.empresa_id AND sc.estado = 'activo'
+         WHERE c.empresa_id = $1 AND c.estado = 'activo'
+         ORDER BY c.nombre, sc.nombre;`,
+        [empresaId],
+      );
+
+      // Consultar Product Sets existentes en Meta
+      const setsRes = await fetch(
+        `https://graph.facebook.com/${apiVersion}/${catalogId}/product_sets?fields=id,name,filter&limit=200`,
+        { headers: { Authorization: `Bearer ${metaToken}` } },
+      );
+      const setsData: any = await setsRes.json();
+      const existingSets: any[] = setsData?.data || [];
+      const setNamesLower = new Set(existingSets.map((s: any) => (s.name || '').toLowerCase().trim()));
+
+      const categoriesDone = new Set<string>();
+      for (const row of catSubRows) {
+        const catName = (row.categoria || '').trim();
+        const subcatName = (row.subcategoria || '').trim();
+
+        // Colección de Categoría
+        if (catName && !categoriesDone.has(catName.toLowerCase())) {
+          categoriesDone.add(catName.toLowerCase());
+          if (!setNamesLower.has(catName.toLowerCase())) {
+            try {
+              const cRes = await fetch(`https://graph.facebook.com/${apiVersion}/${catalogId}/product_sets`, {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${metaToken}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  name: catName,
+                  filter: { product_type: { contains: catName } },
+                }),
+              });
+              const cData: any = await cRes.json();
+              if (cData?.id) {
+                setNamesLower.add(catName.toLowerCase());
+                this.logger.log(`✓ [MetaCatalog] Colección Categoría creada: "${catName}"`);
+              }
+            } catch (err: any) {
+              this.logger.warn(`Error creando set para categoría "${catName}": ${err.message}`);
+            }
+          }
+        }
+
+        // Colección de Subcategoría
+        if (subcatName) {
+          const subSetName = catName ? `${catName} - ${subcatName}` : subcatName;
+          if (!setNamesLower.has(subSetName.toLowerCase())) {
+            try {
+              const scRes = await fetch(`https://graph.facebook.com/${apiVersion}/${catalogId}/product_sets`, {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${metaToken}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  name: subSetName,
+                  filter: { product_type: { contains: subcatName } },
+                }),
+              });
+              const scData: any = await scRes.json();
+              if (scData?.id) {
+                setNamesLower.add(subSetName.toLowerCase());
+                this.logger.log(`✓ [MetaCatalog] Colección Subcategoría creada: "${subSetName}"`);
+              }
+            } catch (err: any) {
+              this.logger.warn(`Error creando set para subcategoría "${subSetName}": ${err.message}`);
+            }
+          }
+        }
+      }
+
+      // 3. Consultar items y grupos existentes en Meta una sola vez
+      const [existingMetaRes, existingGroupsRes] = await Promise.all([
+        fetch(`https://graph.facebook.com/${apiVersion}/${catalogId}/products?limit=1000&fields=id,retailer_id,name,item_group_id`, {
+          headers: { Authorization: `Bearer ${metaToken}` },
+        }),
+        fetch(`https://graph.facebook.com/${apiVersion}/${catalogId}/product_groups?limit=1000&fields=id,retailer_id`, {
+          headers: { Authorization: `Bearer ${metaToken}` },
+        }),
+      ]);
+
+      const existingMetaData: any = await existingMetaRes.json();
+      const existingItems: any[] = existingMetaData?.data || [];
+      const existingByRetailer = new Map<string, string>();
+      for (const it of existingItems) {
+        if (it.retailer_id) existingByRetailer.set(it.retailer_id, it.id);
+      }
+
+      const existingGroupsData: any = await existingGroupsRes.json();
+      const existingGroups: any[] = existingGroupsData?.data || [];
+      const existingGroupByRetailer = new Map<string, string>();
+      for (const g of existingGroups) {
+        if (g.retailer_id) existingGroupByRetailer.set(g.retailer_id, g.id);
+      }
+
+      const cachedContext = {
+        metaToken,
+        businessId,
+        apiVersion,
+        catalogId,
+        wabaId,
+        phoneId,
+        existingByRetailer,
+        existingGroupByRetailer,
+        skipPostOperations: true,
+      };
+
+      // 4. Sincronizar todos los productos en lotes concurrentes (concurrency = 5)
+      this.logger.log(`[MetaCatalog] Iniciando subida de ${productoIds.length} productos a Meta Catalog...`);
+      let exitosos = 0;
+      let fallidos = 0;
+      const concurrency = 5;
+
+      for (let i = 0; i < productoIds.length; i += concurrency) {
+        const chunk = productoIds.slice(i, i + concurrency);
+        const results = await Promise.all(
+          chunk.map(async (id) => {
+            try {
+              const res = await this.sincronizarConMetaCatalog(id, empresaId, cachedContext);
+              return res.success;
+            } catch (err: any) {
+              this.logger.error(`Error sincronizando producto ${id} en lote: ${err.message}`);
+              return false;
+            }
+          }),
+        );
+        for (const r of results) {
+          if (r) exitosos++;
+          else fallidos++;
+        }
+      }
+
+      // 5. Vincular Catálogo a WABA y Refrescar WhatsApp Commerce una sola vez al final
+      if (wabaId && catalogId) {
+        await fetch(`https://graph.facebook.com/${apiVersion}/${wabaId}/product_catalogs`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${metaToken}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ catalog_id: catalogId }),
+        }).catch(() => null);
+      }
+
+      if (phoneId && catalogId) {
+        await this.activarComercioWhatsApp(phoneId, catalogId, metaToken, apiVersion, wabaId);
+      }
+
+      this.logger.log(`✓ [MetaCatalog] Sincronización en lote terminada: ${exitosos} exitosos, ${fallidos} fallidos de ${productoIds.length} productos.`);
+      return { total: productoIds.length, exitosos, fallidos };
+    } catch (err: any) {
+      this.logger.error(`[MetaCatalog] Excepción en sincronización en lote: ${err.message}`, err.stack);
+      return { total: productoIds.length, exitosos: 0, fallidos: productoIds.length };
+    }
+  }
+
+  /**
+   * Ejecuta el script SQL de seed integral de ferretería dentro de una
+   * transacción. Carga 48 productos con todas sus relaciones:
+   * categorías, subcategorías, marcas, impuestos, variantes, inventario,
+   * códigos de barras, proveedores, atributos, imágenes y SEO/IA.
+   * Y sincroniza automáticamente los productos y sus colecciones en Meta WhatsApp Catalog.
+   */
+  async seedFerreteria(empresaId = 1): Promise<{ ok: boolean; productos: number; meta_sincronizados: number; message: string }> {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+    try {
+      this.logger.log('[Seed] Iniciando seed integral de ferretería en PostgreSQL...');
+
+      // Leer el archivo SQL del seed de forma compatible con Node.js ESM
+      const possiblePaths = [
+        path.resolve(process.cwd(), 'dist', 'producto', 'seeds', 'seed-ferreteria.sql'),
+        path.resolve(process.cwd(), 'src', 'producto', 'seeds', 'seed-ferreteria.sql'),
+        path.resolve('c:/Users/Administrator/Desktop/crm-whatssap-practica/backend-chat-connect/src/producto/seeds/seed-ferreteria.sql'),
+        path.resolve('c:/Users/Administrator/Desktop/crm-whatssap-practica/backend-chat-connect/dist/producto/seeds/seed-ferreteria.sql'),
+      ];
+
+      let sql = '';
+      for (const p of possiblePaths) {
+        if (fs.existsSync(p)) {
+          sql = fs.readFileSync(p, 'utf8');
+          this.logger.log(`[Seed] Archivo SQL cargado desde: ${p}`);
+          break;
+        }
+      }
+
+      if (!sql) {
+        throw new Error('No se encontró el archivo seed-ferreteria.sql en ninguna de las rutas esperadas');
+      }
+
+      // Ejecutar el SQL completo dentro de la transacción
+      await queryRunner.query(sql);
+
+      await queryRunner.commitTransaction();
+
+      // Contar los productos insertados
+      const prods = await this.dataSource.query(
+        `SELECT id_producto FROM public.producto WHERE empresa_id = $1 ORDER BY id_producto ASC;`,
+        [empresaId],
+      );
+      const prodIds = prods.map((p: any) => Number(p.id_producto));
+
+      this.logger.log(`[Seed] Seed SQL completado exitosamente: ${prodIds.length} productos en base de datos. Iniciando sincronización con Meta WhatsApp...`);
+
+      // Sincronizar todos los productos cargados con Meta Catalog y sus Colecciones
+      const syncResult = await this.sincronizarLoteConMetaCatalog(prodIds, empresaId);
+
+      return {
+        ok: true,
+        productos: prodIds.length,
+        meta_sincronizados: syncResult.exitosos,
+        message: `Seed de ferretería completado: ${prodIds.length} productos y colecciones cargados en PostgreSQL y enviados a Meta WhatsApp (${syncResult.exitosos} sincronizados). Meta valida políticas e imágenes en 2-10 min. Para verlos en tu celular, cierra y abre WhatsApp.`,
+      };
+    } catch (err: any) {
+      await queryRunner.rollbackTransaction();
+      this.logger.error(`[Seed] Error al ejecutar seed: ${err.message}`, err.stack);
+      throw new InternalServerErrorException(`Error al ejecutar seed de ferretería: ${err.message}`);
+    } finally {
+      await queryRunner.release();
     }
   }
 }
