@@ -25,6 +25,8 @@ import {
 } from '../models/producto.model.js';
 import { CreateProductoDto } from '../dto/create-producto.dto.js';
 import { UpdateProductoDto } from '../dto/update-producto.dto.js';
+import { CreateColeccionDto } from '../dto/create-coleccion.dto.js';
+import { EnviarColeccionWhatsAppDto } from '../dto/enviar-coleccion-whatsapp.dto.js';
 
 /**
  * ============================================================================
@@ -2613,12 +2615,12 @@ export class ProductoRepository {
           );
         }
 
-        // Refrescar caché de WhatsApp Commerce
+        // Refrescar caché de WhatsApp Commerce (vitrina oculta, carrito activo para mensajes interactivos)
         const phoneId = process.env.META_PHONE_NUMBER_ID || '1305340429332213';
         await fetch(`https://graph.facebook.com/${apiVersion}/${phoneId}/whatsapp_commerce_settings`, {
           method: 'POST',
           headers: { Authorization: `Bearer ${metaToken}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ is_catalog_visible: true, is_cart_enabled: true }),
+          body: JSON.stringify({ is_catalog_visible: false, is_cart_enabled: true }),
         }).catch(() => null);
 
         this.logger.log(`✓ [EliminarTodos] Catálogo de Meta vaciado exitosamente (${metaEliminados} items eliminados)`);
@@ -3331,18 +3333,11 @@ export class ProductoRepository {
         }
       }
 
-      // 5. Colecciones en Meta (Product Sets) y Activación de Comercio en paralelo (si no se omiten en lote)
+      // 5. Vincular Catálogo a WABA y Configurar WhatsApp Commerce (sin vitrina pública, carrito activo para mensajes interactivos)
       if (!cachedContext?.skipPostOperations) {
         const postOperations: Promise<any>[] = [];
 
-        // A. Crear o asegurar Sets jerárquicos para Categoría y Subcategoría
-        if (catalogId) {
-          postOperations.push(
-            this.asegurarProductSets(catalogId, catNombre, subcatNombre, metaToken, apiVersion)
-          );
-        }
-
-        // B. Vincular Catálogo a WABA
+        // A. Vincular Catálogo a WABA
         if (wabaId && catalogId) {
           postOperations.push(
             fetch(`https://graph.facebook.com/${apiVersion}/${wabaId}/product_catalogs`, {
@@ -3353,7 +3348,7 @@ export class ProductoRepository {
           );
         }
 
-        // C. Activar Tienda y Carrito en WhatsApp
+        // B. Configurar WhatsApp Commerce (is_catalog_visible: false, is_cart_enabled: true)
         if (phoneId && catalogId) {
           postOperations.push(
             this.activarComercioWhatsApp(phoneId, catalogId, metaToken, apiVersion, wabaId)
@@ -3413,16 +3408,7 @@ export class ProductoRepository {
         }).catch(() => null);
       }
 
-      // 2. Toggle rápido de visibilidad para invalidar la caché de los servidores edge de WhatsApp
-      await fetch(
-        `https://graph.facebook.com/${apiVersion}/${phoneId}/whatsapp_commerce_settings`,
-        {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${metaToken}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ is_catalog_visible: false }),
-        },
-      ).catch(() => null);
-
+      // 2. Ocultar vitrina estática del perfil (is_catalog_visible: false) y habilitar carrito para mensajes interactivos
       const res = await fetch(
         `https://graph.facebook.com/${apiVersion}/${phoneId}/whatsapp_commerce_settings`,
         {
@@ -3430,13 +3416,13 @@ export class ProductoRepository {
           headers: { Authorization: `Bearer ${metaToken}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({
             is_cart_enabled: true,
-            is_catalog_visible: true,
+            is_catalog_visible: false,
           }),
         },
       );
       const data: any = await res.json();
       if (data?.success) {
-        this.logger.log(`✓ [MetaCatalog] WhatsApp Commerce activado y caché refrescada inmediatamente`);
+        this.logger.log(`✓ [MetaCatalog] WhatsApp Commerce configurado: vitrina estática oculta y mensajes interactivos habilitados`);
       }
     } catch (err: any) {
       this.logger.warn(`[MetaCatalog] Advertencia activando WhatsApp Commerce: ${err.message}`);
@@ -3630,81 +3616,7 @@ export class ProductoRepository {
         return { total: productoIds.length, exitosos: 0, fallidos: productoIds.length };
       }
 
-      // 2. Pre-crear o asegurar todas las Colecciones (Product Sets) para Categorías y Subcategorías
-      this.logger.log(`[MetaCatalog] Asegurando colecciones jerárquicas (Product Sets) para empresa ${empresaId}...`);
-      const catSubRows = await this.dataSource.query(
-        `SELECT DISTINCT c.nombre AS categoria, sc.nombre AS subcategoria
-         FROM public.categoria c
-         LEFT JOIN public.subcategoria sc ON sc.categoria_id = c.id_categoria AND sc.empresa_id = c.empresa_id AND sc.estado = 'activo'
-         WHERE c.empresa_id = $1 AND c.estado = 'activo'
-         ORDER BY c.nombre, sc.nombre;`,
-        [empresaId],
-      );
-
-      // Consultar Product Sets existentes en Meta
-      const setsRes = await fetch(
-        `https://graph.facebook.com/${apiVersion}/${catalogId}/product_sets?fields=id,name,filter&limit=200`,
-        { headers: { Authorization: `Bearer ${metaToken}` } },
-      );
-      const setsData: any = await setsRes.json();
-      const existingSets: any[] = setsData?.data || [];
-      const setNamesLower = new Set(existingSets.map((s: any) => (s.name || '').toLowerCase().trim()));
-
-      const categoriesDone = new Set<string>();
-      for (const row of catSubRows) {
-        const catName = (row.categoria || '').trim();
-        const subcatName = (row.subcategoria || '').trim();
-
-        // Colección de Categoría
-        if (catName && !categoriesDone.has(catName.toLowerCase())) {
-          categoriesDone.add(catName.toLowerCase());
-          if (!setNamesLower.has(catName.toLowerCase())) {
-            try {
-              const cRes = await fetch(`https://graph.facebook.com/${apiVersion}/${catalogId}/product_sets`, {
-                method: 'POST',
-                headers: { Authorization: `Bearer ${metaToken}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  name: catName,
-                  filter: { product_type: { contains: catName } },
-                }),
-              });
-              const cData: any = await cRes.json();
-              if (cData?.id) {
-                setNamesLower.add(catName.toLowerCase());
-                this.logger.log(`✓ [MetaCatalog] Colección Categoría creada: "${catName}"`);
-              }
-            } catch (err: any) {
-              this.logger.warn(`Error creando set para categoría "${catName}": ${err.message}`);
-            }
-          }
-        }
-
-        // Colección de Subcategoría
-        if (subcatName) {
-          const subSetName = catName ? `${catName} - ${subcatName}` : subcatName;
-          if (!setNamesLower.has(subSetName.toLowerCase())) {
-            try {
-              const scRes = await fetch(`https://graph.facebook.com/${apiVersion}/${catalogId}/product_sets`, {
-                method: 'POST',
-                headers: { Authorization: `Bearer ${metaToken}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  name: subSetName,
-                  filter: { product_type: { contains: subcatName } },
-                }),
-              });
-              const scData: any = await scRes.json();
-              if (scData?.id) {
-                setNamesLower.add(subSetName.toLowerCase());
-                this.logger.log(`✓ [MetaCatalog] Colección Subcategoría creada: "${subSetName}"`);
-              }
-            } catch (err: any) {
-              this.logger.warn(`Error creando set para subcategoría "${subSetName}": ${err.message}`);
-            }
-          }
-        }
-      }
-
-      // 3. Consultar items y grupos existentes en Meta una sola vez
+      // 2. Consultar items y grupos existentes en Meta una sola vez
       const [existingMetaRes, existingGroupsRes] = await Promise.all([
         fetch(`https://graph.facebook.com/${apiVersion}/${catalogId}/products?limit=1000&fields=id,retailer_id,name,item_group_id`, {
           headers: { Authorization: `Bearer ${metaToken}` },
@@ -3835,14 +3747,14 @@ export class ProductoRepository {
 
       this.logger.log(`[Seed] Seed SQL completado exitosamente: ${prodIds.length} productos en base de datos. Iniciando sincronización con Meta WhatsApp...`);
 
-      // Sincronizar todos los productos cargados con Meta Catalog y sus Colecciones
+      // Sincronizar todos los productos cargados con Meta Catalog para mensajes interactivos
       const syncResult = await this.sincronizarLoteConMetaCatalog(prodIds, empresaId);
 
       return {
         ok: true,
         productos: prodIds.length,
         meta_sincronizados: syncResult.exitosos,
-        message: `Seed de ferretería completado: ${prodIds.length} productos y colecciones cargados en PostgreSQL y enviados a Meta WhatsApp (${syncResult.exitosos} sincronizados). Meta valida políticas e imágenes en 2-10 min. Para verlos en tu celular, cierra y abre WhatsApp.`,
+        message: `Seed de ferretería completado: ${prodIds.length} productos cargados en PostgreSQL y sincronizados con Meta WhatsApp para mensajes interactivos (${syncResult.exitosos} sincronizados).`,
       };
     } catch (err: any) {
       await queryRunner.rollbackTransaction();
@@ -3851,6 +3763,1270 @@ export class ProductoRepository {
     } finally {
       await queryRunner.release();
     }
+  }
+
+  // ==========================================================================
+  // GESTIÓN DE COLECCIONES DE PRODUCTOS EN WHATSAPP (META GRAPH API & COMMERCE)
+  // ==========================================================================
+
+  /**
+   * Obtiene la configuración de Meta Cloud API y el Catálogo para la empresa.
+   */
+  private async getMetaCatalogContext(empresaId = 1) {
+    const metaToken =
+      process.env.META_PERMANENT_TOKEN ||
+      process.env.META_SYSTEM_TOKEN ||
+      process.env.META_ACCESS_TOKEN;
+    const businessId = process.env.META_BUSINESS_ID;
+    const apiVersion = process.env.META_API_VERSION || 'v21.0';
+
+    const canalRows = await this.dataSource.query(
+      `SELECT id_canal, phone_number, phone_number_id, waba_id, catalog_id, configuracion
+       FROM public.canal
+       WHERE empresa_id = $1 AND tipo = 'whatsapp'
+       ORDER BY id_canal ASC
+       LIMIT 1;`,
+      [empresaId],
+    );
+
+    const canal = canalRows[0];
+    const catalogId = canal?.catalog_id || '912267985057130';
+    const phoneId = canal?.phone_number_id || canal?.configuracion?.phone_number_id || process.env.META_PHONE_NUMBER_ID || '1305340429332213';
+    const wabaId = canal?.waba_id || canal?.configuracion?.waba_id || process.env.META_WABA_ID;
+
+    return {
+      metaToken,
+      businessId,
+      apiVersion,
+      catalogId,
+      phoneId,
+      wabaId,
+      canal,
+    };
+  }
+
+  /**
+   * Lista todas las colecciones (Product Sets) configuradas en Meta Commerce Catalog para WhatsApp.
+   */
+  async getColeccionesMeta(empresaId = 1) {
+    const { metaToken, apiVersion, catalogId } = await this.getMetaCatalogContext(empresaId);
+
+    if (!metaToken || !catalogId) {
+      throw new BadRequestException('Meta Cloud API o Catálogo no configurado en el servidor');
+    }
+
+    try {
+      this.logger.log(`[MetaCollections] Consultando colecciones (Product Sets) en Meta Catalog ${catalogId}...`);
+      const url = `https://graph.facebook.com/${apiVersion}/${catalogId}/product_sets?fields=id,name,filter,product_count&limit=100`;
+      const res = await fetch(url, {
+        headers: { Authorization: `Bearer ${metaToken}` },
+      });
+
+      const data: any = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error?.message || 'Error al consultar Product Sets en Meta');
+      }
+
+      const sets: any[] = data.data || [];
+
+      // Consultar categorías locales para correlación
+      const catRows = await this.dataSource.query(
+        `SELECT id_categoria, nombre FROM public.categoria WHERE empresa_id = $1 AND estado = 'activo';`,
+        [empresaId],
+      );
+      const catNames = new Set(catRows.map((c: any) => c.nombre.toLowerCase().trim()));
+
+      const enrichedSets = sets.map((s) => {
+        let filterObj: any = null;
+        try {
+          filterObj = typeof s.filter === 'string' ? JSON.parse(s.filter) : s.filter;
+        } catch {
+          filterObj = s.filter;
+        }
+
+        let tipo = 'personalizada';
+        const nameLower = (s.name || '').toLowerCase().trim();
+        if (s.name === 'All Products') {
+          tipo = 'catalogo_completo';
+        } else if (catNames.has(nameLower)) {
+          tipo = 'categoria';
+        } else if (s.name.includes(' - ') || s.name.includes(' › ')) {
+          tipo = 'subcategoria';
+        }
+
+        return {
+          id: s.id,
+          name: s.name,
+          product_count: s.product_count ?? 0,
+          filter: filterObj,
+          tipo,
+          catalog_id: catalogId,
+        };
+      });
+
+      return {
+        catalog_id: catalogId,
+        total: enrichedSets.length,
+        colecciones: enrichedSets,
+      };
+    } catch (err: any) {
+      this.logger.error(`[MetaCollections] Error consultando colecciones: ${err.message}`);
+      throw new InternalServerErrorException(`Error al consultar colecciones en Meta: ${err.message}`);
+    }
+  }
+
+  /**
+   * Obtiene los productos pertenecientes a una colección específica en Meta.
+   */
+  async getProductosDeColeccionMeta(productSetId: string, empresaId = 1) {
+    const { metaToken, apiVersion } = await this.getMetaCatalogContext(empresaId);
+
+    if (!metaToken || !productSetId) {
+      throw new BadRequestException('Parámetros de consulta de colección inválidos');
+    }
+
+    try {
+      this.logger.log(`[MetaCollections] Obteniendo productos del Product Set ${productSetId}...`);
+      const url = `https://graph.facebook.com/${apiVersion}/${productSetId}/products?fields=id,retailer_id,name,price,image_url,description,availability&limit=50`;
+      const res = await fetch(url, {
+        headers: { Authorization: `Bearer ${metaToken}` },
+      });
+
+      const data: any = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error?.message || 'Error al obtener productos de la colección en Meta');
+      }
+
+      const rawProducts: any[] = data.data || [];
+
+      // Enriquecer con inventario local de PostgreSQL
+      const retailerIds = rawProducts.map((p) => p.retailer_id).filter(Boolean);
+      let localProdsMap = new Map<string, any>();
+
+      if (retailerIds.length > 0) {
+        const placeholders = retailerIds.map((_, i) => `$${i + 2}`).join(',');
+        const localRows = await this.dataSource.query(
+          `SELECT p.id_producto, p.codigo_interno, p.nombre, p.precio_impuesto,
+                  GREATEST(0, COALESCE(inv.existencia, 0) - COALESCE(inv.reservado, 0)) AS disponible
+           FROM public.producto p
+           LEFT JOIN (
+             SELECT producto_id, SUM(existencia) AS existencia, SUM(reservado) AS reservado
+             FROM public.inventario WHERE empresa_id = $1 GROUP BY producto_id
+           ) inv ON inv.producto_id = p.id_producto
+           WHERE p.empresa_id = $1 AND (
+             p.codigo_interno IN (${placeholders}) OR
+             EXISTS (
+               SELECT 1 FROM public.producto_referencia pr
+               WHERE pr.producto_id = p.id_producto AND pr.referencia IN (${placeholders})
+             )
+           );`,
+          [empresaId, ...retailerIds],
+        );
+
+        for (const lp of localRows) {
+          if (lp.codigo_interno) localProdsMap.set(lp.codigo_interno, lp);
+        }
+      }
+
+      const productosEnriquecidos = rawProducts.map((p) => {
+        const local = localProdsMap.get(p.retailer_id);
+        return {
+          id: p.id,
+          retailer_id: p.retailer_id,
+          name: p.name,
+          price: p.price,
+          image_url: p.image_url,
+          description: p.description,
+          availability: p.availability,
+          stock_local: local ? local.disponible : null,
+          id_producto_local: local ? local.id_producto : null,
+        };
+      });
+
+      return {
+        product_set_id: productSetId,
+        total: productosEnriquecidos.length,
+        productos: productosEnriquecidos,
+      };
+    } catch (err: any) {
+      this.logger.error(`[MetaCollections] Error obteniendo productos de colección: ${err.message}`);
+      throw new InternalServerErrorException(`Error al obtener productos de la colección: ${err.message}`);
+    }
+  }
+
+  /**
+   * Crea una nueva colección (Product Set) en Meta Commerce Catalog.
+   */
+  async crearColeccionMeta(dto: CreateColeccionDto, empresaId = 1) {
+    const { metaToken, apiVersion, catalogId } = await this.getMetaCatalogContext(empresaId);
+
+    if (!dto.name || !dto.name.trim()) {
+      throw new BadRequestException('El nombre de la colección es obligatorio');
+    }
+
+    let filter: any = {};
+    if (dto.tipo === 'categoria' && dto.categoriaNombre) {
+      filter = { product_type: { contains: dto.categoriaNombre.trim() } };
+    } else if (dto.tipo === 'subcategoria' && dto.subcategoriaNombre) {
+      filter = { category: { eq: dto.subcategoriaNombre.trim() } };
+    } else if (dto.tipo === 'productos_seleccionados' && dto.retailerIds && dto.retailerIds.length > 0) {
+      filter = { retailer_id: { is_any: dto.retailerIds } };
+    } else {
+      // Filtro por nombre o tipo por defecto
+      filter = { product_type: { contains: dto.name.trim() } };
+    }
+
+    try {
+      this.logger.log(`[MetaCollections] Creando colección "${dto.name}" en Meta Catalog ${catalogId}...`);
+      const res = await fetch(`https://graph.facebook.com/${apiVersion}/${catalogId}/product_sets`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${metaToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: dto.name.trim(),
+          filter,
+        }),
+      });
+
+      const data: any = await res.json();
+      if (!res.ok || !data.id) {
+        throw new Error(data.error?.message || 'Error al crear Product Set en Meta');
+      }
+
+      this.logger.log(`✓ [MetaCollections] Colección creada en Meta con ID: ${data.id}`);
+
+      return {
+        ok: true,
+        id: data.id,
+        name: dto.name.trim(),
+        filter,
+        message: `Colección "${dto.name}" creada exitosamente en Meta Commerce y WhatsApp`,
+      };
+    } catch (err: any) {
+      this.logger.error(`[MetaCollections] Error al crear colección: ${err.message}`);
+      throw new BadRequestException(`No se pudo crear la colección en Meta: ${err.message}`);
+    }
+  }
+
+  /**
+   * Elimina una colección (Product Set) de Meta Commerce Catalog.
+   */
+  async eliminarColeccionMeta(productSetId: string, empresaId = 1) {
+    const { metaToken, apiVersion } = await this.getMetaCatalogContext(empresaId);
+
+    try {
+      this.logger.log(`[MetaCollections] Eliminando Product Set ${productSetId} en Meta...`);
+      const res = await fetch(`https://graph.facebook.com/${apiVersion}/${productSetId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${metaToken}` },
+      });
+
+      const data: any = await res.json();
+      if (!res.ok || data.success !== true) {
+        throw new Error(data.error?.message || 'Error al eliminar Product Set en Meta');
+      }
+
+      this.logger.log(`✓ [MetaCollections] Colección ${productSetId} eliminada en Meta`);
+
+      return {
+        ok: true,
+        id: productSetId,
+        message: 'Colección eliminada exitosamente del catálogo de WhatsApp',
+      };
+    } catch (err: any) {
+      this.logger.error(`[MetaCollections] Error al eliminar colección: ${err.message}`);
+      throw new BadRequestException(`Error al eliminar la colección en Meta: ${err.message}`);
+    }
+  }
+
+  /**
+   * Sincroniza y asegura todas las colecciones basadas en las categorías y subcategorías activas.
+   */
+  async sincronizarColeccionesMeta(empresaId = 1) {
+    const { metaToken, apiVersion, catalogId } = await this.getMetaCatalogContext(empresaId);
+
+    try {
+      this.logger.log(`[MetaCollections] Sincronizando colecciones jerárquicas con Meta...`);
+
+      const catSubRows = await this.dataSource.query(
+        `SELECT DISTINCT c.nombre AS categoria, sc.nombre AS subcategoria
+         FROM public.categoria c
+         LEFT JOIN public.subcategoria sc ON sc.categoria_id = c.id_categoria AND sc.empresa_id = c.empresa_id AND sc.estado = 'activo'
+         WHERE c.empresa_id = $1 AND c.estado = 'activo'
+         ORDER BY c.nombre, sc.nombre;`,
+        [empresaId],
+      );
+
+      const setsRes = await fetch(
+        `https://graph.facebook.com/${apiVersion}/${catalogId}/product_sets?fields=id,name,filter&limit=200`,
+        { headers: { Authorization: `Bearer ${metaToken}` } },
+      );
+      const setsData: any = await setsRes.json();
+      const existingSets: any[] = setsData?.data || [];
+      const setNamesLower = new Set(existingSets.map((s: any) => (s.name || '').toLowerCase().trim()));
+
+      let creadas = 0;
+      const categoriesDone = new Set<string>();
+
+      for (const row of catSubRows) {
+        const catName = (row.categoria || '').trim();
+        const subcatName = (row.subcategoria || '').trim();
+
+        if (catName && !categoriesDone.has(catName.toLowerCase())) {
+          categoriesDone.add(catName.toLowerCase());
+          if (!setNamesLower.has(catName.toLowerCase())) {
+            const createRes = await fetch(`https://graph.facebook.com/${apiVersion}/${catalogId}/product_sets`, {
+              method: 'POST',
+              headers: { Authorization: `Bearer ${metaToken}`, 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                name: catName,
+                filter: { product_type: { contains: catName } },
+              }),
+            });
+            const cData: any = await createRes.json();
+            if (cData?.id) {
+              setNamesLower.add(catName.toLowerCase());
+              creadas++;
+            }
+          }
+        }
+
+        if (subcatName) {
+          const subSetName = catName ? `${catName} - ${subcatName}` : subcatName;
+          if (!setNamesLower.has(subSetName.toLowerCase())) {
+            const scRes = await fetch(`https://graph.facebook.com/${apiVersion}/${catalogId}/product_sets`, {
+              method: 'POST',
+              headers: { Authorization: `Bearer ${metaToken}`, 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                name: subSetName,
+                filter: { category: { eq: subcatName } },
+              }),
+            });
+            const scData: any = await scRes.json();
+            if (scData?.id) {
+              setNamesLower.add(subSetName.toLowerCase());
+              creadas++;
+            }
+          }
+        }
+      }
+
+      return {
+        ok: true,
+        creadas,
+        total_existentes: existingSets.length + creadas,
+        message: `Sincronización de colecciones finalizada: ${creadas} nuevas creadas, ${existingSets.length + creadas} activas en WhatsApp.`,
+      };
+    } catch (err: any) {
+      this.logger.error(`[MetaCollections] Error en sincronización masiva: ${err.message}`);
+      throw new InternalServerErrorException(`Error al sincronizar colecciones: ${err.message}`);
+    }
+  }
+
+  /**
+   * Envía una colección interactiva (Multi-Product Message o Catalog Message)
+   * directamente al WhatsApp de un cliente usando la Meta Cloud API oficial.
+   */
+  async enviarColeccionWhatsApp(dto: EnviarColeccionWhatsAppDto, empresaId = 1) {
+    const { metaToken, apiVersion, catalogId, phoneId } = await this.getMetaCatalogContext(empresaId);
+
+    if (!dto.telefono) {
+      throw new BadRequestException('El número de WhatsApp de destino es obligatorio');
+    }
+
+    const cleanPhone = dto.telefono.replace(/[^0-9]/g, '');
+    if (cleanPhone.length < 8) {
+      throw new BadRequestException('Número de teléfono inválido');
+    }
+
+    try {
+      let payload: any = null;
+      let productosEnviadosCount = 0;
+      let descripcionEnvio = '';
+
+      if (dto.tipoMensaje === 'catalog_message') {
+        // Mensaje de Catálogo Completo con Miniatura
+        let thumbId = dto.retailerIds?.[0];
+        if (!thumbId) {
+          const thumbRow = await this.dataSource.query(
+            `SELECT codigo_interno FROM public.producto WHERE empresa_id = $1 AND fb_product_id IS NOT NULL LIMIT 1;`,
+            [empresaId],
+          );
+          thumbId = thumbRow[0]?.codigo_interno || 'FER-0001-220-KIT';
+        }
+
+        payload = {
+          messaging_product: 'whatsapp',
+          recipient_type: 'individual',
+          to: cleanPhone,
+          type: 'interactive',
+          interactive: {
+            type: 'catalog_message',
+            body: {
+              text: dto.cuerpo || 'Explora nuestro catálogo oficial en WhatsApp con todas las colecciones y productos disponibles:',
+            },
+            footer: {
+              text: 'ChatConnect Ferretería',
+            },
+            action: {
+              name: 'catalog_message',
+              parameters: {
+                thumbnail_product_retailer_id: thumbId,
+              },
+            },
+          },
+        };
+        descripcionEnvio = 'Catálogo completo de WhatsApp con todas las colecciones';
+      } else if (dto.tipoMensaje === 'multi_seccion' || dto.coleccionId === 'todas_las_categorias') {
+        // Mensaje Multi-Colección con Secciones por Categoría
+        const catProds = await this.dataSource.query(
+          `SELECT c.nombre AS categoria, p.codigo_interno
+           FROM public.producto p
+           INNER JOIN public.categoria c ON c.id_categoria = p.categoria_id
+           WHERE p.empresa_id = $1 AND p.fb_product_id IS NOT NULL AND c.estado = 'activo'
+           ORDER BY c.nombre, p.id_producto;`,
+          [empresaId],
+        );
+
+        const sectionsMap = new Map<string, { product_retailer_id: string }[]>();
+        let totalCount = 0;
+        for (const row of catProds) {
+          const cat = (row.categoria || 'General').substring(0, 24);
+          if (!sectionsMap.has(cat)) {
+            if (sectionsMap.size >= 10) continue;
+            sectionsMap.set(cat, []);
+          }
+          const items = sectionsMap.get(cat)!;
+          if (items.length < 3 && totalCount < 30) {
+            items.push({ product_retailer_id: row.codigo_interno });
+            totalCount++;
+          }
+        }
+
+        const sections = Array.from(sectionsMap.entries())
+          .filter(([, items]) => items.length > 0)
+          .map(([title, product_items]) => ({ title, product_items }));
+
+        if (sections.length === 0) {
+          throw new BadRequestException('No hay productos sincronizados con Meta para enviar por secciones');
+        }
+
+        productosEnviadosCount = totalCount;
+        payload = {
+          messaging_product: 'whatsapp',
+          recipient_type: 'individual',
+          to: cleanPhone,
+          type: 'interactive',
+          interactive: {
+            type: 'product_list',
+            header: {
+              type: 'text',
+              text: (dto.titulo || 'Catálogo de Ferretería').substring(0, 60),
+            },
+            body: {
+              text: dto.cuerpo || 'Explora nuestras colecciones organizadas por categoría y realiza tu pedido directo:',
+            },
+            footer: {
+              text: 'ChatConnect Ferretería',
+            },
+            action: {
+              catalog_id: catalogId,
+              sections,
+            },
+          },
+        };
+        descripcionEnvio = `Catálogo Multi-Categoría (${sections.length} secciones, ${productosEnviadosCount} productos)`;
+      } else {
+        // Mensaje de Colección Multi-Producto (product_list)
+        let productItems: { product_retailer_id: string }[] = [];
+
+        if (dto.retailerIds && dto.retailerIds.length > 0) {
+          productItems = dto.retailerIds.slice(0, 30).map((id) => ({ product_retailer_id: id }));
+        } else if (dto.coleccionId) {
+          // Obtener los productos desde Meta API para este Product Set
+          const prodsRes = await fetch(
+            `https://graph.facebook.com/${apiVersion}/${dto.coleccionId}/products?fields=id,retailer_id,name&limit=30`,
+            { headers: { Authorization: `Bearer ${metaToken}` } },
+          );
+          const prodsData: any = await prodsRes.json();
+          const items: any[] = prodsData?.data || [];
+          productItems = items.filter((p) => p.retailer_id).slice(0, 30).map((p) => ({ product_retailer_id: p.retailer_id }));
+        }
+
+        if (productItems.length === 0) {
+          // Fallback a productos locales sincronizados con Meta
+          const dbProds = await this.dataSource.query(
+            `SELECT codigo_interno FROM public.producto
+             WHERE empresa_id = $1 AND fb_product_id IS NOT NULL
+             ORDER BY id_producto ASC LIMIT 10;`,
+            [empresaId],
+          );
+          productItems = dbProds.map((p: any) => ({ product_retailer_id: p.codigo_interno }));
+        }
+
+        if (productItems.length === 0) {
+          throw new BadRequestException('No hay productos aprobados en esta colección para enviar por WhatsApp');
+        }
+
+        productosEnviadosCount = productItems.length;
+        const nombreCol = (dto.nombreColeccion || 'Colección de Productos').substring(0, 24);
+
+        payload = {
+          messaging_product: 'whatsapp',
+          recipient_type: 'individual',
+          to: cleanPhone,
+          type: 'interactive',
+          interactive: {
+            type: 'product_list',
+            header: {
+              type: 'text',
+              text: dto.titulo || `Colección: ${dto.nombreColeccion}`,
+            },
+            body: {
+              text: dto.cuerpo || `Descubre nuestra selección de ${dto.nombreColeccion} disponibles para pedido inmediato con entrega rápida.`,
+            },
+            footer: {
+              text: 'ChatConnect Ferretería',
+            },
+            action: {
+              catalog_id: catalogId,
+              sections: [
+                {
+                  title: nombreCol,
+                  product_items: productItems,
+                },
+              ],
+            },
+          },
+        };
+        descripcionEnvio = `Colección "${dto.nombreColeccion}" (${productosEnviadosCount} productos)`;
+      }
+
+      this.logger.log(`[WhatsAppMPM] Enviando colección a WhatsApp ${cleanPhone}...`);
+      const sendRes = await fetch(`https://graph.facebook.com/${apiVersion}/${phoneId}/messages`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${metaToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const sendData: any = await sendRes.json();
+      if (!sendRes.ok) {
+        const errorMsg = sendData.error?.message || JSON.stringify(sendData);
+        this.logger.error(`[WhatsAppMPM] Error enviando colección por Meta API: ${errorMsg}`);
+        throw new Error(errorMsg);
+      }
+
+      const wamid = sendData.messages?.[0]?.id;
+      this.logger.log(`✓ [WhatsAppMPM] Colección enviada con éxito. WAMID: ${wamid}`);
+
+      // Registrar el mensaje en public.mensaje y actualizar conversación en PostgreSQL
+      let convId = dto.conversacionId;
+      if (!convId) {
+        // Buscar conversación existente por teléfono
+        const convRows = await this.dataSource.query(
+          `SELECT c.id_conversacion FROM public.conversacion c
+           JOIN public.tercero t ON t.id_tercero = c.tercero_id
+           WHERE c.empresa_id = $1 AND (t.whatsapp = $2 OR t.telefono = $2)
+           ORDER BY c.id_conversacion DESC LIMIT 1;`,
+          [empresaId, cleanPhone],
+        );
+        convId = convRows[0]?.id_conversacion;
+      }
+
+      if (convId) {
+        await this.dataSource.query(
+          `INSERT INTO public.mensaje (empresa_id, conversacion_id, direccion, tipo, contenido, metadata, created_at)
+           VALUES ($1, $2, 'outbound', 'interactive', $3, $4, NOW());`,
+          [
+            empresaId,
+            convId,
+            `📦 Colección enviada por WhatsApp: ${descripcionEnvio}`,
+            JSON.stringify({
+              wamid,
+              tipo_interactivo: dto.tipoMensaje || 'product_list',
+              coleccion_id: dto.coleccionId,
+              nombre_coleccion: dto.nombreColeccion,
+              productos_count: productosEnviadosCount,
+            }),
+          ],
+        );
+
+        await this.dataSource.query(
+          `UPDATE public.conversacion
+           SET fecha_ultima_interaccion = NOW(), updated_at = NOW()
+           WHERE id_conversacion = $1;`,
+          [convId],
+        );
+      }
+
+      return {
+        ok: true,
+        wamid,
+        telefono: cleanPhone,
+        productos_enviados: productosEnviadosCount,
+        message: `Colección enviada con éxito al WhatsApp +${cleanPhone}`,
+      };
+    } catch (err: any) {
+      this.logger.error(`[WhatsAppMPM] Error: ${err.message}`);
+      throw new BadRequestException(`No se pudo enviar la colección por WhatsApp: ${err.message}`);
+    }
+  }
+
+  // ==========================================================================
+  // CONVERSACIONES Y CHAT EN TIEMPO REAL (PostgreSQL Single Source of Truth)
+  // ==========================================================================
+
+  /**
+   * Valida si la ventana de atención de servicio de 24 horas de WhatsApp está activa.
+   * Según políticas oficiales de Meta, las respuestas libres e interactivas solo son gratuitas / tarifa de servicio
+   * dentro de las 24 horas del último mensaje entrante del cliente.
+   */
+  async verificarVentanaServicio24h(conversacionId: number, empresaId = 1) {
+    const res = await this.dataSource.query(
+      `SELECT MAX(created_at) as ultimo_mensaje_cliente_at
+       FROM public.mensaje
+       WHERE conversacion_id = $1 AND empresa_id = $2 AND direccion = 'inbound';`,
+      [conversacionId, empresaId],
+    );
+
+    const lastCustomerMsg = res[0]?.ultimo_mensaje_cliente_at ? new Date(res[0].ultimo_mensaje_cliente_at) : null;
+    const now = new Date();
+    let activa = false;
+    let minutosRestantes = 0;
+    let expiraAt: Date | null = null;
+
+    if (lastCustomerMsg) {
+      const diffMs = now.getTime() - lastCustomerMsg.getTime();
+      const diffMin = Math.floor(diffMs / (1000 * 60));
+      const total24hMin = 24 * 60; // 1440 min
+      if (diffMin < total24hMin) {
+        activa = true;
+        minutosRestantes = total24hMin - diffMin;
+        expiraAt = new Date(lastCustomerMsg.getTime() + 24 * 60 * 60 * 1000);
+      }
+    }
+
+    return {
+      activa,
+      minutosRestantes,
+      ultimoMensajeClienteAt: lastCustomerMsg,
+      expiraAt,
+    };
+  }
+
+  /**
+   * Obtiene la lista de conversaciones activas desde PostgreSQL, enriquecida con el estado de la ventana de 24 horas.
+   */
+  async getConversacionesChat(empresaId = 1) {
+    try {
+      const rows = await this.dataSource.query(
+        `SELECT
+           c.id_conversacion AS id,
+           c.empresa_id,
+           c.tercero_id,
+           c.canal_id,
+           c.estado,
+           COALESCE(c.modo, 'ia') AS modo,
+           c.fecha_ultima_interaccion,
+           COALESCE(NULLIF(TRIM(t.nombre), ''), NULLIF(TRIM(t.razon_social), ''), t.whatsapp, 'Cliente WhatsApp') AS nombre,
+           COALESCE(t.whatsapp, t.telefono, '') AS whatsapp,
+           t.email,
+           m.contenido AS ultimo_mensaje,
+           m.tipo AS ultimo_tipo,
+           m.created_at AS hora_ultimo_mensaje,
+           m_in.created_at AS ultimo_mensaje_cliente_at
+         FROM public.conversacion c
+         LEFT JOIN public.tercero t ON t.id_tercero = c.tercero_id
+         LEFT JOIN LATERAL (
+           SELECT contenido, tipo, created_at
+           FROM public.mensaje
+           WHERE conversacion_id = c.id_conversacion
+           ORDER BY id_mensaje DESC
+           LIMIT 1
+         ) m ON true
+         LEFT JOIN LATERAL (
+           SELECT created_at
+           FROM public.mensaje
+           WHERE conversacion_id = c.id_conversacion AND direccion = 'inbound'
+           ORDER BY id_mensaje DESC
+           LIMIT 1
+         ) m_in ON true
+         WHERE c.empresa_id = $1
+         ORDER BY c.fecha_ultima_interaccion DESC NULLS LAST;`,
+        [empresaId],
+      );
+
+      const now = new Date();
+      return rows.map((r: any) => {
+        const lastInbound = r.ultimo_mensaje_cliente_at ? new Date(r.ultimo_mensaje_cliente_at) : null;
+        let ventanaActiva = false;
+        let minutosRestantes = 0;
+        let expiraAt: string | null = null;
+        if (lastInbound) {
+          const diffMs = now.getTime() - lastInbound.getTime();
+          const diffMin = Math.floor(diffMs / (1000 * 60));
+          if (diffMin < 24 * 60) {
+            ventanaActiva = true;
+            minutosRestantes = 24 * 60 - diffMin;
+            expiraAt = new Date(lastInbound.getTime() + 24 * 60 * 60 * 1000).toISOString();
+          }
+        }
+
+        return {
+          id: Number(r.id),
+          cliente_id: Number(r.tercero_id),
+          nombre: r.nombre,
+          whatsapp: r.whatsapp || '+573182483607',
+          avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(r.nombre)}`,
+          modo: r.modo,
+          estado: r.estado,
+          ultimo_mensaje: r.ultimo_mensaje || 'Conversación iniciada',
+          hora: r.hora_ultimo_mensaje ? new Date(r.hora_ultimo_mensaje).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Reciente',
+          ventana_servicio: {
+            activa: ventanaActiva,
+            minutos_restantes: minutosRestantes,
+            expira_at: expiraAt,
+            ultimo_cliente_at: lastInbound ? lastInbound.toISOString() : null,
+          },
+        };
+      });
+    } catch (err: any) {
+      this.logger.error(`[Chat] Error al consultar conversaciones: ${err.message}`);
+      throw new InternalServerErrorException('Error al consultar conversaciones de chat');
+    }
+  }
+
+  /**
+   * Obtiene los productos y categorías disponibles en PostgreSQL y sincronizados con Meta para enviar en el chat.
+   */
+  async getCatalogoDisponibleChat(empresaId = 1) {
+    try {
+      const catRows = await this.dataSource.query(
+        `SELECT
+           c.id_categoria,
+           c.nombre,
+           COUNT(p.id_producto) FILTER (WHERE p.fb_product_id IS NOT NULL) AS total_productos
+         FROM public.categoria c
+         LEFT JOIN public.producto p ON p.categoria_id = c.id_categoria AND p.empresa_id = c.empresa_id
+         WHERE c.empresa_id = $1 AND c.estado = 'activo'
+         GROUP BY c.id_categoria, c.nombre
+         HAVING COUNT(p.id_producto) FILTER (WHERE p.fb_product_id IS NOT NULL) > 0
+         ORDER BY c.nombre ASC;`,
+        [empresaId],
+      );
+
+      const prodRows = await this.dataSource.query(
+        `SELECT
+           p.id_producto,
+           p.codigo_interno,
+           p.nombre,
+           p.descripcion_corta AS descripcion,
+           COALESCE(p.precio_impuesto, p.precio_base, 0) AS precio,
+           img.url AS imagen_principal,
+           p.categoria_id,
+           c.nombre AS categoria_nombre,
+           p.fb_product_id,
+           GREATEST(0, COALESCE(inv.existencia, 0) - COALESCE(inv.reservado, 0)) AS disponible
+         FROM public.producto p
+         LEFT JOIN public.categoria c ON c.id_categoria = p.categoria_id
+         LEFT JOIN public.inventario inv ON inv.producto_id = p.id_producto
+         LEFT JOIN LATERAL (
+           SELECT url FROM public.producto_imagen
+           WHERE producto_id = p.id_producto AND estado = 'activo'
+           ORDER BY principal DESC, orden ASC
+           LIMIT 1
+         ) img ON true
+         WHERE p.empresa_id = $1 AND p.fb_product_id IS NOT NULL
+         ORDER BY c.nombre, p.nombre ASC;`,
+        [empresaId],
+      );
+
+      return {
+        categorias: catRows.map((c: any) => ({
+          id: Number(c.id_categoria),
+          nombre: c.nombre,
+          total_productos: Number(c.total_productos),
+        })),
+        productos: prodRows.map((p: any) => ({
+          id: Number(p.id_producto),
+          codigo_interno: p.codigo_interno,
+          nombre: p.nombre,
+          descripcion: p.descripcion || '',
+          precio: Number(p.precio) || 0,
+          imagen_principal: p.imagen_principal || null,
+          categoria_id: p.categoria_id ? Number(p.categoria_id) : null,
+          categoria_nombre: p.categoria_nombre || 'General',
+          disponible: Number(p.disponible) || 0,
+        })),
+      };
+    } catch (err: any) {
+      this.logger.error(`[Chat] Error al obtener catálogo disponible: ${err.message}`);
+      throw new InternalServerErrorException('Error al consultar productos para el chat');
+    }
+  }
+
+  /**
+   * Obtiene los mensajes de una conversación desde PostgreSQL.
+   */
+  async getMensajesConversacionChat(conversacionId: number, empresaId = 1) {
+    try {
+      const rows = await this.dataSource.query(
+        `SELECT
+           id_mensaje AS id,
+           conversacion_id,
+           direccion,
+           tipo,
+           contenido,
+           media_url,
+           media_mime_type,
+           metadata,
+           created_at
+         FROM public.mensaje
+         WHERE conversacion_id = $1 AND empresa_id = $2
+         ORDER BY id_mensaje ASC;`,
+        [conversacionId, empresaId],
+      );
+
+      return rows.map((m: any) => ({
+        id: Number(m.id),
+        emisor: m.direccion === 'inbound' ? 'cliente' : m.metadata?.enviado_por_tool ? 'ia' : 'asesor',
+        tipo: m.tipo,
+        texto: m.contenido,
+        media_url: m.media_url,
+        metadata: m.metadata,
+        hora: new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      }));
+    } catch (err: any) {
+      this.logger.error(`[Chat] Error al consultar mensajes: ${err.message}`);
+      throw new InternalServerErrorException('Error al consultar mensajes de la conversación');
+    }
+  }
+
+  /**
+   * Alterna el modo de atención ('ia' vs 'humano') para una conversación.
+   */
+  async cambiarModoConversacion(conversacionId: number, modo: 'ia' | 'humano', empresaId = 1) {
+    try {
+      await this.dataSource.query(
+        `UPDATE public.conversacion
+         SET modo = $1, updated_at = NOW()
+         WHERE id_conversacion = $2 AND empresa_id = $3;`,
+        [modo, conversacionId, empresaId],
+      );
+      return { ok: true, conversacionId, modo };
+    } catch (err: any) {
+      this.logger.error(`[Chat] Error al cambiar modo: ${err.message}`);
+      throw new InternalServerErrorException('Error al cambiar modo de atención');
+    }
+  }
+
+  /**
+   * Envía un mensaje de texto por WhatsApp vía Meta Cloud API y lo persiste en PostgreSQL.
+   * Valida estrictamente que la ventana de servicio de 24 horas esté abierta para evitar cobros de marketing.
+   */
+  async enviarMensajeTextoChat(conversacionId: number, texto: string, empresaId = 1) {
+    const ventana = await this.verificarVentanaServicio24h(conversacionId, empresaId);
+    if (!ventana.activa) {
+      throw new BadRequestException(
+        'Ventana de atención de 24 horas cerrada. Para evitar cobros adicionales de marketing de Meta, solo puedes contestar cuando el cliente te haya escrito en las últimas 24 horas.',
+      );
+    }
+
+    const { metaToken, apiVersion, phoneId } = await this.getMetaCatalogContext(empresaId);
+
+    if (!texto || !texto.trim()) {
+      throw new BadRequestException('El mensaje no puede estar vacío');
+    }
+
+    // Obtener teléfono del cliente
+    const convRows = await this.dataSource.query(
+      `SELECT t.whatsapp, t.telefono
+       FROM public.conversacion c
+       JOIN public.tercero t ON t.id_tercero = c.tercero_id
+       WHERE c.id_conversacion = $1 AND c.empresa_id = $2;`,
+      [conversacionId, empresaId],
+    );
+
+    const conv = convRows[0];
+    const phone = conv?.whatsapp || conv?.telefono;
+    const cleanPhone = (phone || '').replace(/[^0-9]/g, '');
+
+    if (!cleanPhone) {
+      throw new BadRequestException('No se encontró número de WhatsApp para este contacto');
+    }
+
+    try {
+      // 1. Enviar por Meta WhatsApp Cloud API
+      const res = await fetch(`https://graph.facebook.com/${apiVersion}/${phoneId}/messages`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${metaToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          messaging_product: 'whatsapp',
+          recipient_type: 'individual',
+          to: cleanPhone,
+          type: 'text',
+          text: { body: texto.trim() },
+        }),
+      });
+
+      const data: any = await res.json();
+      if (!res.ok) {
+        const errText = data.error?.message || JSON.stringify(data);
+        this.logger.error(`[Chat] Error enviando mensaje a WhatsApp: ${errText}`);
+        throw new Error(errText);
+      }
+
+      const wamid = data.messages?.[0]?.id;
+
+      // 2. Persistir en public.mensaje
+      const insertRes = await this.dataSource.query(
+        `INSERT INTO public.mensaje (empresa_id, conversacion_id, direccion, tipo, contenido, metadata, created_at)
+         VALUES ($1, $2, 'outbound', 'text', $3, $4, NOW())
+         RETURNING id_mensaje, created_at;`,
+        [empresaId, conversacionId, texto.trim(), JSON.stringify({ wamid, origen: 'crm_asesor' })],
+      );
+
+      // 3. Actualizar conversación
+      await this.dataSource.query(
+        `UPDATE public.conversacion
+         SET fecha_ultima_interaccion = NOW(), updated_at = NOW()
+         WHERE id_conversacion = $1;`,
+        [conversacionId],
+      );
+
+      return {
+        ok: true,
+        id: Number(insertRes[0]?.id_mensaje),
+        wamid,
+        hora: new Date(insertRes[0]?.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        texto: texto.trim(),
+      };
+    } catch (err: any) {
+      this.logger.error(`[Chat] Error al enviar mensaje: ${err.message}`);
+      throw new BadRequestException(`No se pudo enviar el mensaje por WhatsApp: ${err.message}`);
+    }
+  }
+
+  /**
+   * Envía un Producto Individual (Single Product Message - SPM) por WhatsApp.
+   * Valida estrictamente la ventana de servicio de 24h.
+   */
+  async enviarProductoChat(conversacionId: number, dto: any, empresaId = 1) {
+    const ventana = await this.verificarVentanaServicio24h(conversacionId, empresaId);
+    if (!ventana.activa) {
+      throw new BadRequestException(
+        'Ventana de atención de 24 horas cerrada. Para evitar cobros adicionales de marketing de Meta, solo puedes contestar cuando el cliente te haya escrito en las últimas 24 horas.',
+      );
+    }
+
+    if (!dto.codigo_interno) {
+      throw new BadRequestException('Debes especificar el código interno del producto');
+    }
+
+    const prodRows = await this.dataSource.query(
+      `SELECT id_producto, codigo_interno, nombre, COALESCE(precio_impuesto, precio_base, 0) AS precio, fb_product_id
+       FROM public.producto
+       WHERE codigo_interno = $1 AND empresa_id = $2;`,
+      [dto.codigo_interno, empresaId],
+    );
+
+    const prod = prodRows[0];
+    if (!prod) {
+      throw new BadRequestException(`No se encontró el producto con código ${dto.codigo_interno}`);
+    }
+    if (!prod.fb_product_id) {
+      throw new BadRequestException(`El producto "${prod.nombre}" no está sincronizado con Meta Catalog`);
+    }
+
+    const { metaToken, apiVersion, phoneId, catalogId } = await this.getMetaCatalogContext(empresaId);
+
+    const convRows = await this.dataSource.query(
+      `SELECT t.whatsapp, t.telefono
+       FROM public.conversacion c
+       JOIN public.tercero t ON t.id_tercero = c.tercero_id
+       WHERE c.id_conversacion = $1 AND c.empresa_id = $2;`,
+      [conversacionId, empresaId],
+    );
+
+    const conv = convRows[0];
+    const cleanPhone = (conv?.whatsapp || conv?.telefono || '').replace(/[^0-9]/g, '');
+    if (!cleanPhone) {
+      throw new BadRequestException('No se encontró número de WhatsApp para este contacto');
+    }
+
+    const payload = {
+      messaging_product: 'whatsapp',
+      recipient_type: 'individual',
+      to: cleanPhone,
+      type: 'interactive',
+      interactive: {
+        type: 'product',
+        body: {
+          text: dto.texto?.trim() || `Aquí tienes los detalles de ${prod.nombre}:`,
+        },
+        footer: {
+          text: 'ChatConnect Ferretería',
+        },
+        action: {
+          catalog_id: catalogId,
+          product_retailer_id: prod.codigo_interno,
+        },
+      },
+    };
+
+    const res = await fetch(`https://graph.facebook.com/${apiVersion}/${phoneId}/messages`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${metaToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const data: any = await res.json();
+    if (!res.ok) {
+      const errText = data.error?.message || JSON.stringify(data);
+      this.logger.error(`[ChatSPM] Error enviando producto a WhatsApp: ${errText}`);
+      throw new BadRequestException(`Error de Meta al enviar producto: ${errText}`);
+    }
+
+    const wamid = data.messages?.[0]?.id;
+
+    const insertRes = await this.dataSource.query(
+      `INSERT INTO public.mensaje (empresa_id, conversacion_id, direccion, tipo, contenido, metadata, created_at)
+       VALUES ($1, $2, 'outbound', 'interactive', $3, $4, NOW())
+       RETURNING id_mensaje, created_at;`,
+      [
+        empresaId,
+        conversacionId,
+        `📦 Producto enviado: ${prod.nombre} (${prod.codigo_interno}) - $${Number(prod.precio).toLocaleString('es-CO')}`,
+        JSON.stringify({
+          wamid,
+          tipo_interactivo: 'product',
+          producto_id: prod.id_producto,
+          codigo_interno: prod.codigo_interno,
+          nombre: prod.nombre,
+        }),
+      ],
+    );
+
+    await this.dataSource.query(
+      `UPDATE public.conversacion
+       SET fecha_ultima_interaccion = NOW(), updated_at = NOW()
+       WHERE id_conversacion = $1;`,
+      [conversacionId],
+    );
+
+    return {
+      ok: true,
+      id: Number(insertRes[0]?.id_mensaje),
+      wamid,
+      hora: new Date(insertRes[0]?.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      texto: `📦 Producto enviado: ${prod.nombre} (${prod.codigo_interno})`,
+      producto: prod.nombre,
+    };
+  }
+
+  /**
+   * Envía productos agrupados por 1 o varias categorías (Multi-Product Message - MPM).
+   * Valida estrictamente la ventana de servicio de 24 horas.
+   */
+  async enviarCategoriasChat(conversacionId: number, dto: any, empresaId = 1) {
+    const ventana = await this.verificarVentanaServicio24h(conversacionId, empresaId);
+    if (!ventana.activa) {
+      throw new BadRequestException(
+        'Ventana de atención de 24 horas cerrada. Para evitar cobros adicionales de marketing de Meta, solo puedes contestar cuando el cliente te haya escrito en las últimas 24 horas.',
+      );
+    }
+
+    const catIds = Array.isArray(dto.categoria_ids) ? dto.categoria_ids.map(Number).filter(Boolean) : [];
+    if (catIds.length === 0) {
+      throw new BadRequestException('Debes seleccionar al menos una categoría');
+    }
+
+    const placeholders = catIds.map((_id: number, i: number) => `$${i + 2}`).join(',');
+    const prodRows = await this.dataSource.query(
+      `SELECT
+         c.id_categoria,
+         c.nombre AS categoria,
+         p.id_producto,
+         p.codigo_interno,
+         p.nombre AS producto
+       FROM public.producto p
+       INNER JOIN public.categoria c ON c.id_categoria = p.categoria_id
+       WHERE p.empresa_id = $1 AND p.fb_product_id IS NOT NULL AND c.id_categoria IN (${placeholders})
+       ORDER BY c.nombre, p.id_producto ASC;`,
+      [empresaId, ...catIds],
+    );
+
+    if (prodRows.length === 0) {
+      throw new BadRequestException('Las categorías seleccionadas no tienen productos aprobados en Meta');
+    }
+
+    const sectionsMap = new Map<string, { product_retailer_id: string }[]>();
+    let totalItems = 0;
+
+    for (const r of prodRows) {
+      const catTitle = (r.categoria || 'Productos').substring(0, 24);
+      if (!sectionsMap.has(catTitle)) {
+        if (sectionsMap.size >= 10) continue;
+        sectionsMap.set(catTitle, []);
+      }
+      const items = sectionsMap.get(catTitle)!;
+      if (items.length < 10 && totalItems < 30) {
+        items.push({ product_retailer_id: r.codigo_interno });
+        totalItems++;
+      }
+    }
+
+    const sections = Array.from(sectionsMap.entries())
+      .filter(([, items]) => items.length > 0)
+      .map(([title, product_items]) => ({ title, product_items }));
+
+    if (sections.length === 0) {
+      throw new BadRequestException('No se pudieron construir las secciones del catálogo');
+    }
+
+    const { metaToken, apiVersion, phoneId, catalogId } = await this.getMetaCatalogContext(empresaId);
+
+    const convRows = await this.dataSource.query(
+      `SELECT t.whatsapp, t.telefono
+       FROM public.conversacion c
+       JOIN public.tercero t ON t.id_tercero = c.tercero_id
+       WHERE c.id_conversacion = $1 AND c.empresa_id = $2;`,
+      [conversacionId, empresaId],
+    );
+
+    const conv = convRows[0];
+    const cleanPhone = (conv?.whatsapp || conv?.telefono || '').replace(/[^0-9]/g, '');
+    if (!cleanPhone) {
+      throw new BadRequestException('No se encontró número de WhatsApp para este contacto');
+    }
+
+    const payload = {
+      messaging_product: 'whatsapp',
+      recipient_type: 'individual',
+      to: cleanPhone,
+      type: 'interactive',
+      interactive: {
+        type: 'product_list',
+        header: {
+          type: 'text',
+          text: (dto.titulo?.trim() || 'Catálogo de Productos').substring(0, 60),
+        },
+        body: {
+          text: dto.texto?.trim() || 'Consulta los artículos disponibles en las siguientes categorías y realiza tu pedido directo:',
+        },
+        footer: {
+          text: 'ChatConnect Ferretería',
+        },
+        action: {
+          catalog_id: catalogId,
+          sections,
+        },
+      },
+    };
+
+    const res = await fetch(`https://graph.facebook.com/${apiVersion}/${phoneId}/messages`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${metaToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const data: any = await res.json();
+    if (!res.ok) {
+      const errText = data.error?.message || JSON.stringify(data);
+      this.logger.error(`[ChatMPM] Error enviando categorías a WhatsApp: ${errText}`);
+      throw new BadRequestException(`Error de Meta al enviar catálogo: ${errText}`);
+    }
+
+    const wamid = data.messages?.[0]?.id;
+    const catNombres = Array.from(sectionsMap.keys()).join(', ');
+
+    const insertRes = await this.dataSource.query(
+      `INSERT INTO public.mensaje (empresa_id, conversacion_id, direccion, tipo, contenido, metadata, created_at)
+       VALUES ($1, $2, 'outbound', 'interactive', $3, $4, NOW())
+       RETURNING id_mensaje, created_at;`,
+      [
+        empresaId,
+        conversacionId,
+        `📦 Catálogo enviado (${sections.length} categorías: ${catNombres} - ${totalItems} productos)`,
+        JSON.stringify({
+          wamid,
+          tipo_interactivo: 'product_list',
+          secciones: sections.length,
+          categorias: catNombres,
+          total_productos: totalItems,
+        }),
+      ],
+    );
+
+    await this.dataSource.query(
+      `UPDATE public.conversacion
+       SET fecha_ultima_interaccion = NOW(), updated_at = NOW()
+       WHERE id_conversacion = $1;`,
+      [conversacionId],
+    );
+
+    return {
+      ok: true,
+      id: Number(insertRes[0]?.id_mensaje),
+      wamid,
+      hora: new Date(insertRes[0]?.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      texto: `📦 Catálogo enviado (${sections.length} categorías: ${catNombres} - ${totalItems} productos)`,
+      categorias_enviadas: sections.length,
+      productos_enviados: totalItems,
+    };
+  }
+
+  /**
+   * Envía automáticamente el catálogo multi-categoría dividido en secciones a la conversación.
+   */
+  async enviarCatalogoMultiCategoria(conversacionId: number, empresaId = 1) {
+    const ventana = await this.verificarVentanaServicio24h(conversacionId, empresaId);
+    if (!ventana.activa) {
+      throw new BadRequestException(
+        'Ventana de atención de 24 horas cerrada. Para evitar cobros adicionales de marketing de Meta, solo puedes contestar cuando el cliente te haya escrito en las últimas 24 horas.',
+      );
+    }
+
+    const convRows = await this.dataSource.query(
+      `SELECT t.whatsapp, t.telefono
+       FROM public.conversacion c
+       JOIN public.tercero t ON t.id_tercero = c.tercero_id
+       WHERE c.id_conversacion = $1 AND c.empresa_id = $2;`,
+      [conversacionId, empresaId],
+    );
+
+    const conv = convRows[0];
+    const phone = conv?.whatsapp || conv?.telefono;
+    if (!phone) {
+      throw new BadRequestException('No se encontró número de WhatsApp para este contacto');
+    }
+
+    return await this.enviarColeccionWhatsApp(
+      {
+        telefono: phone,
+        nombreColeccion: 'Catálogo por Categorías',
+        tipoMensaje: 'multi_seccion',
+        titulo: 'Catálogo de Productos',
+        cuerpo: 'Explora nuestras colecciones organizadas por categoría y realiza tu pedido directo:',
+        conversacionId,
+        empresa_id: empresaId,
+      },
+      empresaId,
+    );
   }
 }
 

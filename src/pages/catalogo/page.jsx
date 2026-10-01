@@ -33,8 +33,7 @@ const CatalogoPage = () => {
         category: { name: p.categoria || 'General' },
         subcategoria: p.subcategoria || '', referencia: p.referencia || '',
         fb_product_id: p.fb_product_id, meta_sync_status: p.meta_sync_status,
-        price: Number(p.precio) || 0,
-        quantity: Number(p.disponible ?? p.existencia) || 0,
+        price: Number(p.precio) || 0, quantity: Number(p.disponible ?? p.existencia) || 0,
         images: p.imagen_principal ? [p.imagen_principal] : [],
       })) : []);
     } catch { setProductsList([]); }
@@ -61,30 +60,25 @@ const CatalogoPage = () => {
     try {
       await productoService.syncMeta(prod.id);
       await fetchCatalogData();
-      setFeedback({
-        type: 'success',
-        text: `"${prod.name}" sincronizado con Meta. Meta revisa las imágenes en 2-10 min. Para verlo en tu celular, cierra y abre WhatsApp.`,
-      });
+      setFeedback({ type: 'success', text: `"${prod.name}" sincronizado con Meta WhatsApp.` });
     } catch { setFeedback({ type: 'danger', text: 'Error al sincronizar con WhatsApp' }); }
     finally { setIsSyncing(false); }
   };
 
-  const loaderTitle = isSeeding ? 'Cargando y Sincronizando...' : isDeletingAll ? 'Vaciando Catálogo...' : isDeleting ? 'Eliminando...' : 'Sincronizando...';
-  const loaderMsg = isSeeding ? 'Insertando 48 productos con imágenes y sincronizando colecciones con Meta WhatsApp...' : isDeletingAll ? 'Eliminando todos los productos de PostgreSQL y WhatsApp...' : '';
-
   const filteredProducts = useMemo(() => {
     if (!searchTerm.trim()) return productsList;
     const t = searchTerm.toLowerCase();
-    return productsList.filter(p =>
-      [p.name, p.description, p.category?.name, p.subcategoria, p.referencia].some(v => v?.toLowerCase().includes(t))
-    );
+    return productsList.filter(p => [p.name, p.description, p.category?.name, p.subcategoria, p.referencia].some(v => v?.toLowerCase().includes(t)));
   }, [productsList, searchTerm]);
 
   return (
     <>
-      <FullPageLoader show={isDeleting || isSyncing || isSeeding || isDeletingAll} title={loaderTitle} message={loaderMsg} badge="PostgreSQL" />
+      <FullPageLoader show={isDeleting || isSyncing || isSeeding || isDeletingAll}
+        title={isSeeding ? 'Sincronizando...' : isDeletingAll ? 'Vaciando...' : 'Procesando...'}
+        message={isSeeding ? 'Cargando productos demo en PostgreSQL y Meta...' : ''} badge="PostgreSQL" />
       <PageMetaData title="Productos - Catálogo" />
-      <PageBreadcrumb title="Productos" subName="Catálogo" />
+      <PageBreadcrumb title="Catálogo de Productos" subName="Meta Commerce & WhatsApp" />
+
       <Row><Col><Card><CardBody>
         <WhatsAppCatalogInfoBanner />
         {feedback && (
@@ -93,53 +87,36 @@ const CatalogoPage = () => {
             {feedback.text}
           </Alert>
         )}
-        <div className="d-flex flex-wrap justify-content-between gap-3">
+        <div className="d-flex flex-wrap justify-content-between gap-3 mb-3">
           <div className="search-bar">
             <span><IconifyIcon icon="bx:search-alt" className="mb-1" /></span>
-            <input type="search" className="form-control" id="search"
-              placeholder="Buscar producto, referencia, categoría..."
+            <input type="search" className="form-control" placeholder="Buscar producto..."
               value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
           </div>
           <div className="d-flex gap-2">
-            <DeleteAllProductsBtn
-              disabled={productsList.length === 0}
-              onLoadingChange={setIsDeletingAll}
+            <DeleteAllProductsBtn disabled={productsList.length === 0} onLoadingChange={setIsDeletingAll}
               onComplete={(res) => { fetchCatalogData(); setFeedback({ type: 'success', text: res.message }); }}
-              onError={(msg) => setFeedback({ type: 'danger', text: msg })}
-            />
-            <SeedFerreteriBtn
-              onLoadingChange={setIsSeeding}
+              onError={(msg) => setFeedback({ type: 'danger', text: msg })} />
+            <SeedFerreteriBtn onLoadingChange={setIsSeeding}
               onComplete={(res) => { fetchCatalogData(); setFeedback({ type: 'success', text: res.message }); }}
-              onError={(msg) => setFeedback({ type: 'danger', text: msg })}
-            />
+              onError={(msg) => setFeedback({ type: 'danger', text: msg })} />
             <Link to="/catalogo/crear-producto" className="btn btn-primary d-flex align-items-center">
               <IconifyIcon icon="bx:plus" className="me-1" /> Crear Producto
             </Link>
           </div>
         </div>
-      </CardBody>
-      <div>
         {loading ? (
-          <div className="text-center py-5">
-            <Spinner animation="border" variant="primary" />
-            <p className="text-muted mt-2 fs-13">Cargando catálogo desde PostgreSQL...</p>
-          </div>
+          <div className="text-center py-5"><Spinner animation="border" variant="primary" /><p className="text-muted mt-2 fs-13">Cargando...</p></div>
         ) : productsList.length > 0 ? (
           <CatalogoProductsTable products={filteredProducts} onDeleteProduct={setProductToDelete} onSyncProduct={handleSyncMeta} />
         ) : (
-          <div className="text-center py-5">
-            <IconifyIcon icon="bx:box" className="fs-48 text-muted mb-2" />
-            <h5 className="fw-semibold text-dark">No hay productos registrados</h5>
-            <p className="text-muted fs-13">Empieza creando un nuevo producto o carga datos demo.</p>
-          </div>
+          <div className="text-center py-5"><IconifyIcon icon="bx:box" className="fs-48 text-muted mb-2" /><h5 className="fw-semibold">No hay productos</h5></div>
         )}
-      </div></Card></Col></Row>
-      <DeleteConfirmationModal
-        show={!!productToDelete} onHide={() => !isDeleting && setProductToDelete(null)}
-        onConfirm={handleConfirmDelete}
-        title="¿Eliminar producto?" message={`¿Eliminar "${productToDelete?.name}" de BD y WhatsApp?`}
-        itemName={productToDelete?.name} confirmBtnText={isDeleting ? 'Eliminando...' : 'Sí, eliminar'}
-      />
+      </CardBody></Card></Col></Row>
+
+      <DeleteConfirmationModal show={!!productToDelete} onHide={() => !isDeleting && setProductToDelete(null)}
+        onConfirm={handleConfirmDelete} title="¿Eliminar producto?" message={`¿Eliminar "${productToDelete?.name}" de BD y WhatsApp?`}
+        itemName={productToDelete?.name} confirmBtnText={isDeleting ? 'Eliminando...' : 'Sí, eliminar'} />
     </>
   );
 };

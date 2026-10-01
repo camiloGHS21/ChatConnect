@@ -221,6 +221,133 @@ export const productoService = {
     const res = await HttpClient.post('/productos/ciudades', datos);
     return res.data;
   },
+
+  // ==========================================================================
+  // COLECCIONES DE PRODUCTOS EN WHATSAPP (Meta Commerce / Graph API)
+  // ==========================================================================
+
+  /**
+   * Lista todas las colecciones (Product Sets) configuradas en Meta WhatsApp.
+   */
+  async getColecciones(empresaId = 1) {
+    const res = await HttpClient.get(`/productos/colecciones?empresa_id=${empresaId}`);
+    return res.data;
+  },
+
+  /**
+   * Obtiene los productos pertenecientes a una colección en Meta.
+   */
+  async getProductosDeColeccion(id, empresaId = 1) {
+    const res = await HttpClient.get(`/productos/colecciones/${id}/productos?empresa_id=${empresaId}`);
+    return res.data;
+  },
+
+  /**
+   * Crea una nueva colección (Product Set) en Meta Commerce Catalog.
+   */
+  async crearColeccion(datos, empresaId = 1) {
+    const res = await HttpClient.post(`/productos/colecciones?empresa_id=${empresaId}`, datos);
+    return res.data;
+  },
+
+  /**
+   * Elimina una colección en Meta Catalog.
+   */
+  async eliminarColeccion(id, empresaId = 1) {
+    const res = await HttpClient.delete(`/productos/colecciones/${id}?empresa_id=${empresaId}`);
+    return res.data;
+  },
+
+  /**
+   * Sincroniza automáticamente todas las categorías y subcategorías como colecciones en Meta.
+   */
+  async sincronizarColecciones(empresaId = 1) {
+    const res = await HttpClient.post(`/productos/colecciones/sincronizar?empresa_id=${empresaId}`, {});
+    return res.data;
+  },
+
+  /**
+   * Envía una colección interactiva de productos directamente a un número de WhatsApp vía Meta Cloud API.
+   */
+  async enviarColeccionWhatsApp(datos, empresaId = 1) {
+    const res = await HttpClient.post(`/productos/colecciones/enviar-whatsapp?empresa_id=${empresaId}`, datos);
+    return res.data;
+  },
+
+  // ==========================================================================
+  // CONVERSACIONES Y CHAT EN VIVO WHATSAPP
+  // ==========================================================================
+
+  /**
+   * Obtiene las conversaciones activas desde PostgreSQL.
+   */
+  async getConversaciones(empresaId = 1) {
+    const res = await HttpClient.get(`/productos/chat/conversaciones?empresa_id=${empresaId}`);
+    return res.data;
+  },
+
+  /**
+   * Obtiene los mensajes de una conversación desde PostgreSQL.
+   */
+  async getMensajesConversacion(id, empresaId = 1) {
+    const res = await HttpClient.get(`/productos/chat/conversaciones/${id}/mensajes?empresa_id=${empresaId}`);
+    return res.data;
+  },
+
+  /**
+   * Cambia el modo de atención ('ia' o 'humano').
+   */
+  async cambiarModoConversacion(id, modo, empresaId = 1) {
+    const res = await HttpClient.patch(`/productos/chat/conversaciones/${id}/modo?empresa_id=${empresaId}`, { modo });
+    return res.data;
+  },
+
+  /**
+   * Envía un mensaje de texto por WhatsApp al cliente y lo almacena en la BD.
+   */
+  async enviarMensajeTexto(id, texto, empresaId = 1) {
+    const res = await HttpClient.post(`/productos/chat/conversaciones/${id}/enviar-texto?empresa_id=${empresaId}`, { texto });
+    return res.data;
+  },
+
+  /**
+   * Envía automáticamente el catálogo multi-categoría dividido en secciones al cliente.
+   */
+  async enviarCatalogoMultiCategoria(id, empresaId = 1) {
+    const res = await HttpClient.post(`/productos/chat/conversaciones/${id}/enviar-catalogo-multicategoria?empresa_id=${empresaId}`);
+    return res.data;
+  },
+
+  /**
+   * Obtiene las categorías y productos disponibles en PostgreSQL y sincronizados con Meta para enviar en el chat.
+   */
+  async getCatalogoDisponibleChat(empresaId = 1) {
+    const res = await HttpClient.get(`/productos/chat/catalogo-disponible?empresa_id=${empresaId}`);
+    return res.data;
+  },
+
+  /**
+   * Envía un producto individual interactivo (Single Product Message - SPM) al cliente en WhatsApp.
+   */
+  async enviarProductoChat(conversacionId, codigoInterno, texto = '', empresaId = 1) {
+    const res = await HttpClient.post(`/productos/chat/conversaciones/${conversacionId}/enviar-producto?empresa_id=${empresaId}`, {
+      codigo_interno: codigoInterno,
+      texto,
+    });
+    return res.data;
+  },
+
+  /**
+   * Envía productos de 1 o varias categorías (Multi-Product Message - MPM) en secciones interactivas al cliente en WhatsApp.
+   */
+  async enviarCategoriasChat(conversacionId, categoriaIds, titulo = '', texto = '', empresaId = 1) {
+    const res = await HttpClient.post(`/productos/chat/conversaciones/${conversacionId}/enviar-categorias?empresa_id=${empresaId}`, {
+      categoria_ids: categoriaIds,
+      titulo,
+      texto,
+    });
+    return res.data;
+  },
 };
 
 export default productoService;
