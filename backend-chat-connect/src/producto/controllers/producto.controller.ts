@@ -215,11 +215,7 @@ export class ProductoController {
 
   @Get('departamentos')
   async getDepartamentos() {
-    return await this.dataSourceDepartamentos();
-  }
-
-  private async dataSourceDepartamentos() {
-    return await this.productoRepo.getCatalogosConfiguracion().then(c => c.departamentos);
+    return await this.productoRepo.getDepartamentos();
   }
 
   @Post('departamentos')
@@ -230,9 +226,8 @@ export class ProductoController {
 
   @Get('ciudades')
   async getCiudades(@Query('departamento_id') departamentoId?: string) {
-    const cat = await this.productoRepo.getCatalogosConfiguracion();
-    if (!departamentoId) return cat.ciudades;
-    return cat.ciudades.filter(c => String(c.id_departamento) === String(departamentoId));
+    const depId = departamentoId ? parseInt(departamentoId, 10) : undefined;
+    return await this.productoRepo.getCiudades(depId);
   }
 
   @Post('ciudades')

@@ -8,6 +8,7 @@ import productoService from '@/services/productoService';
 const ModalProveedorGeoFields = ({ form, update }) => {
   const [departamentos, setDepartamentos] = useState([]);
   const [ciudades, setCiudades] = useState([]);
+  const [loadingCiudades, setLoadingCiudades] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -20,9 +21,11 @@ const ModalProveedorGeoFields = ({ form, update }) => {
   useEffect(() => {
     let isMounted = true;
     if (form.id_departamento) {
+      setLoadingCiudades(true);
       productoService.getCiudades(form.id_departamento).then(data => {
         if (isMounted && Array.isArray(data)) setCiudades(data);
-      }).catch(err => console.warn('Error cargando ciudades:', err));
+      }).catch(err => console.warn('Error cargando ciudades:', err))
+        .finally(() => { if (isMounted) setLoadingCiudades(false); });
     } else {
       setCiudades([]);
     }
@@ -48,24 +51,38 @@ const ModalProveedorGeoFields = ({ form, update }) => {
   return (
     <>
       <Col md={4}>
-        <Form.Label className="fs-12 fw-semibold text-secondary mb-1">Departamento</Form.Label>
+        <Form.Label className="fs-12 fw-semibold text-secondary mb-1">
+          Departamento
+        </Form.Label>
         <Form.Select value={form.id_departamento || ''} onChange={handleDeptoChange}>
           <option value="">Selecciona Departamento...</option>
           {departamentos.map(d => (
-            <option key={d.id} value={d.id}>{d.nombre}</option>
+            <option key={d.id} value={d.id}>
+              {d.nombre}
+            </option>
           ))}
         </Form.Select>
       </Col>
       <Col md={4}>
-        <Form.Label className="fs-12 fw-semibold text-secondary mb-1">Ciudad</Form.Label>
+        <Form.Label className="fs-12 fw-semibold text-secondary mb-1">
+          Ciudad o Municipio
+        </Form.Label>
         <Form.Select
           value={form.id_ciudad || ''}
           onChange={handleCiudadChange}
-          disabled={!form.id_departamento}
+          disabled={!form.id_departamento || loadingCiudades}
         >
-          <option value="">{form.id_departamento ? 'Selecciona Ciudad...' : 'Primero elige dpto.'}</option>
+          <option value="">
+            {loadingCiudades
+              ? 'Cargando ciudades/municipios...'
+              : form.id_departamento
+                ? 'Selecciona Ciudad o Municipio...'
+                : 'Primero elige departamento'}
+          </option>
           {ciudades.map(c => (
-            <option key={c.id} value={c.id}>{c.nombre}</option>
+            <option key={c.id} value={c.id}>
+              {c.nombre}
+            </option>
           ))}
         </Form.Select>
       </Col>

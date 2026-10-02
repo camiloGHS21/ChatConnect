@@ -597,12 +597,12 @@ export class ProductoRepository {
    * Resuelve el nombre del departamento desde su id (creándolo si aún no existe).
    */
   private async resolverNombreDepartamento(dto: any, empresaId: number): Promise<string | null> {
-    if (!dto.departamento) return null;
-    const depId = Number(dto.departamento_id);
+    const depId = Number(dto.id_departamento || dto.departamento_id);
     if (depId) {
       const dep = await this.departamentoRepo.findOne({ where: { id: depId } });
       if (dep) return dep.nombre;
     }
+    if (!dto.departamento) return null;
     const nombreDep = String(dto.departamento).trim();
     if (!nombreDep) return null;
     const dep = await this.crearDepartamento({ nombre: nombreDep });
@@ -613,16 +613,16 @@ export class ProductoRepository {
    * Resuelve el nombre de la ciudad desde su id (creándola si aún no existe).
    */
   private async resolverNombreCiudad(dto: any, empresaId: number): Promise<string | null> {
-    if (!dto.ciudad) return null;
-    const nombreDep = await this.resolverNombreDepartamento(dto, empresaId);
-    const ciudadId = Number(dto.ciudad_id);
+    const ciudadId = Number(dto.id_ciudad || dto.ciudad_id);
     if (ciudadId) {
       const ciu = await this.ciudadRepo.findOne({ where: { id: ciudadId } });
       if (ciu) return ciu.nombre;
     }
+    if (!dto.ciudad) return null;
     const nombreCiudad = String(dto.ciudad).trim();
     if (!nombreCiudad) return null;
 
+    const nombreDep = await this.resolverNombreDepartamento(dto, empresaId);
     const dept = nombreDep
       ? await this.departamentoRepo.findOne({ where: { nombre: ILike(nombreDep) } })
       : null;

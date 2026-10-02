@@ -40,23 +40,21 @@ const GeoConfigTab = ({
         <div>
           <h5 className="card-title mb-0 fw-bold text-dark d-flex align-items-center">
             <IconifyIcon icon="bx:map-pin" className="me-2 text-danger fs-20" />
-            Catálogo Geográfico: Departamentos y Ciudades (Relación 1:N)
+            Catálogo Geográfico: Departamentos y Ciudades
           </h5>
-          <small className="text-muted">Estructura oficial para ubicación y registro de terceros en PostgreSQL</small>
+          <small className="text-muted">Estructura oficial para ubicación y registro de terceros</small>
         </div>
         <div className="d-flex gap-2">
-          <Button variant="outline-primary" size="sm" onClick={() => setShowModalDepto(true)}>
-            + Departamento
-          </Button>
+
           <Button variant="primary" size="sm" onClick={() => setShowModalCiudad(true)}>
-            + Ciudad en {activeDepto?.nombre || 'Dpto.'}
+            + Ciudad o Municipio en {activeDepto?.nombre || 'Dpto.'}
           </Button>
         </div>
       </Card.Header>
       <Card.Body className="p-3">
         <Row className="g-3">
           <Col md={4} className="border-end">
-            <h6 className="fw-bold fs-13 text-secondary mb-2">Departamentos (1)</h6>
+            <h6 className="fw-bold fs-13 text-secondary mb-2">Departamentos (DIAN)</h6>
             <div className="list-group rounded-2" style={{ maxHeight: 380, overflowY: 'auto' }}>
               {departamentos.map(d => (
                 <button
@@ -76,7 +74,7 @@ const GeoConfigTab = ({
           <Col md={8}>
             <div className="d-flex justify-content-between align-items-center mb-2">
               <h6 className="fw-bold fs-13 text-secondary mb-0">
-                Ciudades de {activeDepto?.nombre} (Muchos: {filteredCiudades.length})
+                Ciudades y Municipios de {activeDepto?.nombre} ({filteredCiudades.length})
               </h6>
             </div>
             <div className="table-responsive border rounded-2" style={{ maxHeight: 380, overflowY: 'auto' }}>
@@ -84,9 +82,9 @@ const GeoConfigTab = ({
                 <thead className="table-light sticky-top">
                   <tr className="fs-12 text-muted">
                     <th style={{ width: 70 }}>ID</th>
-                    <th style={{ width: 90 }}>Código</th>
-                    <th>Nombre Ciudad</th>
-                    <th style={{ width: 140 }}>ID Departamento</th>
+                    <th style={{ width: 110 }}>Código DIAN</th>
+                    <th>Ciudad o Municipio</th>
+                    <th style={{ width: 140 }}>Nombre Departamento</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -95,7 +93,7 @@ const GeoConfigTab = ({
                       <td className="text-muted fs-12">#{c.id}</td>
                       <td><Badge bg="light" className="text-dark border">{c.codigo}</Badge></td>
                       <td className="fw-semibold text-dark fs-13">{c.nombre}</td>
-                      <td className="text-muted fs-12">id_depto: {c.id_departamento}</td>
+                      <td className="text-muted fs-12">{activeDepto?.nombre}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -107,13 +105,13 @@ const GeoConfigTab = ({
 
       <Modal show={showModalCiudad} onHide={() => setShowModalCiudad(false)} centered>
         <Form onSubmit={handleSaveCiudad}>
-          <Modal.Header closeButton><Modal.Title className="fs-15">Nueva Ciudad en {activeDepto?.nombre}</Modal.Title></Modal.Header>
+          <Modal.Header closeButton><Modal.Title className="fs-15">Nueva Ciudad / Municipio en {activeDepto?.nombre}</Modal.Title></Modal.Header>
           <Modal.Body className="py-2">
             <Form.Group className="mb-2">
-              <Form.Label className="fs-12 fw-semibold">Nombre Ciudad *</Form.Label>
+              <Form.Label className="fs-12 fw-semibold">Nombre Ciudad o Municipio *</Form.Label>
               <Form.Control required value={ciudadForm.nombre} onChange={e => setCiudadForm(p => ({ ...p, nombre: e.target.value }))} />
             </Form.Group>
-            <Form.Group><Form.Label className="fs-12 fw-semibold">Código DANE (opcional)</Form.Label>
+            <Form.Group><Form.Label className="fs-12 fw-semibold">Código DIAN / DANE (5 dígitos)</Form.Label>
               <Form.Control value={ciudadForm.codigo} onChange={e => setCiudadForm(p => ({ ...p, codigo: e.target.value }))} />
             </Form.Group>
           </Modal.Body>
