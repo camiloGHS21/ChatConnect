@@ -39,11 +39,8 @@ export const getInitialProductState = (siguienteCodigo = '') => ({
     { id: 2, lista_precio_id: '3', nombre_lista: 'Precio Distribuidor', precio_base: 110000, utilidad_porcentaje: 29.41, utilidad_valor: 25000, impuesto_porcentaje: 19, precio_venta: 130900, estado: 'activo' }
   ],
 
-  // SECCIÓN 4 — Retenciones
-  retenciones: [
-    { id: 1, retencion_id: '1', nombre_retencion: 'Retención en la Fuente 2.5% (Compras generales)', tipo: 'PORCENTAJE', porcentaje: 2.5, valor_fijo: null, estado: 'activo' },
-    { id: 2, retencion_id: '2', nombre_retencion: 'Retención de IVA 15% (ReteIVA)', tipo: 'PORCENTAJE', porcentaje: 15.0, valor_fijo: null, estado: 'activo' }
-  ],
+  // SECCIÓN 4 — Retenciones (No aplican para valores menores a $500.000 COP)
+  retenciones: [],
 
   // SECCIÓN 5 — Inventario
   maneja_inventario: true,

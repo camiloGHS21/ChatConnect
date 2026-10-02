@@ -43,6 +43,11 @@ export const useProductCatalogs = (updateField) => {
         if (code && updateField) {
           updateField('codigo_interno', code);
         }
+
+        const medida94 = (catData.medidas || []).find(m => String(m.codigo) === '94');
+        if (medida94 && updateField) {
+          updateField('medida_id', String(medida94.id));
+        }
       } catch (err) {
         console.warn('Error al cargar catálogos desde backend:', err);
       } finally {

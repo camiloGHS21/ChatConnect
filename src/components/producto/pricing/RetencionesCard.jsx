@@ -16,8 +16,17 @@ const RetencionesCard = ({
     valor_fijo: 0,
   });
 
+  const precioBase = parseFloat(formData?.precio_base || formData?.costo_base || 0);
+  const aplicaRetencion = precioBase >= 500000;
+
+  React.useEffect(() => {
+    if (!aplicaRetencion && formData?.retenciones && formData.retenciones.length > 0) {
+      updateField('retenciones', []);
+    }
+  }, [aplicaRetencion]);
+
   const handleAddWithholding = () => {
-    if (!newWithholding.retencion_id) return;
+    if (!aplicaRetencion || !newWithholding.retencion_id) return;
     const item = withholdingsCatalog.find(w => String(w.id) === String(newWithholding.retencion_id));
     const isDuplicate = (formData.retenciones || []).some(
       r => String(r.retencion_id) === String(newWithholding.retencion_id)
@@ -50,6 +59,15 @@ const RetencionesCard = ({
         <p className="text-muted fs-14 mb-0">Retenciones fiscales aplicables al producto (ReteFuente, ReteIVA, ReteICA)</p>
       </div>
 
+      {!aplicaRetencion && (
+        <div className="alert alert-info py-2 px-3 fs-13 d-flex align-items-center gap-2 mb-3">
+          <IconifyIcon icon="bx:info-circle" className="fs-18 flex-shrink-0 text-info" />
+          <span>
+            <strong>Base mínima DIAN:</strong> Para valores menores a <strong>$500.000 COP</strong> no aplica retención en la fuente (Base mínima legal de compras).
+          </span>
+        </div>
+      )}
+
       <Card className="border shadow-none mb-3 bg-light-subtle rounded-3">
         <Card.Body className="p-3">
           <Row className="g-2 align-items-end">
@@ -57,6 +75,7 @@ const RetencionesCard = ({
               <Form.Label className="fs-12 fw-semibold mb-1">Seleccionar Retención</Form.Label>
               <Form.Select
                 size="sm"
+                disabled={!aplicaRetencion}
                 value={newWithholding.retencion_id}
                 onChange={e => {
                   const rId = e.target.value;
@@ -81,11 +100,7 @@ const RetencionesCard = ({
 
             <Col md={3} sm={6}>
               <Form.Label className="fs-12 fw-semibold mb-1">Tipo de Retención</Form.Label>
-              <Form.Select
-                size="sm"
-                value={newWithholding.tipo}
-                onChange={e => setNewWithholding({ ...newWithholding, tipo: e.target.value })}
-              >
+              <Form.Select size="sm" disabled={!aplicaRetencion} value={newWithholding.tipo} onChange={e => setNewWithholding({ ...newWithholding, tipo: e.target.value })}>
                 <option value="PORCENTAJE">Porcentual (%)</option>
                 <option value="VALOR_FIJO">Valor Fijo ($)</option>
               </Form.Select>
@@ -99,6 +114,7 @@ const RetencionesCard = ({
                 size="sm"
                 type="number"
                 step="0.01"
+                disabled={!aplicaRetencion}
                 value={newWithholding.tipo === 'PORCENTAJE' ? newWithholding.porcentaje : newWithholding.valor_fijo}
                 onChange={e => {
                   if (newWithholding.tipo === 'PORCENTAJE') {
@@ -116,7 +132,7 @@ const RetencionesCard = ({
                 size="sm"
                 className="w-100"
                 onClick={handleAddWithholding}
-                disabled={!newWithholding.retencion_id || isAssigned(newWithholding.retencion_id)}
+                disabled={!aplicaRetencion || !newWithholding.retencion_id || isAssigned(newWithholding.retencion_id)}
               >
                 <IconifyIcon icon="bx:plus" className="me-1" />
                 Agregar

@@ -9,6 +9,15 @@ const InventarioConfigCard = ({
   measuresCatalog = [],
   errors = {},
 }) => {
+  React.useEffect(() => {
+    if (!formData.medida_id && measuresCatalog.length > 0) {
+      const defaultMeasure = measuresCatalog.find(m => String(m.codigo) === '94') || measuresCatalog[0];
+      if (defaultMeasure) {
+        updateField('medida_id', String(defaultMeasure.id));
+      }
+    }
+  }, [measuresCatalog, formData.medida_id]);
+
   return (
     <Card className="border shadow-none mb-4 rounded-3">
       <Card.Header className="bg-light-subtle py-3 border-bottom d-flex align-items-center justify-content-between">
@@ -55,11 +64,13 @@ const InventarioConfigCard = ({
               >
                 <option value="">-- Seleccionar unidad de medida --</option>
                 {measuresCatalog.map(m => (
-                  <option key={m.id} value={m.id}>{m.nombre} ({m.codigo})</option>
+                  <option key={m.id} value={m.id}>
+                    {m.nombre?.replace(/\s*\(\s*94\s*-\s*DIAN\s*\)/gi, '').trim() || m.nombre}
+                  </option>
                 ))}
               </Form.Select>
               <Form.Text className="text-muted fs-12">
-                Unidad base para transacciones comerciales y conteo de existencias.
+                Unidad base para transacciones comerciales.
               </Form.Text>
             </Form.Group>
           </Col>

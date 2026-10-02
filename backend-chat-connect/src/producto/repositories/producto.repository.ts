@@ -80,10 +80,76 @@ export class ProductoRepository {
   ) { }
 
   /**
+   * Garantiza que cada empresa tenga los impuestos oficiales de la DIAN por defecto
+   * y la unidad de medida con código 94 de la DIAN.
+   */
+  async asegurarConfiguracionDianPorDefecto(empresaId = 1): Promise<void> {
+    try {
+      // 1. Unidad de medida 94 (Unidad) de la DIAN por defecto
+      await this.dataSource.query(
+        `UPDATE public.medida
+         SET codigo = '94', nombre = 'Unidad', estado = 'activo'
+         WHERE empresa_id = $1 AND (codigo = '94' OR codigo = 'UND' OR id_medida = 1);`,
+        [empresaId],
+      );
+      const existeMedida94 = await this.dataSource.query(
+        `SELECT id_medida FROM public.medida WHERE empresa_id = $1 AND codigo = '94';`,
+        [empresaId],
+      );
+      if (!existeMedida94 || existeMedida94.length === 0) {
+        await this.dataSource.query(
+          `INSERT INTO public.medida (id_medida, empresa_id, codigo, nombre, estado)
+           VALUES (1, $1, '94', 'Unidad', 'activo')
+           ON CONFLICT DO NOTHING;`,
+          [empresaId],
+        );
+      }
+      await this.dataSource.query(
+        `UPDATE public.producto SET medida_id = 1 WHERE empresa_id = $1;`,
+        [empresaId],
+      );
+      await this.dataSource.query(
+        `DELETE FROM public.medida WHERE empresa_id = $1 AND codigo != '94';`,
+        [empresaId],
+      );
+
+      // 2. Impuestos oficiales DIAN por defecto
+      const dianTaxes = [
+        { codigo: 'IVA19', nombre: 'IVA General 19%', porcentaje: 19.00, tipo: 'PORCENTAJE' },
+        { codigo: 'IVA5', nombre: 'IVA Diferencial 5%', porcentaje: 5.00, tipo: 'PORCENTAJE' },
+        { codigo: 'IVA0', nombre: 'Exento de IVA 0%', porcentaje: 0.00, tipo: 'PORCENTAJE' },
+        { codigo: 'EXCLUIDO', nombre: 'Excluido de IVA', porcentaje: 0.00, tipo: 'PORCENTAJE' },
+        { codigo: 'INC8', nombre: 'Impoconsumo 8%', porcentaje: 8.00, tipo: 'PORCENTAJE' },
+        { codigo: 'INC16', nombre: 'Impoconsumo 16%', porcentaje: 16.00, tipo: 'PORCENTAJE' },
+      ];
+
+      for (const t of dianTaxes) {
+        const existing = await this.impuestoRepo.findOne({
+          where: { empresaId, codigo: t.codigo },
+        });
+        if (!existing) {
+          await this.impuestoRepo.save({
+            empresaId,
+            codigo: t.codigo,
+            nombre: t.nombre,
+            porcentaje: t.porcentaje,
+            valor: undefined,
+            tipo: t.tipo,
+            estado: 'activo',
+          });
+        }
+      }
+    } catch (err: any) {
+      this.logger.warn(`Error asegurando configuración DIAN para empresa ${empresaId}: ${err.message}`);
+    }
+  }
+
+  /**
    * Obtiene todos los catálogos maestros reales desde PostgreSQL.
    */
   async getCatalogos(empresaId = 1) {
     try {
+      await this.asegurarConfiguracionDianPorDefecto(empresaId);
       const [
         categorias,
         subcategorias,
@@ -325,6 +391,7 @@ export class ProductoRepository {
    */
   async getCatalogosConfiguracion(empresaId = 1) {
     try {
+      await this.asegurarConfiguracionDianPorDefecto(empresaId);
       const [categorias, marcas, listasPrecios, impuestos, departamentos, ciudades] = await Promise.all([
         this.categoriaRepo.find({ where: { empresaId }, order: { nombre: 'ASC' } }),
         this.marcaRepo.find({ where: { empresaId }, order: { nombre: 'ASC' } }),
@@ -883,6 +950,18 @@ export class ProductoRepository {
       const utilidadPorcentaje =
         Number(dto.utilidad_porcentaje) || (costoBase > 0 ? ((precioBase - costoBase) / costoBase) * 100 : 0);
 
+      // Resolver unidad de medida por defecto (Código 94 de la DIAN) si no se especifica
+      let medidaIdFinal = dto.medida_id ? Number(dto.medida_id) : null;
+      if (!medidaIdFinal) {
+        const medida94 = await queryRunner.query(
+          `SELECT id_medida FROM public.medida WHERE empresa_id = $1 AND codigo = '94' LIMIT 1;`,
+          [empresaId],
+        );
+        if (medida94 && medida94.length > 0) {
+          medidaIdFinal = Number(medida94[0].id_medida);
+        }
+      }
+
       // Inserción del producto principal
       const prodResult = await queryRunner.query(
         `INSERT INTO public.producto (
@@ -913,7 +992,7 @@ export class ProductoRepository {
           dto.tipo_inventario_id ? Number(dto.tipo_inventario_id) : null,
           Number(dto.stock_minimo) || 0,
           Number(dto.stock_maximo) || 0,
-          dto.medida_id ? Number(dto.medida_id) : null,
+          medidaIdFinal,
           dto.presentacion || null,
           dto.estado_producto || 'activo',
           dto.estado_publicacion || 'publicado',
@@ -975,8 +1054,13 @@ export class ProductoRepository {
         }
       }
 
-      // 5. Retenciones
-      if (dto.retenciones && dto.retenciones.length > 0) {
+      // 5. Retenciones (No aplica retención si el valor del producto es menor a $500.000 COP según DIAN)
+      const baseRetencionCrear = Math.max(
+        Number(dto.precio_base || 0),
+        Number(dto.precio_impuesto || 0),
+        Number(dto.costo_base || 0),
+      );
+      if (baseRetencionCrear >= 500000 && dto.retenciones && dto.retenciones.length > 0) {
         for (const ret of dto.retenciones) {
           if (ret.retencion_id) {
             await queryRunner.query(
@@ -1778,22 +1862,25 @@ export class ProductoRepository {
         }
       }
 
-      // 6. Retenciones
+      // 6. Retenciones (No aplica retención si el valor del producto es menor a $500.000 COP según DIAN)
       if (dto.retenciones !== undefined) {
         await queryRunner.query(`DELETE FROM public.producto_retencion WHERE producto_id = $1;`, [productoId]);
-        for (const ret of dto.retenciones) {
-          if (ret.retencion_id) {
-            await queryRunner.query(
-              `INSERT INTO public.producto_retencion (producto_id, retencion_id, tipo, porcentaje, valor_fijo, estado)
-               VALUES ($1, $2, $3, $4, $5, 'activo');`,
-              [
-                productoId,
-                Number(ret.retencion_id),
-                ret.tipo || 'PORCENTAJE',
-                ret.tipo === 'PORCENTAJE' ? Number(ret.porcentaje) || 0 : null,
-                ret.tipo === 'VALOR_FIJO' ? Number(ret.valor_fijo) || 0 : null,
-              ],
-            );
+        const baseRetencionActualizar = Math.max(precioBase, precioImpuesto, costoBase);
+        if (baseRetencionActualizar >= 500000) {
+          for (const ret of dto.retenciones) {
+            if (ret.retencion_id) {
+              await queryRunner.query(
+                `INSERT INTO public.producto_retencion (producto_id, retencion_id, tipo, porcentaje, valor_fijo, estado)
+                 VALUES ($1, $2, $3, $4, $5, 'activo');`,
+                [
+                  productoId,
+                  Number(ret.retencion_id),
+                  ret.tipo || 'PORCENTAJE',
+                  ret.tipo === 'PORCENTAJE' ? Number(ret.porcentaje) || 0 : null,
+                  ret.tipo === 'VALOR_FIJO' ? Number(ret.valor_fijo) || 0 : null,
+                ],
+              );
+            }
           }
         }
       }
