@@ -8,6 +8,7 @@ const ListasPreciosConfigTab = ({
   onUpdateName,
   onToggleStatus,
   onCreate,
+  onDelete,
   loading = false,
 }) => {
   const [search, setSearch] = useState('');
@@ -35,23 +36,15 @@ const ListasPreciosConfigTab = ({
             <IconifyIcon icon="bx:list-ul" className="me-2 text-success fs-20" />
             Configuración de Listas de Precios
           </h5>
-          <small className="text-muted">Ajusta los nombres oficiales de las listas de precios en PostgreSQL</small>
+          <small className="text-muted">Ajusta o elimina listas de precios (sin productos asociados)</small>
         </div>
         <div className="d-flex align-items-center gap-2">
           <InputGroup size="sm" style={{ width: 220 }}>
-            <InputGroup.Text className="bg-light text-muted border-end-0">
-              <IconifyIcon icon="bx:search" />
-            </InputGroup.Text>
-            <Form.Control
-              placeholder="Buscar lista de precios..."
-              className="border-start-0 ps-0"
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-            />
+            <InputGroup.Text className="bg-light text-muted border-end-0"><IconifyIcon icon="bx:search" /></InputGroup.Text>
+            <Form.Control placeholder="Buscar lista..." className="border-start-0 ps-0" value={search} onChange={e => setSearch(e.target.value)} />
           </InputGroup>
           <Button variant="success" size="sm" onClick={() => setShowCreate(true)}>
-            <IconifyIcon icon="bx:plus" className="me-1" />
-            Nueva Lista
+            <IconifyIcon icon="bx:plus" className="me-1" />Nueva Lista
           </Button>
         </div>
       </Card.Header>
@@ -59,20 +52,9 @@ const ListasPreciosConfigTab = ({
       {showCreate && (
         <Card.Body className="bg-light-subtle border-bottom py-2">
           <Form onSubmit={handleCreateSubmit} className="d-flex align-items-center gap-2">
-            <Form.Control
-              size="sm"
-              placeholder="Nombre de la lista (ej: Precio Mayorista)..."
-              value={newNombre}
-              onChange={e => setNewNombre(e.target.value)}
-              autoFocus
-              style={{ maxWidth: 350 }}
-            />
-            <Button size="sm" variant="success" type="submit" disabled={!newNombre.trim()}>
-              Crear
-            </Button>
-            <Button size="sm" variant="light" onClick={() => { setShowCreate(false); setNewNombre(''); }}>
-              Cancelar
-            </Button>
+            <Form.Control size="sm" placeholder="Nombre de lista (ej: Constructor)..." value={newNombre} onChange={e => setNewNombre(e.target.value)} autoFocus style={{ maxWidth: 350 }} />
+            <Button size="sm" variant="success" type="submit" disabled={!newNombre.trim()}>Crear</Button>
+            <Button size="sm" variant="light" onClick={() => { setShowCreate(false); setNewNombre(''); }}>Cancelar</Button>
           </Form>
         </Card.Body>
       )}
@@ -82,24 +64,26 @@ const ListasPreciosConfigTab = ({
           <Table hover className="align-middle mb-0">
             <thead className="table-light">
               <tr className="fs-12 text-muted">
-                <th style={{ width: 80 }} className="ps-3">ID</th>
+                <th style={{ width: 70 }} className="ps-3">ID</th>
                 <th>Nombre de la Lista de Precios</th>
-                <th style={{ width: 130 }} className="text-center">Estado</th>
-                <th style={{ width: 110 }} className="text-end pe-3">Acciones</th>
+                <th style={{ width: 110 }} className="text-center">Productos</th>
+                <th style={{ width: 100 }} className="text-center">Estado</th>
+                <th style={{ width: 100 }} className="text-end pe-3">Acciones</th>
               </tr>
             </thead>
             <tbody>
               {filtered.length === 0 ? (
-                <tr>
-                  <td colSpan={4} className="text-center py-4 text-muted fs-13">
-                    No se encontraron listas de precios
-                  </td>
-                </tr>
+                <tr><td colSpan={5} className="text-center py-4 text-muted fs-13">No se encontraron listas de precios</td></tr>
               ) : (
                 filtered.map(item => (
                   <tr key={item.id}>
                     <td className="ps-3 text-muted fs-13">#{item.id}</td>
                     <td className="fw-semibold text-dark fs-14">{item.nombre}</td>
+                    <td className="text-center">
+                      <Badge bg={item.total_productos > 0 ? 'success-subtle' : 'secondary-subtle'} className={`text-${item.total_productos > 0 ? 'success' : 'muted'} px-2 py-1`}>
+                        {item.total_productos || 0} prod.
+                      </Badge>
+                    </td>
                     <td className="text-center">
                       <Badge
                         bg={item.estado === 'activo' ? 'success-subtle' : 'secondary-subtle'}
@@ -112,16 +96,20 @@ const ListasPreciosConfigTab = ({
                       </Badge>
                     </td>
                     <td className="text-end pe-3">
-                      <Button
-                        variant="outline-success"
-                        size="sm"
-                        className="py-1 px-2 fs-12 d-inline-flex align-items-center"
-                        onClick={() => setEditingItem(item)}
-                        title="Editar nombre de lista de precios"
-                      >
-                        <IconifyIcon icon="bx:edit-alt" className="me-1 fs-14" />
-                        Editar
-                      </Button>
+                      <div className="d-inline-flex gap-1">
+                        <Button variant="outline-success" size="sm" className="py-1 px-2 fs-12" onClick={() => setEditingItem(item)} title="Editar lista">
+                          <IconifyIcon icon="bx:edit-alt" className="fs-14" />
+                        </Button>
+                        <Button
+                          variant={item.total_productos > 0 ? 'outline-secondary' : 'outline-danger'}
+                          size="sm"
+                          className="py-1 px-2 fs-12"
+                          onClick={() => onDelete && onDelete(item)}
+                          title={item.total_productos > 0 ? `Tiene ${item.total_productos} productos asociados` : 'Eliminar lista'}
+                        >
+                          <IconifyIcon icon="bx:trash" className="fs-14" />
+                        </Button>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -134,13 +122,10 @@ const ListasPreciosConfigTab = ({
       <ModalEditarNombre
         show={Boolean(editingItem)}
         item={editingItem}
-        title="Editar Nombre de Lista de Precios"
+        title="Editar Lista de Precios"
         label="Nombre de la Lista"
         onHide={() => setEditingItem(null)}
-        onSave={(id, val) => {
-          onUpdateName(id, val);
-          setEditingItem(null);
-        }}
+        onSave={(id, val) => { onUpdateName(id, val); setEditingItem(null); }}
         loading={loading}
       />
     </Card>

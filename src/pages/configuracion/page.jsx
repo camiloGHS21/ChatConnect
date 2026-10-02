@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Nav, Alert, Spinner } from 'react-bootstrap';
 import PageMetaData from '@/components/PageTitle';
 import PageBreadcrumb from '@/components/layout/PageBreadcrumb';
+import DeleteConfirmationModal from '@/components/DeleteConfirmationModal';
 import productoService from '@/services/productoService';
 import CategoriasConfigTab from './components/CategoriasConfigTab';
 import MarcasConfigTab from './components/MarcasConfigTab';
@@ -23,14 +24,39 @@ const ConfiguracionPage = () => {
     handleUpdateCat,
     handleToggleCat,
     handleCreateCat,
+    handleDeleteCat,
     handleUpdateMarca,
     handleToggleMarca,
     handleCreateMarca,
+    handleDeleteMarca,
     handleUpdateLista,
     handleToggleLista,
     handleCreateLista,
+    handleDeleteLista,
     handleUpdateImpuesto,
   } = useConfiguracion();
+
+  const [itemToDelete, setItemToDelete] = useState(null);
+
+  const requestDelete = (type, item) => {
+    if (item.total_productos > 0) {
+      setNotification({
+        type: 'warning',
+        message: `No se puede eliminar "${item.nombre}" porque tiene ${item.total_productos} producto(s) asociado(s).`,
+      });
+      return;
+    }
+    setItemToDelete({ type, item });
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!itemToDelete) return;
+    const { type, item } = itemToDelete;
+    if (type === 'categoria') await handleDeleteCat(item);
+    else if (type === 'marca') await handleDeleteMarca(item);
+    else if (type === 'lista') await handleDeleteLista(item);
+    setItemToDelete(null);
+  };
 
   return (
     <>
@@ -62,6 +88,7 @@ const ConfiguracionPage = () => {
               onUpdateName={handleUpdateCat}
               onToggleStatus={handleToggleCat}
               onCreate={handleCreateCat}
+              onDelete={cat => requestDelete('categoria', cat)}
               loading={actionLoading}
             />
           )}
@@ -71,6 +98,7 @@ const ConfiguracionPage = () => {
               onUpdateName={handleUpdateMarca}
               onToggleStatus={handleToggleMarca}
               onCreate={handleCreateMarca}
+              onDelete={marca => requestDelete('marca', marca)}
               loading={actionLoading}
             />
           )}
@@ -80,6 +108,7 @@ const ConfiguracionPage = () => {
               onUpdateName={handleUpdateLista}
               onToggleStatus={handleToggleLista}
               onCreate={handleCreateLista}
+              onDelete={lista => requestDelete('lista', lista)}
               loading={actionLoading}
             />
           )}
@@ -101,6 +130,16 @@ const ConfiguracionPage = () => {
           )}
         </>
       )}
+
+      <DeleteConfirmationModal
+        show={Boolean(itemToDelete)}
+        onHide={() => setItemToDelete(null)}
+        onConfirm={handleConfirmDelete}
+        title={`¿Eliminar ${itemToDelete?.type === 'categoria' ? 'categoría' : itemToDelete?.type === 'marca' ? 'marca' : 'lista de precios'}?`}
+        itemName={itemToDelete?.item?.nombre}
+        itemType={itemToDelete?.type === 'categoria' ? 'categoría' : itemToDelete?.type === 'marca' ? 'marca' : 'lista de precios'}
+        confirmBtnText={actionLoading ? 'Eliminando...' : 'Sí, eliminar'}
+      />
     </>
   );
 };

@@ -133,6 +133,57 @@ export const useConfiguracion = () => {
     finally { setActionLoading(false); }
   };
 
+  const handleDeleteCat = async (cat) => {
+    if (cat.total_productos > 0) {
+      notify(`No se puede eliminar "${cat.nombre}" porque tiene ${cat.total_productos} producto(s) asociado(s).`, 'warning');
+      return false;
+    }
+    try {
+      setActionLoading(true);
+      await productoService.eliminarCategoria(cat.id, 1);
+      setCatalogs(p => ({ ...p, categorias: p.categorias.filter(c => c.id !== cat.id) }));
+      notify(`Categoría "${cat.nombre}" eliminada exitosamente`);
+      return true;
+    } catch (err) {
+      notify(err.response?.data?.message || 'Error al eliminar categoría', 'danger');
+      return false;
+    } finally { setActionLoading(false); }
+  };
+
+  const handleDeleteMarca = async (marca) => {
+    if (marca.total_productos > 0) {
+      notify(`No se puede eliminar "${marca.nombre}" porque tiene ${marca.total_productos} producto(s) asociado(s).`, 'warning');
+      return false;
+    }
+    try {
+      setActionLoading(true);
+      await productoService.eliminarMarca(marca.id, 1);
+      setCatalogs(p => ({ ...p, marcas: p.marcas.filter(m => m.id !== marca.id) }));
+      notify(`Marca "${marca.nombre}" eliminada exitosamente`);
+      return true;
+    } catch (err) {
+      notify(err.response?.data?.message || 'Error al eliminar marca', 'danger');
+      return false;
+    } finally { setActionLoading(false); }
+  };
+
+  const handleDeleteLista = async (lista) => {
+    if (lista.total_productos > 0) {
+      notify(`No se puede eliminar "${lista.nombre}" porque tiene ${lista.total_productos} producto(s) asociado(s).`, 'warning');
+      return false;
+    }
+    try {
+      setActionLoading(true);
+      await productoService.eliminarListaPrecio(lista.id, 1);
+      setCatalogs(p => ({ ...p, listasPrecios: p.listasPrecios.filter(l => l.id !== lista.id) }));
+      notify(`Lista de precios "${lista.nombre}" eliminada exitosamente`);
+      return true;
+    } catch (err) {
+      notify(err.response?.data?.message || 'Error al eliminar lista', 'danger');
+      return false;
+    } finally { setActionLoading(false); }
+  };
+
   return {
     activeTab,
     setActiveTab,
@@ -145,12 +196,15 @@ export const useConfiguracion = () => {
     handleUpdateCat,
     handleToggleCat,
     handleCreateCat,
+    handleDeleteCat,
     handleUpdateMarca,
     handleToggleMarca,
     handleCreateMarca,
+    handleDeleteMarca,
     handleUpdateLista,
     handleToggleLista,
     handleCreateLista,
+    handleDeleteLista,
     handleUpdateImpuesto,
   };
 };

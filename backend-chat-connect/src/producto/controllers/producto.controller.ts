@@ -183,10 +183,28 @@ export class ProductoController {
     return await this.productoRepo.actualizarCategoria(parseInt(id, 10), dto, empId);
   }
 
+  @Delete('configuraciones/categorias/:id')
+  async eliminarCategoria(
+    @Param('id') id: string,
+    @Query('empresa_id') empresaId?: string,
+  ) {
+    const empId = empresaId ? parseInt(empresaId, 10) : 1;
+    return await this.productoRepo.eliminarCategoria(parseInt(id, 10), empId);
+  }
+
   @Patch('configuraciones/marcas/:id')
   async actualizarMarca(@Param('id') id: string, @Body() dto: any, @Query('empresa_id') empresaId?: string) {
     const empId = empresaId ? parseInt(empresaId, 10) : 1;
     return await this.productoRepo.actualizarMarca(parseInt(id, 10), dto, empId);
+  }
+
+  @Delete('configuraciones/marcas/:id')
+  async eliminarMarca(
+    @Param('id') id: string,
+    @Query('empresa_id') empresaId?: string,
+  ) {
+    const empId = empresaId ? parseInt(empresaId, 10) : 1;
+    return await this.productoRepo.eliminarMarca(parseInt(id, 10), empId);
   }
 
   @Patch('configuraciones/listas-precios/:id')
@@ -197,6 +215,15 @@ export class ProductoController {
   ) {
     const empId = empresaId ? parseInt(empresaId, 10) : 1;
     return await this.productoRepo.actualizarListaPrecio(parseInt(id, 10), dto, empId);
+  }
+
+  @Delete('configuraciones/listas-precios/:id')
+  async eliminarListaPrecio(
+    @Param('id') id: string,
+    @Query('empresa_id') empresaId?: string,
+  ) {
+    const empId = empresaId ? parseInt(empresaId, 10) : 1;
+    return await this.productoRepo.eliminarListaPrecio(parseInt(id, 10), empId);
   }
 
   @Patch('configuraciones/impuestos/:id')

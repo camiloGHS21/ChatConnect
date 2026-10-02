@@ -8,6 +8,7 @@ const MarcasConfigTab = ({
   onUpdateName,
   onToggleStatus,
   onCreate,
+  onDelete,
   loading = false,
 }) => {
   const [search, setSearch] = useState('');
@@ -35,23 +36,15 @@ const MarcasConfigTab = ({
             <IconifyIcon icon="bx:purchase-tag-alt" className="me-2 text-info fs-20" />
             Configuración de Marcas
           </h5>
-          <small className="text-muted">Ajusta los nombres oficiales de las marcas comerciales en PostgreSQL</small>
+          <small className="text-muted">Ajusta o elimina marcas comerciales (sin productos asociados)</small>
         </div>
         <div className="d-flex align-items-center gap-2">
           <InputGroup size="sm" style={{ width: 220 }}>
-            <InputGroup.Text className="bg-light text-muted border-end-0">
-              <IconifyIcon icon="bx:search" />
-            </InputGroup.Text>
-            <Form.Control
-              placeholder="Buscar marca..."
-              className="border-start-0 ps-0"
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-            />
+            <InputGroup.Text className="bg-light text-muted border-end-0"><IconifyIcon icon="bx:search" /></InputGroup.Text>
+            <Form.Control placeholder="Buscar marca..." className="border-start-0 ps-0" value={search} onChange={e => setSearch(e.target.value)} />
           </InputGroup>
           <Button variant="info" size="sm" className="text-white" onClick={() => setShowCreate(true)}>
-            <IconifyIcon icon="bx:plus" className="me-1" />
-            Nueva Marca
+            <IconifyIcon icon="bx:plus" className="me-1" />Nueva Marca
           </Button>
         </div>
       </Card.Header>
@@ -59,20 +52,9 @@ const MarcasConfigTab = ({
       {showCreate && (
         <Card.Body className="bg-light-subtle border-bottom py-2">
           <Form onSubmit={handleCreateSubmit} className="d-flex align-items-center gap-2">
-            <Form.Control
-              size="sm"
-              placeholder="Nombre de la nueva marca..."
-              value={newNombre}
-              onChange={e => setNewNombre(e.target.value)}
-              autoFocus
-              style={{ maxWidth: 350 }}
-            />
-            <Button size="sm" variant="success" type="submit" disabled={!newNombre.trim()}>
-              Crear
-            </Button>
-            <Button size="sm" variant="light" onClick={() => { setShowCreate(false); setNewNombre(''); }}>
-              Cancelar
-            </Button>
+            <Form.Control size="sm" placeholder="Nombre de la nueva marca..." value={newNombre} onChange={e => setNewNombre(e.target.value)} autoFocus style={{ maxWidth: 350 }} />
+            <Button size="sm" variant="success" type="submit" disabled={!newNombre.trim()}>Crear</Button>
+            <Button size="sm" variant="light" onClick={() => { setShowCreate(false); setNewNombre(''); }}>Cancelar</Button>
           </Form>
         </Card.Body>
       )}
@@ -82,24 +64,26 @@ const MarcasConfigTab = ({
           <Table hover className="align-middle mb-0">
             <thead className="table-light">
               <tr className="fs-12 text-muted">
-                <th style={{ width: 80 }} className="ps-3">ID</th>
+                <th style={{ width: 70 }} className="ps-3">ID</th>
                 <th>Nombre de la Marca</th>
-                <th style={{ width: 130 }} className="text-center">Estado</th>
-                <th style={{ width: 110 }} className="text-end pe-3">Acciones</th>
+                <th style={{ width: 110 }} className="text-center">Productos</th>
+                <th style={{ width: 100 }} className="text-center">Estado</th>
+                <th style={{ width: 100 }} className="text-end pe-3">Acciones</th>
               </tr>
             </thead>
             <tbody>
               {filtered.length === 0 ? (
-                <tr>
-                  <td colSpan={4} className="text-center py-4 text-muted fs-13">
-                    No se encontraron marcas
-                  </td>
-                </tr>
+                <tr><td colSpan={5} className="text-center py-4 text-muted fs-13">No se encontraron marcas</td></tr>
               ) : (
                 filtered.map(marca => (
                   <tr key={marca.id}>
                     <td className="ps-3 text-muted fs-13">#{marca.id}</td>
                     <td className="fw-semibold text-dark fs-14">{marca.nombre}</td>
+                    <td className="text-center">
+                      <Badge bg={marca.total_productos > 0 ? 'info-subtle' : 'secondary-subtle'} className={`text-${marca.total_productos > 0 ? 'info' : 'muted'} px-2 py-1`}>
+                        {marca.total_productos || 0} prod.
+                      </Badge>
+                    </td>
                     <td className="text-center">
                       <Badge
                         bg={marca.estado === 'activo' ? 'success-subtle' : 'secondary-subtle'}
@@ -112,16 +96,20 @@ const MarcasConfigTab = ({
                       </Badge>
                     </td>
                     <td className="text-end pe-3">
-                      <Button
-                        variant="outline-info"
-                        size="sm"
-                        className="py-1 px-2 fs-12 d-inline-flex align-items-center"
-                        onClick={() => setEditingItem(marca)}
-                        title="Editar nombre de marca"
-                      >
-                        <IconifyIcon icon="bx:edit-alt" className="me-1 fs-14" />
-                        Editar
-                      </Button>
+                      <div className="d-inline-flex gap-1">
+                        <Button variant="outline-info" size="sm" className="py-1 px-2 fs-12" onClick={() => setEditingItem(marca)} title="Editar marca">
+                          <IconifyIcon icon="bx:edit-alt" className="fs-14" />
+                        </Button>
+                        <Button
+                          variant={marca.total_productos > 0 ? 'outline-secondary' : 'outline-danger'}
+                          size="sm"
+                          className="py-1 px-2 fs-12"
+                          onClick={() => onDelete && onDelete(marca)}
+                          title={marca.total_productos > 0 ? `Tiene ${marca.total_productos} productos asociados` : 'Eliminar marca'}
+                        >
+                          <IconifyIcon icon="bx:trash" className="fs-14" />
+                        </Button>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -137,10 +125,7 @@ const MarcasConfigTab = ({
         title="Editar Marca"
         label="Nombre de la Marca"
         onHide={() => setEditingItem(null)}
-        onSave={(id, val) => {
-          onUpdateName(id, val);
-          setEditingItem(null);
-        }}
+        onSave={(id, val) => { onUpdateName(id, val); setEditingItem(null); }}
         loading={loading}
       />
     </Card>

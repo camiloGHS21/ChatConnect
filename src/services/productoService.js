@@ -166,6 +166,14 @@ export const productoService = {
   },
 
   /**
+   * Elimina una categoría si no tiene productos asociados.
+   */
+  async eliminarCategoria(id, empresaId = 1) {
+    const res = await HttpClient.delete(`/productos/configuraciones/categorias/${id}?empresa_id=${empresaId}`);
+    return res.data;
+  },
+
+  /**
    * Actualiza el nombre/estado de una marca.
    */
   async actualizarMarca(id, datos, empresaId = 1) {
@@ -174,10 +182,26 @@ export const productoService = {
   },
 
   /**
+   * Elimina una marca si no tiene productos asociados.
+   */
+  async eliminarMarca(id, empresaId = 1) {
+    const res = await HttpClient.delete(`/productos/configuraciones/marcas/${id}?empresa_id=${empresaId}`);
+    return res.data;
+  },
+
+  /**
    * Actualiza el nombre/estado de una lista de precios.
    */
   async actualizarListaPrecio(id, datos, empresaId = 1) {
     const res = await HttpClient.patch(`/productos/configuraciones/listas-precios/${id}?empresa_id=${empresaId}`, datos);
+    return res.data;
+  },
+
+  /**
+   * Elimina una lista de precios si no tiene productos asociados.
+   */
+  async eliminarListaPrecio(id, empresaId = 1) {
+    const res = await HttpClient.delete(`/productos/configuraciones/listas-precios/${id}?empresa_id=${empresaId}`);
     return res.data;
   },
 

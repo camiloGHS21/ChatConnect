@@ -392,19 +392,61 @@ export class ProductoRepository {
   async getCatalogosConfiguracion(empresaId = 1) {
     try {
       await this.asegurarConfiguracionDianPorDefecto(empresaId);
-      const [categorias, marcas, listasPrecios, impuestos, departamentos, ciudades] = await Promise.all([
-        this.categoriaRepo.find({ where: { empresaId }, order: { nombre: 'ASC' } }),
-        this.marcaRepo.find({ where: { empresaId }, order: { nombre: 'ASC' } }),
-        this.listaPrecioRepo.find({ where: { empresaId }, order: { nombre: 'ASC' } }),
+      const [categoriasRaw, marcasRaw, listasPreciosRaw, impuestos, departamentos, ciudades] = await Promise.all([
+        this.dataSource.query(
+          `SELECT c.id_categoria AS id, c.nombre, c.estado,
+                  COUNT(p.id_producto)::int AS total_productos
+           FROM public.categoria c
+           LEFT JOIN public.producto p ON p.categoria_id = c.id_categoria AND p.empresa_id = c.empresa_id
+           WHERE c.empresa_id = $1
+           GROUP BY c.id_categoria, c.nombre, c.estado
+           ORDER BY c.nombre ASC;`,
+          [empresaId],
+        ),
+        this.dataSource.query(
+          `SELECT m.id_marca AS id, m.nombre, m.estado,
+                  COUNT(p.id_producto)::int AS total_productos
+           FROM public.marca m
+           LEFT JOIN public.producto p ON p.marca_id = m.id_marca AND p.empresa_id = m.empresa_id
+           WHERE m.empresa_id = $1
+           GROUP BY m.id_marca, m.nombre, m.estado
+           ORDER BY m.nombre ASC;`,
+          [empresaId],
+        ),
+        this.dataSource.query(
+          `SELECT lp.id_lista_precio AS id, lp.nombre, lp.estado,
+                  COUNT(plp.id_producto_lista_precio)::int AS total_productos
+           FROM public.lista_precio lp
+           LEFT JOIN public.producto_lista_precio plp ON plp.lista_precio_id = lp.id_lista_precio
+           WHERE lp.empresa_id = $1
+           GROUP BY lp.id_lista_precio, lp.nombre, lp.estado
+           ORDER BY lp.nombre ASC;`,
+          [empresaId],
+        ),
         this.impuestoRepo.find({ where: { empresaId }, order: { nombre: 'ASC' } }),
         this.departamentoRepo.find({ where: { estado: 'activo' }, order: { nombre: 'ASC' } }),
         this.ciudadRepo.find({ where: { estado: 'activo' }, order: { nombre: 'ASC' } }),
       ]);
 
       return {
-        categorias: categorias.map(c => ({ id: Number(c.id), nombre: c.nombre, estado: c.estado })),
-        marcas: marcas.map(m => ({ id: Number(m.id), nombre: m.nombre, estado: m.estado })),
-        listasPrecios: listasPrecios.map(l => ({ id: Number(l.id), nombre: l.nombre, estado: l.estado })),
+        categorias: categoriasRaw.map((c: any) => ({
+          id: Number(c.id),
+          nombre: c.nombre,
+          estado: c.estado,
+          total_productos: Number(c.total_productos) || 0,
+        })),
+        marcas: marcasRaw.map((m: any) => ({
+          id: Number(m.id),
+          nombre: m.nombre,
+          estado: m.estado,
+          total_productos: Number(m.total_productos) || 0,
+        })),
+        listasPrecios: listasPreciosRaw.map((l: any) => ({
+          id: Number(l.id),
+          nombre: l.nombre,
+          estado: l.estado,
+          total_productos: Number(l.total_productos) || 0,
+        })),
         impuestos: impuestos.map(i => ({
           id: Number(i.id),
           codigo: i.codigo,
@@ -517,6 +559,96 @@ export class ProductoRepository {
       tipo: saved.tipo,
       estado: saved.estado,
     };
+  }
+
+  /**
+   * Elimina una categoría del catálogo, únicamente si no tiene productos asociados.
+   */
+  async eliminarCategoria(id: number, empresaId = 1) {
+    const cat = await this.categoriaRepo.findOne({ where: { id, empresaId } });
+    if (!cat) throw new NotFoundException('La categoría no existe');
+
+    // Validar si tiene productos asociados directa o indirectamente (vía categoría o subcategoría)
+    const resCount = await this.dataSource.query(
+      `SELECT COUNT(*)::int AS total
+       FROM public.producto
+       WHERE empresa_id = $1
+         AND (categoria_id = $2
+              OR subcategoria_id IN (SELECT id_subcategoria FROM public.subcategoria WHERE categoria_id = $2 AND empresa_id = $1));`,
+      [empresaId, id],
+    );
+    const total = Number(resCount[0]?.total || 0);
+    if (total > 0) {
+      throw new BadRequestException(
+        `No se puede eliminar la categoría "${cat.nombre}" porque tiene ${total} producto(s) asociado(s). Desvincule o reasigne los productos primero.`,
+      );
+    }
+
+    // Si no tiene productos, eliminar primero las subcategorías vacías y luego la categoría
+    await this.dataSource.query(
+      `DELETE FROM public.subcategoria WHERE categoria_id = $1 AND empresa_id = $2;`,
+      [id, empresaId],
+    );
+    await this.categoriaRepo.delete({ id, empresaId });
+
+    return { success: true, message: `Categoría "${cat.nombre}" eliminada exitosamente`, id };
+  }
+
+  /**
+   * Elimina una marca del catálogo, únicamente si no tiene productos asociados.
+   */
+  async eliminarMarca(id: number, empresaId = 1) {
+    const marca = await this.marcaRepo.findOne({ where: { id, empresaId } });
+    if (!marca) throw new NotFoundException('La marca no existe');
+
+    // Validar si tiene productos asociados
+    const resCount = await this.dataSource.query(
+      `SELECT COUNT(*)::int AS total FROM public.producto WHERE empresa_id = $1 AND marca_id = $2;`,
+      [empresaId, id],
+    );
+    const total = Number(resCount[0]?.total || 0);
+    if (total > 0) {
+      throw new BadRequestException(
+        `No se puede eliminar la marca "${marca.nombre}" porque tiene ${total} producto(s) asociado(s). Desvincule o reasigne los productos primero.`,
+      );
+    }
+
+    await this.marcaRepo.delete({ id, empresaId });
+    return { success: true, message: `Marca "${marca.nombre}" eliminada exitosamente`, id };
+  }
+
+  /**
+   * Elimina una lista de precios del catálogo, únicamente si no tiene productos asociados.
+   */
+  async eliminarListaPrecio(id: number, empresaId = 1) {
+    const lista = await this.listaPrecioRepo.findOne({ where: { id, empresaId } });
+    if (!lista) throw new NotFoundException('La lista de precios no existe');
+
+    // Validar si tiene productos o precios asociados
+    const resCount = await this.dataSource.query(
+      `SELECT (
+         (SELECT COUNT(*) FROM public.producto_lista_precio WHERE lista_precio_id = $1) +
+         (SELECT COUNT(*) FROM public.precio WHERE empresa_id = $2 AND lista_precio_id = $1)
+       )::int AS total;`,
+      [id, empresaId],
+    );
+    const total = Number(resCount[0]?.total || 0);
+    if (total > 0) {
+      throw new BadRequestException(
+        `No se puede eliminar la lista de precios "${lista.nombre}" porque tiene ${total} producto(s) o precio(s) asociado(s).`,
+      );
+    }
+
+    await this.dataSource.query(
+      `DELETE FROM public.producto_lista_precio WHERE lista_precio_id = $1;`,
+      [id],
+    );
+    await this.dataSource.query(
+      `DELETE FROM public.precio WHERE lista_precio_id = $1 AND empresa_id = $2;`,
+      [id, empresaId],
+    );
+    await this.listaPrecioRepo.delete({ id, empresaId });
+    return { success: true, message: `Lista de precios "${lista.nombre}" eliminada exitosamente`, id };
   }
 
   /**
