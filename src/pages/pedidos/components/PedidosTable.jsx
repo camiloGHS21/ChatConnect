@@ -1,0 +1,129 @@
+import { Card, CardHeader, CardBody, CardTitle, Table, Button, Form, Dropdown } from 'react-bootstrap';
+import IconifyIcon from '@/components/wrappers/IconifyIcon';
+import { getStatusBadge } from './StatusBadge';
+
+const PedidosTable = ({
+  orders,
+  statusFilter,
+  setStatusFilter,
+  searchTerm,
+  setSearchTerm,
+  onOpenDetail,
+  onUpdateStatus,
+  onNotificarDespacho,
+  onNavigateChat,
+}) => {
+  return (
+    <Card className="border-0 shadow-sm">
+      <CardHeader className="d-flex flex-wrap justify-content-between align-items-center gap-2 bg-transparent border-bottom">
+        <div>
+          <CardTitle as="h5" className="fw-bold mb-0">Listado de Órdenes Formalizadas</CardTitle>
+          <span className="text-muted fs-12">Flujo de compra automatizado: Carrito WhatsApp ➔ Confirmación ➔ Despacho</span>
+        </div>
+
+        <div className="d-flex flex-wrap align-items-center gap-2">
+          <div className="btn-group btn-group-sm">
+            {['all', 'en_preparacion', 'despachado', 'entregado'].map((st) => (
+              <Button
+                key={st}
+                variant={statusFilter === st ? (st === 'all' ? 'primary' : st === 'en_preparacion' ? 'info' : st === 'despachado' ? 'primary' : 'success') : 'outline-light'}
+                className={statusFilter === st ? 'text-white' : 'text-dark'}
+                onClick={() => setStatusFilter(st)}
+              >
+                {st === 'all' ? 'Todos' : st === 'en_preparacion' ? 'Preparación' : st === 'despachado' ? 'Despachados' : 'Entregados'}
+              </Button>
+            ))}
+          </div>
+
+          <div className="search-bar" style={{ minWidth: 240 }}>
+            <Form.Control
+              type="text"
+              placeholder="Buscar pedido, cliente..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="form-control-sm"
+            />
+          </div>
+        </div>
+      </CardHeader>
+
+      <CardBody className="p-0">
+        <div className="table-responsive">
+          <Table hover className="table-centered align-middle mb-0">
+            <thead className="table-light fs-12 text-muted">
+              <tr>
+                <th>N° Pedido</th>
+                <th>Cliente & Contacto</th>
+                <th>Fecha</th>
+                <th>Modalidad & Destino</th>
+                <th>Total COP</th>
+                <th>Estado</th>
+                <th className="text-end">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {orders.map((ord) => (
+                <tr key={ord.id}>
+                  <td><span className="font-monospace fw-bold text-primary fs-13">{ord.numero_pedido}</span></td>
+                  <td>
+                    <div className="fw-semibold text-dark">{ord.cliente_nombre}</div>
+                    <span
+                      role="button"
+                      onClick={() => onNavigateChat(ord.cliente_id)}
+                      className="text-success fs-11 d-flex align-items-center gap-1 cursor-pointer"
+                      title="Abrir conversación en Consola WhatsApp"
+                      style={{ cursor: 'pointer' }}
+                    >
+                      <IconifyIcon icon="bxl:whatsapp" />
+                      {ord.whatsapp}
+                    </span>
+                  </td>
+                  <td className="text-muted fs-12">{ord.fecha}</td>
+                  <td>
+                    <div className="d-flex align-items-center gap-1 fs-12">
+                      <IconifyIcon
+                        icon={ord.tipo_entrega === 'domicilio' ? 'mdi:truck-delivery' : 'mdi:store'}
+                        className={ord.tipo_entrega === 'domicilio' ? 'text-primary' : 'text-secondary'}
+                      />
+                      <span className="fw-medium">{ord.tipo_entrega === 'domicilio' ? 'Envío Domicilio' : 'Recoge en Tienda'}</span>
+                    </div>
+                    <div className="text-muted fs-11 text-truncate" style={{ maxWidth: 220 }}>{ord.direccion_entrega}</div>
+                  </td>
+                  <td className="fw-bold text-dark fs-13">${ord.total.toLocaleString('es-CO')} COP</td>
+                  <td>{getStatusBadge(ord.estado)}</td>
+                  <td className="text-end">
+                    <div className="d-flex justify-content-end align-items-center gap-1">
+                      <Button variant="soft-primary" size="sm" className="btn-icon rounded-circle" onClick={() => onOpenDetail(ord)} title="Ver Detalle / Factura">
+                        <IconifyIcon icon="bx:show" className="fs-16" />
+                      </Button>
+                      <Button variant="soft-success" size="sm" className="btn-icon rounded-circle" onClick={() => onNotificarDespacho(ord)} title="Notificar Despacho en Consola de WhatsApp">
+                        <IconifyIcon icon="bxl:whatsapp" className="fs-16" />
+                      </Button>
+                      <Dropdown align="end">
+                        <Dropdown.Toggle variant="light" size="sm" className="btn-icon rounded-circle content-none arrow-none" title="Más Opciones">
+                          <IconifyIcon icon="bx:dots-vertical-rounded" className="fs-16" />
+                        </Dropdown.Toggle>
+                        <Dropdown.Menu className="fs-12 shadow-sm border-0">
+                          <Dropdown.Header>Actualizar Estado</Dropdown.Header>
+                          <Dropdown.Item onClick={() => onUpdateStatus(ord.id, 'en_preparacion')}>Marcar En Preparación</Dropdown.Item>
+                          <Dropdown.Item onClick={() => onUpdateStatus(ord.id, 'despachado')}>Marcar Despachado</Dropdown.Item>
+                          <Dropdown.Item onClick={() => onUpdateStatus(ord.id, 'entregado')}>Marcar Entregado</Dropdown.Item>
+                          <Dropdown.Divider />
+                          <Dropdown.Item onClick={() => onNotificarDespacho(ord)} className="text-success d-flex align-items-center gap-1">
+                            <IconifyIcon icon="bxl:whatsapp" /> Notificar Despacho
+                          </Dropdown.Item>
+                        </Dropdown.Menu>
+                      </Dropdown>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </Table>
+        </div>
+      </CardBody>
+    </Card>
+  );
+};
+
+export default PedidosTable;
