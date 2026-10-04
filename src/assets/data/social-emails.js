@@ -1,3 +1,10 @@
+import postImg1 from '@/assets/images/app-social/post-1.jpg';
+import postImg2 from '@/assets/images/app-social/post-2.jpg';
+import postImg3 from '@/assets/images/app-social/post-3.jpg';
+import postImg4 from '@/assets/images/app-social/post-4.jpg';
+import postImg6 from '@/assets/images/app-social/post-6.jpg';
+import postImg7 from '@/assets/images/app-social/post-7.jpg';
+
 export const emailsData = [{
   id: '2001',
   fromId: '102',

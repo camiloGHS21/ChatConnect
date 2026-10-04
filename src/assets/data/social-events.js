@@ -1,3 +1,19 @@
+import { addOrSubtractDaysFromDate, addOrSubtractMinutesFromDate } from '@/utils/date';
+import avatar10 from '@/assets/images/users/avatar-10.jpg';
+import groupImg1 from '@/assets/images/app-social/group-1.jpg';
+import groupImg2 from '@/assets/images/app-social/group-2.jpg';
+import groupImg3 from '@/assets/images/app-social/group-3.jpg';
+import groupImg4 from '@/assets/images/app-social/group-4.jpg';
+import groupImg5 from '@/assets/images/app-social/group-5.jpg';
+import groupImg6 from '@/assets/images/app-social/group-6.jpg';
+import groupImg7 from '@/assets/images/app-social/group-7.jpg';
+import groupImg8 from '@/assets/images/app-social/group-8.jpg';
+import groupImg9 from '@/assets/images/app-social/group-9.jpg';
+import small1 from '@/assets/images/small/img-1.jpg';
+import small2 from '@/assets/images/small/img-2.jpg';
+import small3 from '@/assets/images/small/img-3.jpg';
+import { socialUsersData } from './social-posts';
+
 export const socialEventsData = [{
   id: '201',
   image: groupImg2,
