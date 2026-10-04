@@ -31,6 +31,7 @@ export const getInitialProductState = (siguienteCodigo = '') => ({
   ],
   precio_impuesto: 172550,
   utilidad_valor: 60000,
+  ganancia_final: 71400,
   utilidad_porcentaje: 70.59,
 
   // SECCIÓN 3 — Listas de precios

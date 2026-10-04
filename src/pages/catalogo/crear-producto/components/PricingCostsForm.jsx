@@ -41,6 +41,8 @@ const PricingCostsForm = ({ formData, updateField, catalogs = {}, triggerDeleteC
     const { baseCalculada } = calculateReverseBase(finalVal, formData.impuestos_compra || []);
     handleCostoBaseChange(baseCalculada);
     updateField('costo_impuesto', finalVal);
+    const pFinal = parseFloat(formData?.precio_impuesto) || 0;
+    updateField('ganancia_final', Math.round((pFinal - finalVal) * 100) / 100);
   };
 
   const handlePrecioImpuestoChange = (val) => {
@@ -49,6 +51,8 @@ const PricingCostsForm = ({ formData, updateField, catalogs = {}, triggerDeleteC
     const { baseCalculada } = calculateReverseBase(finalVal, formData.impuestos_venta || []);
     handlePrecioBaseChange(baseCalculada);
     updateField('precio_impuesto', finalVal);
+    const cFinal = parseFloat(formData?.costo_impuesto) || 0;
+    updateField('ganancia_final', Math.round((finalVal - cFinal) * 100) / 100);
   };
 
   const handleSmartRound = (target) => {
@@ -107,6 +111,11 @@ const PricingCostsForm = ({ formData, updateField, catalogs = {}, triggerDeleteC
       <RentabilidadSummaryCard
         utilidadValor={formData?.utilidad_valor}
         utilidadPorcentaje={formData?.utilidad_porcentaje}
+        costoFinal={formData?.costo_impuesto}
+        precioFinal={formData?.precio_impuesto}
+        costoBase={formData?.costo_base}
+        precioBase={formData?.precio_base}
+        gananciaFinal={formData?.ganancia_final}
       />
 
       <ListasPreciosCard

@@ -74,6 +74,7 @@ export const syncFinancials = (costoBase, precioBase, taxesCompra = [], taxesVen
   const cFinal = calculateFinalWithTax(cBase, taxesCompra);
   const pFinal = calculateFinalWithTax(pBase, taxesVenta);
   const { utilidadValor, utilidadPorcentaje } = calculateProfitMargins(cBase, pBase);
+  const gananciaFinal = pFinal - cFinal;
 
   return {
     costo_base: cBase,
@@ -81,6 +82,7 @@ export const syncFinancials = (costoBase, precioBase, taxesCompra = [], taxesVen
     precio_base: pBase,
     precio_impuesto: Math.round(pFinal * 100) / 100,
     utilidad_valor: Math.round(utilidadValor * 100) / 100,
+    ganancia_final: Math.round(gananciaFinal * 100) / 100,
     utilidad_porcentaje: Math.round(utilidadPorcentaje * 100) / 100,
   };
 };
