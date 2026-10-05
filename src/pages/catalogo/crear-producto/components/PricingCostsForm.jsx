@@ -42,7 +42,9 @@ const PricingCostsForm = ({ formData, updateField, catalogs = {}, triggerDeleteC
     handleCostoBaseChange(baseCalculada);
     updateField('costo_impuesto', finalVal);
     const pFinal = parseFloat(formData?.precio_impuesto) || 0;
-    updateField('ganancia_final', Math.round((pFinal - finalVal) * 100) / 100);
+    const utilBruta = Math.round((pFinal - finalVal) * 100) / 100;
+    updateField('ganancia_final', utilBruta);
+    updateField('utilidad_bruta', utilBruta);
   };
 
   const handlePrecioImpuestoChange = (val) => {
@@ -52,7 +54,9 @@ const PricingCostsForm = ({ formData, updateField, catalogs = {}, triggerDeleteC
     handlePrecioBaseChange(baseCalculada);
     updateField('precio_impuesto', finalVal);
     const cFinal = parseFloat(formData?.costo_impuesto) || 0;
-    updateField('ganancia_final', Math.round((finalVal - cFinal) * 100) / 100);
+    const utilBruta = Math.round((finalVal - cFinal) * 100) / 100;
+    updateField('ganancia_final', utilBruta);
+    updateField('utilidad_bruta', utilBruta);
   };
 
   const handleSmartRound = (target) => {
@@ -100,6 +104,7 @@ const PricingCostsForm = ({ formData, updateField, catalogs = {}, triggerDeleteC
           formData={formData}
           updateField={updateField}
           taxesCatalog={taxesList}
+          costoImpuesto={formData?.costo_impuesto}
           onPrecioBaseChange={handlePrecioBaseChange}
           onPrecioImpuestoChange={handlePrecioImpuestoChange}
           onSmartRound={() => handleSmartRound('precio')}
@@ -116,6 +121,7 @@ const PricingCostsForm = ({ formData, updateField, catalogs = {}, triggerDeleteC
         costoBase={formData?.costo_base}
         precioBase={formData?.precio_base}
         gananciaFinal={formData?.ganancia_final}
+        utilidadBruta={formData?.utilidad_bruta ?? formData?.ganancia_final}
       />
 
       <ListasPreciosCard

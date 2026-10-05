@@ -46,7 +46,9 @@ function AppRoutes() {
       <Route path="/inventario" element={<ProtectedRoute><InventarioPage /></ProtectedRoute>} />
       <Route path="/pedidos" element={<ProtectedRoute><PedidosPage /></ProtectedRoute>} />
       <Route path="/chat" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
-      <Route path="/configuracion" element={<ProtectedRoute><ConfiguracionPage /></ProtectedRoute>} />
+      <Route path="/configuracion" element={<Navigate to="/configuracion/inventario" replace />} />
+      <Route path="/configuracion/:seccion" element={<ProtectedRoute><ConfiguracionPage /></ProtectedRoute>} />
+      <Route path="/configuracion/:seccion/:tab" element={<ProtectedRoute><ConfiguracionPage /></ProtectedRoute>} />
       <Route path="/" element={<Navigate to={isAuthenticated ? '/dashboard' : '/auth/sign-in'} replace />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

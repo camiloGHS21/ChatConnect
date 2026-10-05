@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Nav, Alert, Spinner } from 'react-bootstrap';
+import { Nav, Alert, Spinner, Badge } from 'react-bootstrap';
 import PageMetaData from '@/components/PageTitle';
 import PageBreadcrumb from '@/components/layout/PageBreadcrumb';
 import DeleteConfirmationModal from '@/components/DeleteConfirmationModal';
+import IconifyIcon from '@/components/wrappers/IconifyIcon';
 import productoService from '@/services/productoService';
 import CategoriasConfigTab from './components/CategoriasConfigTab';
 import MarcasConfigTab from './components/MarcasConfigTab';
@@ -11,10 +12,37 @@ import ImpuestosConfigTab from './components/ImpuestosConfigTab';
 import GeoConfigTab from './components/GeoConfigTab';
 import { useConfiguracion } from './useConfiguracion';
 
+const SECTION_CONFIG = {
+  inventario: {
+    title: 'Configuración de Inventario',
+    subName: 'Categorías y Marcas',
+    tabs: [
+      { key: 'categorias', label: 'Categorías', icon: 'bx:category', countKey: 'categorias' },
+      { key: 'marcas', label: 'Marcas', icon: 'bx:purchase-tag', countKey: 'marcas' },
+    ],
+  },
+  precios: {
+    title: 'Configuración de Precios e Impuestos',
+    subName: 'Listas de Precios y Tasas',
+    tabs: [
+      { key: 'listas', label: 'Listas de Precios', icon: 'bx:list-ul', countKey: 'listasPrecios' },
+      { key: 'impuestos', label: 'Impuestos y Tasas', icon: 'bx:receipt', countKey: 'impuestos' },
+    ],
+  },
+  geo: {
+    title: 'Código de Departamentos y Ciudades',
+    subName: 'Ajustes Maestros DIVIPOLA',
+    tabs: [
+      { key: 'geo', label: 'Departamentos & Ciudades', icon: 'bx:map-pin', countKey: 'departamentos' },
+    ],
+  },
+};
+
 const ConfiguracionPage = () => {
   const {
+    activeMenu,
     activeTab,
-    setActiveTab,
+    handleSelectTab,
     catalogs,
     loading,
     actionLoading,
@@ -58,10 +86,12 @@ const ConfiguracionPage = () => {
     setItemToDelete(null);
   };
 
+  const currentSection = SECTION_CONFIG[activeMenu] || SECTION_CONFIG.inventario;
+
   return (
     <>
-      <PageMetaData title="Configuración de Catálogos - ChatConnect" />
-      <PageBreadcrumb title="Configuración de Catálogos" subName="Ajustes Maestros" />
+      <PageMetaData title={`${currentSection.title} - ChatConnect`} />
+      <PageBreadcrumb title={currentSection.title} subName={currentSection.subName} />
 
       {notification.message && (
         <Alert variant={notification.type} className="py-2 fs-13 mb-3 d-flex align-items-center justify-content-between">
@@ -70,19 +100,39 @@ const ConfiguracionPage = () => {
         </Alert>
       )}
 
-      <Nav variant="pills" className="bg-light p-1 rounded-3 mb-3" activeKey={activeTab} onSelect={k => setActiveTab(k)}>
-        <Nav.Item><Nav.Link eventKey="categorias" className="fs-13 fw-semibold">Categorías</Nav.Link></Nav.Item>
-        <Nav.Item><Nav.Link eventKey="marcas" className="fs-13 fw-semibold">Marcas</Nav.Link></Nav.Item>
-        <Nav.Item><Nav.Link eventKey="listas" className="fs-13 fw-semibold">Listas de Precios</Nav.Link></Nav.Item>
-        <Nav.Item><Nav.Link eventKey="impuestos" className="fs-13 fw-semibold">Impuestos y Tasas</Nav.Link></Nav.Item>
-        <Nav.Item><Nav.Link eventKey="geo" className="fs-13 fw-semibold">Departamentos & Ciudades</Nav.Link></Nav.Item>
-      </Nav>
+      {/* Pestañas exclusivas de la sección actual (Inventario o Precios o Geo) */}
+      {currentSection.tabs.length > 1 && (
+        <Nav
+          variant="pills"
+          className="bg-light p-1 rounded-3 mb-3 d-inline-flex"
+          activeKey={activeTab}
+          onSelect={k => k && handleSelectTab(k)}
+        >
+          {currentSection.tabs.map(tab => {
+            const count = catalogs[tab.countKey]?.length || 0;
+            return (
+              <Nav.Item key={tab.key}>
+                <Nav.Link eventKey={tab.key} className="fs-13 fw-semibold d-flex align-items-center gap-2">
+                  <IconifyIcon icon={tab.icon} className="fs-16" />
+                  <span>{tab.label}</span>
+                  <Badge
+                    bg={activeTab === tab.key ? 'primary' : 'secondary-subtle'}
+                    className={`fs-11 ${activeTab === tab.key ? 'text-white' : 'text-secondary'}`}
+                  >
+                    {count}
+                  </Badge>
+                </Nav.Link>
+              </Nav.Item>
+            );
+          })}
+        </Nav>
+      )}
 
       {loading ? (
         <div className="text-center py-5"><Spinner animation="border" variant="primary" /></div>
       ) : (
         <>
-          {activeTab === 'categorias' && (
+          {activeMenu === 'inventario' && activeTab === 'categorias' && (
             <CategoriasConfigTab
               categorias={catalogs.categorias}
               onUpdateName={handleUpdateCat}
@@ -92,7 +142,7 @@ const ConfiguracionPage = () => {
               loading={actionLoading}
             />
           )}
-          {activeTab === 'marcas' && (
+          {activeMenu === 'inventario' && activeTab === 'marcas' && (
             <MarcasConfigTab
               marcas={catalogs.marcas}
               onUpdateName={handleUpdateMarca}
@@ -102,7 +152,7 @@ const ConfiguracionPage = () => {
               loading={actionLoading}
             />
           )}
-          {activeTab === 'listas' && (
+          {activeMenu === 'precios' && activeTab === 'listas' && (
             <ListasPreciosConfigTab
               listasPrecios={catalogs.listasPrecios}
               onUpdateName={handleUpdateLista}
@@ -112,14 +162,14 @@ const ConfiguracionPage = () => {
               loading={actionLoading}
             />
           )}
-          {activeTab === 'impuestos' && (
+          {activeMenu === 'precios' && activeTab === 'impuestos' && (
             <ImpuestosConfigTab
               impuestos={catalogs.impuestos}
               onUpdateImpuesto={handleUpdateImpuesto}
               loading={actionLoading}
             />
           )}
-          {activeTab === 'geo' && (
+          {activeMenu === 'geo' && (
             <GeoConfigTab
               departamentos={catalogs.departamentos}
               ciudades={catalogs.ciudades}

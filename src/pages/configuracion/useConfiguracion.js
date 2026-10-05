@@ -1,8 +1,63 @@
 import { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import productoService from '@/services/productoService';
 
+const TAB_TO_MENU = {
+  categorias: 'inventario',
+  marcas: 'inventario',
+  listas: 'precios',
+  impuestos: 'precios',
+  geo: 'geo',
+  ciudades: 'geo',
+};
+
+const MENU_DEFAULT_TAB = {
+  inventario: 'categorias',
+  precios: 'listas',
+  geo: 'geo',
+};
+
 export const useConfiguracion = () => {
-  const [activeTab, setActiveTab] = useState('categorias');
+  const { seccion, tab } = useParams();
+  const navigate = useNavigate();
+
+  let resolvedMenu = 'inventario';
+  let resolvedTab = 'categorias';
+
+  if (seccion) {
+    if (MENU_DEFAULT_TAB[seccion]) {
+      resolvedMenu = seccion;
+      resolvedTab = tab || MENU_DEFAULT_TAB[seccion];
+      if (resolvedTab === 'ciudades') resolvedTab = 'geo';
+    } else if (TAB_TO_MENU[seccion]) {
+      resolvedTab = seccion === 'ciudades' ? 'geo' : seccion;
+      resolvedMenu = TAB_TO_MENU[resolvedTab];
+    }
+  }
+
+  const [activeMenu, setActiveMenu] = useState(resolvedMenu);
+  const [activeTab, setActiveTab] = useState(resolvedTab);
+
+  useEffect(() => {
+    setActiveMenu(resolvedMenu);
+    setActiveTab(resolvedTab);
+  }, [resolvedMenu, resolvedTab]);
+
+  const handleSelectMenu = (menuKey, defaultTabKey) => {
+    const nextTab = defaultTabKey || MENU_DEFAULT_TAB[menuKey] || 'categorias';
+    setActiveMenu(menuKey);
+    setActiveTab(nextTab);
+    navigate(`/configuracion/${menuKey}/${nextTab}`);
+  };
+
+  const handleSelectTab = (tabKey) => {
+    const nextTab = tabKey === 'ciudades' ? 'geo' : tabKey;
+    const parentMenu = TAB_TO_MENU[nextTab] || activeMenu;
+    setActiveMenu(parentMenu);
+    setActiveTab(nextTab);
+    navigate(`/configuracion/${parentMenu}/${nextTab}`);
+  };
+
   const [catalogs, setCatalogs] = useState({
     categorias: [],
     marcas: [],
@@ -185,8 +240,11 @@ export const useConfiguracion = () => {
   };
 
   return {
+    activeMenu,
     activeTab,
     setActiveTab,
+    handleSelectMenu,
+    handleSelectTab,
     catalogs,
     loading,
     actionLoading,

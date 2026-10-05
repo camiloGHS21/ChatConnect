@@ -290,6 +290,7 @@ export class ProductoQueryRepository {
       precio_base: Number(prod.precio_base) || 0,
       precio_impuesto: Number(prod.precio_impuesto) || 0,
       utilidad_valor: Number(prod.utilidad_valor) || 0,
+      utilidad_bruta: Math.round(((Number(prod.precio_impuesto) || 0) - (Number(prod.costo_impuesto) || 0)) * 100) / 100,
       utilidad_porcentaje: Number(prod.utilidad_porcentaje) || 0,
 
       impuestos_compra: impuestosCompra.map((i: any) => ({

@@ -81,6 +81,7 @@ export class CreateProductoDto {
   precio_base?: number;
   precio_impuesto?: number;
   utilidad_valor?: number;
+  utilidad_bruta?: number;
   utilidad_porcentaje?: number;
 
   maneja_inventario?: boolean;

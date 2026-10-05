@@ -68,6 +68,12 @@ export const calculateProfitMargins = (costoBase, precioBase) => {
   };
 };
 
+export const calculateUtilidadBruta = (precioFinalVenta, costoFinalConImpuestos) => {
+  const pFinal = Number(precioFinalVenta) || 0;
+  const cFinal = Number(costoFinalConImpuestos) || 0;
+  return Math.round((pFinal - cFinal) * 100) / 100;
+};
+
 export const syncFinancials = (costoBase, precioBase, taxesCompra = [], taxesVenta = []) => {
   const cBase = Math.max(0, Number(costoBase) || 0);
   const pBase = Math.max(0, Number(precioBase) || 0);
@@ -83,6 +89,7 @@ export const syncFinancials = (costoBase, precioBase, taxesCompra = [], taxesVen
     precio_impuesto: Math.round(pFinal * 100) / 100,
     utilidad_valor: Math.round(utilidadValor * 100) / 100,
     ganancia_final: Math.round(gananciaFinal * 100) / 100,
+    utilidad_bruta: Math.round(gananciaFinal * 100) / 100, // Precio Final de Venta - Costo Final con Impuestos
     utilidad_porcentaje: Math.round(utilidadPorcentaje * 100) / 100,
   };
 };

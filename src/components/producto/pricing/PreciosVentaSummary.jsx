@@ -5,10 +5,15 @@ import IconifyIcon from '@/components/wrappers/IconifyIcon';
 const PreciosVentaSummary = ({
   precioBase = 0,
   precioImpuesto = 0,
+  costoImpuesto = 0,
   taxBreakdown = {},
   onPrecioImpuestoChange,
   onSmartRound
 }) => {
+  const pFinal = parseFloat(precioImpuesto) || 0;
+  const cFinal = parseFloat(costoImpuesto) || 0;
+  const utilidadBruta = Math.round((pFinal - cFinal) * 100) / 100;
+
   return (
     <div className="p-3 bg-light rounded-2 border">
       <div className="d-flex justify-content-between align-items-center mb-1">
@@ -66,6 +71,28 @@ const PreciosVentaSummary = ({
               <IconifyIcon icon="bx:magic-wand" className="fs-13" />
               Redondear
             </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Utilidad Bruta (Precio Final de Venta - Costo Final con Impuestos) */}
+      <div className="border-top pt-2 mt-2">
+        <div className="d-flex justify-content-between align-items-center bg-white p-2 rounded border border-success-subtle shadow-xs">
+          <div>
+            <div className="d-flex align-items-center gap-1">
+              <span className="fw-bold fs-13 text-dark">Utilidad Bruta:</span>
+              <span className={`badge ${utilidadBruta >= 0 ? 'bg-success-subtle text-success border border-success' : 'bg-danger-subtle text-danger border border-danger'} fs-10 px-1 py-0`}>
+                {utilidadBruta >= 0 ? 'Rentable' : 'Pérdida'}
+              </span>
+            </div>
+            <small className="text-muted fs-11 d-block">
+              Precio Final de Venta - Costo Final con Impuestos
+            </small>
+          </div>
+          <div className="text-end">
+            <span className={`fw-bold fs-15 font-monospace ${utilidadBruta >= 0 ? 'text-success' : 'text-danger'}`}>
+              ${utilidadBruta.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </span>
           </div>
         </div>
       </div>

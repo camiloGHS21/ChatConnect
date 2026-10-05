@@ -67,9 +67,12 @@ const ProductSummaryCard = ({
             </Col>
 
             <Col lg={3} sm={6}>
-              <span className="text-muted fs-12 d-block">Margen de Utilidad:</span>
-              <Badge bg="success" className="fs-12">
-                {Number(formData?.utilidad_porcentaje || 0).toFixed(2)}% (${Number(formData?.utilidad_valor || 0).toLocaleString('es-CO')})
+              <span className="text-muted fs-12 d-block">Utilidad Bruta (PVP - Costo):</span>
+              <span className="fw-bold text-success fs-14 font-monospace d-block">
+                ${Number((formData?.precio_impuesto || 0) - (formData?.costo_impuesto || 0)).toLocaleString('es-CO', { minimumFractionDigits: 2 })}
+              </span>
+              <Badge bg="success-subtle" className="text-success border border-success border-opacity-25 fs-11">
+                Margen: {Number(formData?.utilidad_porcentaje || 0).toFixed(2)}%
               </Badge>
             </Col>
 

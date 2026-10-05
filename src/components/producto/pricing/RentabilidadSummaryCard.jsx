@@ -16,6 +16,7 @@ const RentabilidadSummaryCard = ({
   costoBase,
   precioBase,
   gananciaFinal,
+  utilidadBruta,
 }) => {
   const cBase = parseFloat(costoBase) || 0;
   const pBase = parseFloat(precioBase) || 0;
@@ -27,17 +28,17 @@ const RentabilidadSummaryCard = ({
     ? (pBase - cBase)
     : Number(utilidadValor || 0);
 
-  // 2. Ganancia Neta Real (la nueva: precio_final - costo_final)
+  // 2. Utilidad Bruta (Precio Final de Venta - Costo Final con Impuestos)
   const valorReal = (pFinal > 0 || cFinal > 0)
     ? (pFinal - cFinal)
-    : (Number(gananciaFinal || 0) || valorBase);
+    : (Number(utilidadBruta ?? gananciaFinal ?? 0) || valorBase);
 
   // 3. Margen de Utilidad Porcentual (de antes)
   const porcentaje = Number(utilidadPorcentaje || 0);
 
   return (
     <Row className="g-3 mb-4">
-      {/* Tarjeta 1 (De antes): Utilidad Base */}
+      {/* Tarjeta 1: Utilidad Base */}
       <Col lg={4} md={6}>
         <Card className="border border-primary border-opacity-25 bg-primary bg-opacity-10 shadow-none rounded-3 h-100 mb-0">
           <Card.Body className="py-3 d-flex align-items-center gap-3">
@@ -59,7 +60,7 @@ const RentabilidadSummaryCard = ({
         </Card>
       </Col>
 
-      {/* Tarjeta 2 (LA NUEVA): Ganancia Real en Mano (Precio Final - Costo Final) */}
+      {/* Tarjeta 2: Utilidad Bruta (Precio Final de Venta - Costo Final con Impuestos) */}
       <Col lg={4} md={6}>
         <Card className={`border ${valorReal >= 0 ? 'border-success bg-success' : 'border-danger bg-danger'} border-opacity-25 bg-opacity-10 shadow-none rounded-3 h-100 mb-0`}>
           <Card.Body className="py-3 d-flex align-items-center gap-3">
@@ -69,14 +70,14 @@ const RentabilidadSummaryCard = ({
             <div className="overflow-hidden">
               <span className="text-muted fs-11 text-uppercase fw-semibold d-flex align-items-center gap-1 text-truncate">
                 <IconifyIcon icon="bx:money-withdraw" className="text-success fs-14" />
-                Ganancia Final (En Mano)
+                Utilidad Bruta
               </span>
               <h4 className={`mb-0 fw-bold ${valorReal >= 0 ? 'text-success' : 'text-danger'} font-monospace d-flex align-items-center gap-1`}>
                 <IconifyIcon icon="bx:wallet" className="fs-20 opacity-75" />
                 ${valorReal.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </h4>
               <span className="text-muted fs-11 mt-1 d-block text-truncate">
-                Precio Final Venta - Costo Final
+                Precio Final de Venta - Costo Final con Impuestos
               </span>
             </div>
           </Card.Body>

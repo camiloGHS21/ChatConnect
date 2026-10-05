@@ -44,6 +44,25 @@ export const MENU_ITEMS = [
     key: 'configuracion',
     icon: 'iconamoon:settings-duotone',
     label: 'Configuración',
-    url: '/configuracion',
+    children: [
+      {
+        key: 'config-inventario',
+        label: 'Inventario',
+        parentKey: 'configuracion',
+        url: '/configuracion/inventario',
+      },
+      {
+        key: 'config-precios',
+        label: 'Precios e Impuestos',
+        parentKey: 'configuracion',
+        url: '/configuracion/precios',
+      },
+      {
+        key: 'config-geo',
+        label: 'Departamentos y Ciudades',
+        parentKey: 'configuracion',
+        url: '/configuracion/geo',
+      },
+    ],
   },
 ];
