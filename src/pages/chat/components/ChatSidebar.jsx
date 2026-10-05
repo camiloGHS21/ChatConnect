@@ -9,7 +9,17 @@ const ChatSidebar = ({
   onSearchChange,
   channelInfo = { name: 'Línea Ferretería', whatsapp: '+57 302 4610721' },
 }) => {
-  const filtered = conversaciones.filter((c) =>
+  // Deduplicación defensiva por número de WhatsApp o cliente_id
+  const seenKeys = new Set();
+  const uniqueConversaciones = conversaciones.filter((c) => {
+    const rawNumber = (c.whatsapp || '').replace(/\D/g, '');
+    const key = rawNumber ? `phone_${rawNumber}` : (c.cliente_id ? `cliente_${c.cliente_id}` : `id_${c.id}`);
+    if (seenKeys.has(key)) return false;
+    seenKeys.add(key);
+    return true;
+  });
+
+  const filtered = uniqueConversaciones.filter((c) =>
     (c.nombre || '').toLowerCase().includes((searchContact || '').toLowerCase()) ||
     (c.whatsapp || '').includes(searchContact || '')
   );

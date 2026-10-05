@@ -29,10 +29,6 @@ import {
   CanalModel,
   DepartamentoModel,
   CiudadModel,
-  PedidoModel,
-  PedidoDetalleModel,
-  PedidoDetalleImpuestoModel,
-  PedidoEstadoModel,
 } from './models/producto.model.js';
 import { DatabaseModule } from '../database/database.module.js';
 
@@ -75,10 +71,6 @@ const repositories = [
       CanalModel,
       DepartamentoModel,
       CiudadModel,
-      PedidoModel,
-      PedidoDetalleModel,
-      PedidoDetalleImpuestoModel,
-      PedidoEstadoModel,
     ]),
   ],
   controllers: [ProductoController, EmpresaLimpiezaController],

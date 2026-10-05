@@ -58,39 +58,42 @@ export class ChatWhatsappRepository {
   async getConversacionesChat(empresaId = 1) {
     try {
       const rows = await this.dataSource.query(
-        `SELECT
-           c.id_conversacion AS id,
-           c.empresa_id,
-           c.tercero_id,
-           c.canal_id,
-           c.estado,
-           COALESCE(c.modo, 'ia') AS modo,
-           c.fecha_ultima_interaccion,
-           COALESCE(NULLIF(TRIM(t.nombre), ''), NULLIF(TRIM(t.razon_social), ''), t.whatsapp, 'Cliente WhatsApp') AS nombre,
-           COALESCE(t.whatsapp, t.telefono, '') AS whatsapp,
-           t.email,
-           m.contenido AS ultimo_mensaje,
-           m.tipo AS ultimo_tipo,
-           m.created_at AS hora_ultimo_mensaje,
-           m_in.created_at AS ultimo_mensaje_cliente_at
-         FROM public.conversacion c
-         LEFT JOIN public.tercero t ON t.id_tercero = c.tercero_id
-         LEFT JOIN LATERAL (
-           SELECT contenido, tipo, created_at
-           FROM public.mensaje
-           WHERE conversacion_id = c.id_conversacion
-           ORDER BY id_mensaje DESC
-           LIMIT 1
-         ) m ON true
-         LEFT JOIN LATERAL (
-           SELECT created_at
-           FROM public.mensaje
-           WHERE conversacion_id = c.id_conversacion AND direccion = 'inbound'
-           ORDER BY id_mensaje DESC
-           LIMIT 1
-         ) m_in ON true
-         WHERE c.empresa_id = $1
-         ORDER BY c.fecha_ultima_interaccion DESC NULLS LAST;`,
+        `SELECT * FROM (
+           SELECT DISTINCT ON (c.tercero_id)
+              c.id_conversacion AS id,
+              c.empresa_id,
+              c.tercero_id,
+              c.canal_id,
+              c.estado,
+              COALESCE(c.modo, 'ia') AS modo,
+              c.fecha_ultima_interaccion,
+              COALESCE(NULLIF(TRIM(t.nombre), ''), NULLIF(TRIM(t.razon_social), ''), NULLIF(TRIM(t.whatsapp), ''), 'Cliente WhatsApp') AS nombre,
+              COALESCE(NULLIF(TRIM(t.whatsapp), ''), NULLIF(TRIM(t.telefono), ''), '') AS whatsapp,
+              t.email,
+              m.contenido AS ultimo_mensaje,
+              m.tipo AS ultimo_tipo,
+              m.created_at AS hora_ultimo_mensaje,
+              m_in.created_at AS ultimo_mensaje_cliente_at
+            FROM public.conversacion c
+            LEFT JOIN public.tercero t ON t.id_tercero = c.tercero_id
+            LEFT JOIN LATERAL (
+              SELECT contenido, tipo, created_at
+              FROM public.mensaje
+              WHERE conversacion_id = c.id_conversacion
+              ORDER BY id_mensaje DESC
+              LIMIT 1
+            ) m ON true
+            LEFT JOIN LATERAL (
+              SELECT created_at
+              FROM public.mensaje
+              WHERE conversacion_id = c.id_conversacion AND direccion = 'inbound'
+              ORDER BY id_mensaje DESC
+              LIMIT 1
+            ) m_in ON true
+            WHERE c.empresa_id = $1 AND COALESCE(TRIM(t.whatsapp), '') != ''
+            ORDER BY c.tercero_id, c.fecha_ultima_interaccion DESC NULLS LAST, c.id_conversacion DESC
+         ) sub
+         ORDER BY sub.fecha_ultima_interaccion DESC NULLS LAST, sub.id DESC;`,
         [empresaId],
       );
 
@@ -110,12 +113,17 @@ export class ChatWhatsappRepository {
           }
         }
 
+        const rawPhone = (r.whatsapp || '').replace(/\D/g, '');
+        const formattedPhone = rawPhone
+          ? (rawPhone.startsWith('57') ? `+${rawPhone}` : `+57${rawPhone}`)
+          : '';
+
         return {
           id: Number(r.id),
           cliente_id: Number(r.tercero_id),
-          nombre: r.nombre,
-          whatsapp: r.whatsapp || '+573182483607',
-          avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(r.nombre)}`,
+          nombre: r.nombre || 'Cliente WhatsApp',
+          whatsapp: formattedPhone,
+          avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(r.nombre || 'cliente')}`,
           modo: r.modo,
           estado: r.estado,
           ultimo_mensaje: r.ultimo_mensaje || 'Conversación iniciada',
@@ -210,18 +218,22 @@ export class ChatWhatsappRepository {
     try {
       const rows = await this.dataSource.query(
         `SELECT
-           id_mensaje AS id,
-           conversacion_id,
-           direccion,
-           tipo,
-           contenido,
-           media_url,
-           media_mime_type,
-           metadata,
-           created_at
-         FROM public.mensaje
-         WHERE conversacion_id = $1 AND empresa_id = $2
-         ORDER BY id_mensaje ASC;`,
+           m.id_mensaje AS id,
+           m.conversacion_id,
+           m.direccion,
+           m.tipo,
+           m.contenido,
+           m.media_url,
+           m.media_mime_type,
+           m.metadata,
+           m.created_at
+         FROM public.mensaje m
+         JOIN public.conversacion c ON c.id_conversacion = m.conversacion_id
+         WHERE (
+           m.conversacion_id = $1 
+           OR c.tercero_id = (SELECT tercero_id FROM public.conversacion WHERE id_conversacion = $1 LIMIT 1)
+         ) AND m.empresa_id = $2
+         ORDER BY m.id_mensaje ASC;`,
         [conversacionId, empresaId],
       );
 

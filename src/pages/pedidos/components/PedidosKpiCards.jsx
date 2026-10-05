@@ -51,7 +51,11 @@ const PedidosKpiCards = ({ totalOrders, totalEnCurso, totalEntregados, totalVent
             </div>
             <div>
               <h4 className="fw-bold mb-0 text-info">
-                ${(totalVentas / 1000000).toFixed(1)}M COP
+                {totalVentas >= 1000000
+                  ? `$${(totalVentas / 1000000).toFixed(1)}M COP`
+                  : totalVentas >= 1000
+                    ? `$${(totalVentas / 1000).toFixed(1)}K COP`
+                    : `$${Number(totalVentas || 0).toLocaleString('es-CO')} COP`}
               </h4>
               <span className="text-muted fs-12">Facturación Total</span>
             </div>

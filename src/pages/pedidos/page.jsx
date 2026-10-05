@@ -14,8 +14,9 @@ const PedidosPage = () => {
     selectedOrder,
     showDetailModal,
     setShowDetailModal,
-    orders,
     filteredOrders,
+    loading,
+    totalOrders,
     totalVentas,
     totalEntregados,
     totalEnCurso,
@@ -31,7 +32,7 @@ const PedidosPage = () => {
       <PageBreadcrumb title="Gestión de Pedidos" subName="Órdenes WhatsApp Meta Cloud API" />
 
       <PedidosKpiCards
-        totalOrders={orders.length}
+        totalOrders={totalOrders}
         totalEnCurso={totalEnCurso}
         totalEntregados={totalEntregados}
         totalVentas={totalVentas}
@@ -39,6 +40,7 @@ const PedidosPage = () => {
 
       <PedidosTable
         orders={filteredOrders}
+        loading={loading}
         statusFilter={statusFilter}
         setStatusFilter={setStatusFilter}
         searchTerm={searchTerm}

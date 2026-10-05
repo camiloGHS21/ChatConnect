@@ -45,18 +45,26 @@ const PedidoDetailModal = ({ show, onHide, order, onUpdateStatus, onNotificarDes
             </tr>
           </thead>
           <tbody>
-            {order.items.map((it, idx) => (
-              <tr key={idx}>
-                <td className="fw-medium">{it.producto}</td>
-                <td className="text-center fw-bold">{it.cantidad}</td>
-                <td className="text-end">${it.unitario.toLocaleString('es-CO')}</td>
-                <td className="text-end fw-bold">${it.subtotal.toLocaleString('es-CO')}</td>
+            {(!order.items || order.items.length === 0) ? (
+              <tr>
+                <td colSpan={4} className="text-center text-muted py-3">
+                  No hay productos registrados en esta orden
+                </td>
               </tr>
-            ))}
+            ) : (
+              order.items.map((it, idx) => (
+                <tr key={idx}>
+                  <td className="fw-medium">{it.producto}</td>
+                  <td className="text-center fw-bold">{it.cantidad}</td>
+                  <td className="text-end">${Number(it.unitario || it.precio_unitario || 0).toLocaleString('es-CO')}</td>
+                  <td className="text-end fw-bold">${Number(it.subtotal || it.total || 0).toLocaleString('es-CO')}</td>
+                </tr>
+              ))
+            )}
             <tr className="table-light">
               <td colSpan={3} className="text-end fw-bold">Total Facturado (IVA Inc.):</td>
               <td className="text-end fw-bold text-primary fs-14">
-                ${order.total.toLocaleString('es-CO')} COP
+                ${Number(order.total || 0).toLocaleString('es-CO')} COP
               </td>
             </tr>
           </tbody>
@@ -65,6 +73,12 @@ const PedidoDetailModal = ({ show, onHide, order, onUpdateStatus, onNotificarDes
         <div className="d-flex justify-content-between align-items-center p-2 border rounded bg-light">
           <span className="fs-12 text-muted">Actualizar estado del pedido:</span>
           <div className="btn-group btn-group-sm">
+            <Button
+              variant={order.estado === 'pendiente' ? 'secondary' : 'outline-secondary'}
+              onClick={() => onUpdateStatus(order.id, 'pendiente')}
+            >
+              Pendiente
+            </Button>
             <Button
               variant={order.estado === 'en_preparacion' ? 'info' : 'outline-secondary'}
               onClick={() => onUpdateStatus(order.id, 'en_preparacion')}

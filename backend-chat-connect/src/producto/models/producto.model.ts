@@ -14,7 +14,7 @@ export * from './catalogo.model.js';
 export * from './atributo.model.js';
 export * from './geografia.model.js';
 export * from './canal-secuencia.model.js';
-export * from './pedido.model.js';
+export * from '../../pedido/models/pedido.model.js';
 
 /**
  * =============================================================================
