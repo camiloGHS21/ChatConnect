@@ -63,6 +63,12 @@ export const MENU_ITEMS = [
         parentKey: 'configuracion',
         url: '/configuracion/geo',
       },
+      {
+        key: 'config-limpieza',
+        label: 'Limpieza de Datos',
+        parentKey: 'configuracion',
+        url: '/configuracion/limpieza',
+      },
     ],
   },
 ];

@@ -14,6 +14,8 @@ import { MetaCatalogRepository } from './repositories/meta-catalog.repository.js
 import { MetaColeccionRepository } from './repositories/meta-coleccion.repository.js';
 import { ChatWhatsappRepository } from './repositories/chat-whatsapp.repository.js';
 import { ChatCatalogoRepository } from './repositories/chat-catalogo.repository.js';
+import { EmpresaLimpiezaController } from './controllers/empresa-limpieza.controller.js';
+import { EmpresaLimpiezaRepository } from './repositories/empresa-limpieza.repository.js';
 import {
   ProductoModel,
   CategoriaModel,
@@ -48,6 +50,7 @@ const repositories = [
   MetaColeccionRepository,
   ChatWhatsappRepository,
   ChatCatalogoRepository,
+  EmpresaLimpiezaRepository,
 ];
 
 /**
@@ -78,7 +81,7 @@ const repositories = [
       PedidoEstadoModel,
     ]),
   ],
-  controllers: [ProductoController],
+  controllers: [ProductoController, EmpresaLimpiezaController],
   providers: repositories,
   exports: repositories,
 })

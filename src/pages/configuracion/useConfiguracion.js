@@ -9,12 +9,14 @@ const TAB_TO_MENU = {
   impuestos: 'precios',
   geo: 'geo',
   ciudades: 'geo',
+  limpieza: 'limpieza',
 };
 
 const MENU_DEFAULT_TAB = {
   inventario: 'categorias',
   precios: 'listas',
   geo: 'geo',
+  limpieza: 'limpieza',
 };
 
 export const useConfiguracion = () => {

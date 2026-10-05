@@ -10,6 +10,7 @@ import MarcasConfigTab from './components/MarcasConfigTab';
 import ListasPreciosConfigTab from './components/ListasPreciosConfigTab';
 import ImpuestosConfigTab from './components/ImpuestosConfigTab';
 import GeoConfigTab from './components/GeoConfigTab';
+import LimpiezaDatosTab from './components/LimpiezaDatosTab';
 import { useConfiguracion } from './useConfiguracion';
 
 const SECTION_CONFIG = {
@@ -34,6 +35,13 @@ const SECTION_CONFIG = {
     subName: 'Ajustes Maestros DIVIPOLA',
     tabs: [
       { key: 'geo', label: 'Departamentos & Ciudades', icon: 'bx:map-pin', countKey: 'departamentos' },
+    ],
+  },
+  limpieza: {
+    title: 'Limpieza y Purga de Datos',
+    subName: 'Zona de Seguridad y Vaciado de Empresa',
+    tabs: [
+      { key: 'limpieza', label: 'Purga de Datos', icon: 'bx:trash-alt', countKey: 'limpieza' },
     ],
   },
 };
@@ -177,6 +185,9 @@ const ConfiguracionPage = () => {
               onCrearCiudad={async (c) => { await productoService.crearCiudad(c); loadData(); }}
               loading={actionLoading}
             />
+          )}
+          {activeMenu === 'limpieza' && (
+            <LimpiezaDatosTab onDataPurged={loadData} />
           )}
         </>
       )}
