@@ -95,6 +95,7 @@ DROP TABLE IF EXISTS public.error_integracion CASCADE;
 DROP TABLE IF EXISTS public.evento_webhook CASCADE;
 DROP TABLE IF EXISTS public.procesamiento_ia CASCADE;
 DROP TABLE IF EXISTS public.pedido_estado CASCADE;
+DROP TABLE IF EXISTS public.pedido_detalle_impuesto CASCADE;
 DROP TABLE IF EXISTS public.pedido_detalle CASCADE;
 DROP TABLE IF EXISTS public.pedido CASCADE;
 DROP TABLE IF EXISTS public.carrito_detalle CASCADE;
@@ -1304,6 +1305,34 @@ CREATE TABLE public.pedido_detalle (
 );
 
 -- ============================================================
+-- 38.1. PEDIDO_DETALLE_IMPUESTO
+-- ============================================================
+CREATE TABLE public.pedido_detalle_impuesto (
+    id_pedido_detalle_impuesto BIGSERIAL PRIMARY KEY,
+    pedido_detalle_id BIGINT NOT NULL,
+    impuesto_id BIGINT NOT NULL,
+    nombre_impuesto VARCHAR(100) NOT NULL,
+    tipo VARCHAR(30) NOT NULL DEFAULT 'PORCENTAJE',
+    porcentaje NUMERIC(9,4) NULL,
+    valor_fijo NUMERIC(14,2) NULL,
+    base_impuesto NUMERIC(14,2) NOT NULL DEFAULT 0,
+    valor_impuesto NUMERIC(14,2) NOT NULL DEFAULT 0,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+
+    CONSTRAINT pedido_detalle_impuesto_valores_check CHECK (
+        base_impuesto >= 0 AND valor_impuesto >= 0
+    ),
+    CONSTRAINT pedido_detalle_impuesto_pedido_detalle_fk
+        FOREIGN KEY (pedido_detalle_id)
+        REFERENCES public.pedido_detalle(id_pedido_detalle)
+        ON UPDATE CASCADE ON DELETE CASCADE,
+    CONSTRAINT pedido_detalle_impuesto_impuesto_fk
+        FOREIGN KEY (impuesto_id)
+        REFERENCES public.impuesto(id_impuesto)
+        ON UPDATE CASCADE ON DELETE RESTRICT
+);
+
+-- ============================================================
 -- 39. PEDIDOS_ESTADOS
 -- ============================================================
 CREATE TABLE public.pedido_estado (
@@ -2000,6 +2029,76 @@ ON public.inventario
 FOR EACH ROW
 EXECUTE FUNCTION public.validar_inventario_variante_producto();
 
+-- ------------------------------------------------------------
+-- 45.15 Sumatoria automática de impuestos en pedido_detalle
+-- ------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.actualizar_impuesto_pedido_detalle()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_detalle_id BIGINT;
+    v_total_impuestos NUMERIC(14,2);
+BEGIN
+    IF TG_OP = 'DELETE' THEN
+        v_detalle_id := OLD.pedido_detalle_id;
+    ELSE
+        v_detalle_id := NEW.pedido_detalle_id;
+    END IF;
+
+    SELECT COALESCE(SUM(valor_impuesto), 0)
+      INTO v_total_impuestos
+      FROM public.pedido_detalle_impuesto
+     WHERE pedido_detalle_id = v_detalle_id;
+
+    UPDATE public.pedido_detalle
+       SET impuesto = v_total_impuestos,
+           total = (cantidad * precio_unitario) - descuento + v_total_impuestos
+     WHERE id_pedido_detalle = v_detalle_id;
+
+    RETURN NULL;
+END;
+$$;
+
+CREATE TRIGGER trg_actualizar_impuesto_pedido_detalle
+AFTER INSERT OR UPDATE OR DELETE ON public.pedido_detalle_impuesto
+FOR EACH ROW
+EXECUTE FUNCTION public.actualizar_impuesto_pedido_detalle();
+
+-- ------------------------------------------------------------
+-- 45.16 Validar pertenencia de impuesto y pedido a la misma empresa
+-- ------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.validar_empresa_pedido_detalle_impuesto()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_empresa_pedido BIGINT;
+    v_empresa_impuesto BIGINT;
+BEGIN
+    SELECT p.empresa_id INTO v_empresa_pedido
+      FROM public.pedido_detalle pd
+      JOIN public.pedido p ON p.id_pedido = pd.pedido_id
+     WHERE pd.id_pedido_detalle = NEW.pedido_detalle_id;
+
+    SELECT empresa_id INTO v_empresa_impuesto
+      FROM public.impuesto
+     WHERE id_impuesto = NEW.impuesto_id;
+
+    IF v_empresa_pedido IS NOT NULL AND v_empresa_impuesto IS NOT NULL
+       AND v_empresa_pedido <> v_empresa_impuesto THEN
+        RAISE EXCEPTION 'El impuesto y el pedido deben pertenecer a la misma empresa';
+    END IF;
+
+    RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER trg_validar_pedido_detalle_impuesto_empresa
+BEFORE INSERT OR UPDATE ON public.pedido_detalle_impuesto
+FOR EACH ROW
+EXECUTE FUNCTION public.validar_empresa_pedido_detalle_impuesto();
+
 -- ============================================================
 -- 46. INDICES RECOMENDADOS POR EL DOC 02
 -- ============================================================
@@ -2041,6 +2140,11 @@ CREATE INDEX idx_inventario_producto
     ON public.inventario(producto_id);
 CREATE INDEX idx_inventario_variante
     ON public.inventario(producto_variante_id);
+
+CREATE INDEX idx_pedido_detalle_impuesto_detalle
+    ON public.pedido_detalle_impuesto(pedido_detalle_id);
+CREATE INDEX idx_pedido_detalle_impuesto_impuesto
+    ON public.pedido_detalle_impuesto(impuesto_id);
 
 -- ============================================================
 -- 47. AUDITORIA
@@ -2533,6 +2637,40 @@ WITH CHECK (EXISTS (
     SELECT 1 FROM public.producto p
     WHERE p.id_producto = producto_id
       AND p.empresa_id = public.current_empresa_id()
+));
+
+-- RLS para pedido_detalle y pedido_detalle_impuesto
+ALTER TABLE public.pedido_detalle ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.pedido_detalle_impuesto ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY pedido_detalle_por_empresa
+ON public.pedido_detalle
+USING (EXISTS (
+    SELECT 1 FROM public.pedido p
+    WHERE p.id_pedido = pedido_id
+      AND p.empresa_id = public.current_empresa_id()
+))
+WITH CHECK (EXISTS (
+    SELECT 1 FROM public.pedido p
+    WHERE p.id_pedido = pedido_id
+      AND p.empresa_id = public.current_empresa_id()
+));
+
+CREATE POLICY pedido_detalle_impuesto_por_empresa
+ON public.pedido_detalle_impuesto
+USING (EXISTS (
+    SELECT 1 
+      FROM public.pedido_detalle pd
+      JOIN public.pedido p ON p.id_pedido = pd.pedido_id
+     WHERE pd.id_pedido_detalle = pedido_detalle_id
+       AND p.empresa_id = public.current_empresa_id()
+))
+WITH CHECK (EXISTS (
+    SELECT 1 
+      FROM public.pedido_detalle pd
+      JOIN public.pedido p ON p.id_pedido = pd.pedido_id
+     WHERE pd.id_pedido_detalle = pedido_detalle_id
+       AND p.empresa_id = public.current_empresa_id()
 ));
 
 
