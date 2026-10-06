@@ -108,7 +108,7 @@ const ChatPage = () => {
   return (
     <>
       <PageMetaData title="Consola WhatsApp - ChatConnect" />
-      <PageBreadcrumb title="Consola de WhatsApp" subName="Atención en Vivo & Catálogo Interactivo" />
+      <PageBreadcrumb title="Consola de WhatsApp" subName="Atención en Vivo y Catálogo Interactivo" />
 
       <Card className="border-0 shadow-sm overflow-hidden" style={{ height: 'calc(100dvh - 210px)', minHeight: 0 }}>
         <Row className="g-0 h-100">

@@ -32,7 +32,7 @@ const SECTION_CONFIG = {
   },
   geo: {
     title: 'Código de Ciudades',
-    subName: 'Ajustes Maestros DIVIPOLA',
+    subName: 'Configuraciones de Ciudades',
     tabs: [
       { key: 'geo', label: 'Ciudades', icon: 'bx:map-pin', countKey: 'departamentos' },
     ],
