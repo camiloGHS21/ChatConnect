@@ -1,4 +1,3 @@
-import React from 'react';
 import { Table, Badge, Button } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import IconifyIcon from '@/components/wrappers/IconifyIcon';

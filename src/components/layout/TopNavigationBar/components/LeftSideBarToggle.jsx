@@ -15,7 +15,7 @@ const LeftSideBarToggle = () => {
   const {
     pathname
   } = useLocation();
-  const isFirstRender = useRef(true);
+  const previousPathname = useRef(pathname);
   const handleMenuSize = () => {
     if (size === 'hidden') {
       toggleBackdrop();
@@ -28,14 +28,12 @@ const LeftSideBarToggle = () => {
     }
   };
   useEffect(() => {
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
-    } else if (size === 'hidden') {
-      toggleBackdrop();
-    }
-  }, [pathname]);
+    if (previousPathname.current === pathname) return;
+    previousPathname.current = pathname;
+    if (size === 'hidden') toggleBackdrop();
+  }, [pathname, size, toggleBackdrop]);
   return <div className="topbar-item">
-      <button onClick={handleMenuSize} type="button" className="button-toggle-menu">
+      <button onClick={handleMenuSize} type="button" className="button-toggle-menu" aria-label="Alternar menú lateral">
         <IconifyIcon icon="iconamoon:menu-burger-horizontal" className="fs-22" />
       </button>
     </div>;

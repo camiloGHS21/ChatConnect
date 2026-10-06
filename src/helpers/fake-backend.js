@@ -21,10 +21,10 @@ export const fakeUsers = [{
   token: 'eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJ0ZWNoemFhIiwiYXVkIjoiaHR0cHM6Ly90ZWNoemFhLmdldGFwcHVpLmNvbS8iLCJzdWIiOiJzdXBwb3J0QGNvZGVydGhlbWVzLmNvbSIsImxhc3ROYW1lIjoiVGVjaHphYSIsIkVtYWlsIjoidGVjaHphYXN0dWRpb0BnbWFpbC5jb20iLCJSb2xlIjoiQWRtaW4iLCJmaXJzdE5hbWUiOiJUZXN0VG9rZW4ifQ.ud4LnFZ-mqhHEYiPf2wCLM7KvLGoAxhXTBSymRIZEFLleFkO119AXd8p3OfPCpdUWSyeZl8-pZyElANc_KHj5w'
 }];
 export default function configureFakeBackend() {
-  mock.onPost('/login').reply(function (config) {
+  mock.onPost('/login').reply(config => {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    return new Promise(function (resolve, _reject) {
-      setTimeout(function () {
+    return new Promise((resolve, _reject) => {
+      setTimeout(() => {
         // get parameters from post request
         const params = JSON.parse(config.data);
         // find if any user matches login credentials

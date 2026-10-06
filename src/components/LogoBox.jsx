@@ -17,7 +17,7 @@ const LogoBox = ({
             className={squareLogo?.className}
             height={squareLogo?.height ?? 30}
             width={squareLogo?.width ?? 30}
-            alt="ChatConnect Logo"
+            alt="Logotipo de ChatConnect"
           />
           <img
             src={logoDark}
@@ -35,7 +35,7 @@ const LogoBox = ({
             className={squareLogo?.className}
             height={squareLogo?.height ?? 30}
             width={squareLogo?.width ?? 30}
-            alt="ChatConnect Logo"
+            alt="Logotipo de ChatConnect"
           />
           <img
             src={logoLight}

@@ -4,6 +4,7 @@ import { Button, Card, CardBody, CardTitle, Col } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import IconifyIcon from '@/components/wrappers/IconifyIcon';
 import { getAllOrders } from '@/helpers/data';
+import { formatDate, statusLabel, paymentMethodLabel } from '../../spanishPresentation';
 const RecentOrders = () => {
   const [orders, setOrders] = useState();
   useEffect(() => {
@@ -16,11 +17,11 @@ const RecentOrders = () => {
   return <Card>
       <CardBody>
         <div className="d-flex align-items-center justify-content-between">
-          <CardTitle>Recent Orders</CardTitle>
+          <CardTitle>Pedidos recientes</CardTitle>
           <Button variant="primary" size="sm">
             <span className="icons-center">
               <IconifyIcon icon="bx:plus" className="me-1" />
-              Create Order
+              Crear pedido
             </span>
           </Button>
         </div>
@@ -29,25 +30,25 @@ const RecentOrders = () => {
         <table className="table mb-0">
           <thead className="bg-light bg-opacity-50">
             <tr>
-              <th className="border-0 py-2">Order ID.</th>
-              <th className="border-0 py-2">Date</th>
-              <th className="border-0 py-2">Product</th>
-              <th className="border-0 py-2">Customer Name</th>
-              <th className="border-0 py-2">Email ID</th>
-              <th className="border-0 py-2">Phone No.</th>
-              <th className="border-0 py-2">Address</th>
-              <th className="border-0 py-2">Payment Type</th>
-              <th className="border-0 py-2">Status</th>
+              <th className="border-0 py-2">ID del pedido</th>
+              <th className="border-0 py-2">Fecha</th>
+              <th className="border-0 py-2">Producto</th>
+              <th className="border-0 py-2">Nombre del cliente</th>
+              <th className="border-0 py-2">Correo electrónico</th>
+              <th className="border-0 py-2">Teléfono</th>
+              <th className="border-0 py-2">Dirección</th>
+              <th className="border-0 py-2">Forma de pago</th>
+              <th className="border-0 py-2">Estado</th>
             </tr>
           </thead>
           <tbody>
-            {orders?.slice(0, 5).map((order, idx) => <tr key={idx}>
+            {orders?.slice(0, 5).map((order) => <tr key={order.id}>
                 <td>
                   <Link to={`/ecommerce/orders/${order.id}`}>{order.id}</Link>
                 </td>
-                <td>{new Date(order.createdAt).toDateString()}</td>
+                <td>{formatDate(order.createdAt)}</td>
                 {order.product && <td>
-                    <img src={order.product?.images[0]} alt="product-1(1)" className="img-fluid avatar-sm" />
+                    <img src={order.product?.images[0]} alt="Imagen del producto" className="img-fluid avatar-sm" />
                   </td>}
                 <td>
                   <Link to="">{order.customer?.name}</Link>
@@ -55,11 +56,11 @@ const RecentOrders = () => {
                 <td>{order.customer?.email}</td>
                 <td>{order.customer?.phone}</td>
                 <td>{order.customer?.address}</td>
-                <td>{order.paymentMethod}</td>
+                <td>{paymentMethodLabel(order.paymentMethod)}</td>
                 <td>
                   <div className="icons-center">
-                    <IconifyIcon icon="bxs:circle" className={clsx('me-1', order.status === 'Cancelled' ? 'text-danger' : order.status == 'Processing' ? 'text-primary' : 'text-success')} />
-                    {order.status}
+                    <IconifyIcon icon="bxs:circle" className={clsx('me-1', order.status === 'Cancelled' ? 'text-danger' : order.status === 'Processing' ? 'text-primary' : 'text-success')} />
+                    {statusLabel(order.status)}
                   </div>
                 </td>
               </tr>)}
@@ -69,15 +70,15 @@ const RecentOrders = () => {
       <div className="align-items-center justify-content-between row g-0 text-center text-sm-start p-3 border-top">
         <div className="col-sm">
           <div className="text-muted">
-            Showing &nbsp;
-            <span className="fw-semibold">5</span>&nbsp; of &nbsp;
-            <span className="fw-semibold">90,521</span>&nbsp; orders
+            Mostrando &nbsp;
+            <span className="fw-semibold">5</span>&nbsp; de &nbsp;
+            <span className="fw-semibold">90.521</span>&nbsp; pedidos
           </div>
         </div>
         <Col sm="auto" className="mt-3 mt-sm-0">
           <ul className="pagination pagination-rounded m-0">
             <li className="page-item">
-              <Link to="" className="page-link">
+              <Link to="" className="page-link" aria-label="Página anterior">
                 <IconifyIcon icon="bx:left-arrow-alt" />
               </Link>
             </li>
@@ -97,7 +98,7 @@ const RecentOrders = () => {
               </Link>
             </li>
             <li className="page-item">
-              <Link to="" className="page-link">
+              <Link to="" className="page-link" aria-label="Página siguiente">
                 <IconifyIcon icon="bx:right-arrow-alt" />
               </Link>
             </li>

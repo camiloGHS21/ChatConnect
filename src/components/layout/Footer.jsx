@@ -1,5 +1,5 @@
 import { currentYear, developedBy, developedByLink } from '@/context/constants';
-import IconifyIcon from '../wrappers/IconifyIcon';
+
 import { Col, Container, Row } from 'react-bootstrap';
 const Footer = () => {
   return <footer className="footer">
@@ -8,9 +8,9 @@ const Footer = () => {
         <Col xs={12} className="text-center">
           <span className="icons-center">
             {' '}
-            {currentYear} © ChatConnect. Crafted {/* with&nbsp; */}
+            {currentYear} © ChatConnect. Desarrollado
             {/* <IconifyIcon icon="iconamoon:heart-duotone" className="fs-18 align-middle text-danger" /> */}
-            &nbsp;by&nbsp;
+            &nbsp;por&nbsp;
             <a href={developedByLink} className="fw-bold footer-text" target="_blank" rel="noreferrer">
               {developedBy}
             </a>

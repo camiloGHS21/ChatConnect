@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Button, Card, CardBody, CardHeader, CardTitle } from 'react-bootstrap';
 import { currency } from '@/context/constants';
 import { getAllTransactions } from '@/helpers/data';
+import { formatDate, formatNumber, statusLabel } from '../../spanishPresentation';
 const Transactions = () => {
   const [transactionsData, setTransactionsData] = useState();
   useEffect(() => {
@@ -13,9 +14,9 @@ const Transactions = () => {
   }, []);
   return <Card>
       <CardHeader className="d-flex justify-content-between align-items-center">
-        <CardTitle>Recent Transactions</CardTitle>
+        <CardTitle>Transacciones recientes</CardTitle>
         <Button variant="light" size="sm">
-          View All
+          Ver todas
         </Button>
       </CardHeader>
       <CardBody>
@@ -24,22 +25,22 @@ const Transactions = () => {
             <thead>
               <tr>
                 <th className="py-1">ID</th>
-                <th className="py-1">Date</th>
-                <th className="py-1">Amount</th>
-                <th className="py-1">Status</th>
-                <th className="py-1">Description</th>
+                <th className="py-1">Fecha</th>
+                <th className="py-1">Importe</th>
+                <th className="py-1">Estado</th>
+                <th className="py-1">Descripción</th>
               </tr>
             </thead>
             <tbody>
-              {transactionsData?.slice(0, 5).map((transaction, idx) => <tr key={idx}>
+              {transactionsData?.slice(0, 5).map((transaction) => <tr key={transaction.id}>
                   <td>#{transaction.id}</td>
-                  <td>{new Date(transaction.date).toDateString()}</td>
+                  <td>{formatDate(transaction.date)}</td>
                   <td>
                     {currency}
-                    {transaction.amount}
+                    {formatNumber(transaction.amount)}
                   </td>
                   <td>
-                    <span className={`badge bg-${transaction.status === 'Dr.' ? 'danger' : 'success'}`}>{transaction.status}</span>
+                    <span className={`badge bg-${transaction.status === 'Dr.' ? 'danger' : 'success'}`}>{statusLabel(transaction.status)}</span>
                   </td>
                   <td>{transaction.description}</td>
                 </tr>)}

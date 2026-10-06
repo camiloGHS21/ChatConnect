@@ -16,11 +16,11 @@ const InventarioConfigCard = ({
         updateField('medida_id', String(defaultMeasure.id));
       }
     }
-  }, [measuresCatalog, formData.medida_id]);
+  }, [measuresCatalog, formData.medida_id, updateField]);
 
   return (
     <Card className="border shadow-none mb-4 rounded-3">
-      <Card.Header className="bg-light-subtle py-3 border-bottom d-flex align-items-center justify-content-between">
+      <Card.Header className="bg-body-tertiary py-3 border-bottom d-flex align-items-center justify-content-between">
         <div className="d-flex align-items-center gap-2">
           <IconifyIcon icon="bx:box" className="fs-20 text-primary" />
           <h5 className="card-title mb-0">Control y Configuración de Inventario</h5>
@@ -28,7 +28,7 @@ const InventarioConfigCard = ({
         <Form.Check
           type="switch"
           id="maneja-inventario-switch"
-          label={formData.maneja_inventario ? 'Control de Stock Activo' : 'Sin Control de Stock'}
+          label={formData.maneja_inventario ? 'Control de existencias activo' : 'Sin control de existencias'}
           checked={!!formData.maneja_inventario}
           onChange={e => updateField('maneja_inventario', e.target.checked)}
           className="fw-semibold text-primary"
@@ -37,7 +37,7 @@ const InventarioConfigCard = ({
       <Card.Body className="p-4">
         <Row className="g-3">
           <Col md={6}>
-            <Form.Group>
+            <Form.Group controlId="producto-tipo-inventario">
               <Form.Label className="fw-semibold fs-13">Tipo de Inventario</Form.Label>
               <Form.Select
                 value={formData.tipo_inventario_id || ''}
@@ -56,7 +56,7 @@ const InventarioConfigCard = ({
           </Col>
 
           <Col md={6}>
-            <Form.Group>
+            <Form.Group controlId="producto-unidad-medida">
               <Form.Label className="fw-semibold fs-13">Unidad de Medida</Form.Label>
               <Form.Select
                 value={formData.medida_id || ''}
@@ -76,15 +76,15 @@ const InventarioConfigCard = ({
           </Col>
 
           <Col md={4}>
-            <Form.Group>
-              <Form.Label className="fw-semibold fs-13">Stock Mínimo</Form.Label>
+            <Form.Group controlId="producto-existencias-minimas">
+              <Form.Label className="fw-semibold fs-13">Existencias mínimas</Form.Label>
               <Form.Control
                 type="number"
                 min="0"
                 isInvalid={!!errors?.stock_minimo}
                 value={formData.stock_minimo ?? 0}
                 onChange={e => {
-                  const val = Math.max(0, parseInt(e.target.value) || 0);
+                  const val = Math.max(0, parseInt(e.target.value, 10) || 0);
                   updateField('stock_minimo', val);
                   if (formData.stock_maximo != null && val > formData.stock_maximo) {
                     updateField('stock_maximo', val);
@@ -103,14 +103,14 @@ const InventarioConfigCard = ({
           </Col>
 
           <Col md={4}>
-            <Form.Group>
-              <Form.Label className="fw-semibold fs-13">Stock Máximo</Form.Label>
+            <Form.Group controlId="producto-existencias-maximas">
+              <Form.Label className="fw-semibold fs-13">Existencias máximas</Form.Label>
               <Form.Control
                 type="number"
                 min="0"
                 isInvalid={!!errors?.stock_maximo}
                 value={formData.stock_maximo ?? 0}
-                onChange={e => updateField('stock_maximo', Math.max(0, parseInt(e.target.value) || 0))}
+                onChange={e => updateField('stock_maximo', Math.max(0, parseInt(e.target.value, 10) || 0))}
                 disabled={!formData.maneja_inventario}
               />
               {errors?.stock_maximo ? (
@@ -124,7 +124,7 @@ const InventarioConfigCard = ({
           </Col>
 
           <Col md={4}>
-            <Form.Group>
+            <Form.Group controlId="producto-presentacion-fisica">
               <Form.Label className="fw-semibold fs-13">Presentación Física</Form.Label>
               <Form.Control
                 type="text"

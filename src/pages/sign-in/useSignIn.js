@@ -119,7 +119,7 @@ const useSignIn = () => {
         e.response?.data?.error ||
         e.response?.data?.message ||
         e.message ||
-        'Error de conexión con el servidor backend';
+        'Error de conexión con el servidor';
 
       // Mostrar toast de alerta en color rojo (danger) con el mensaje de error
       showNotification({

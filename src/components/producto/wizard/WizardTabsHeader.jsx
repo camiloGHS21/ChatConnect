@@ -18,7 +18,7 @@ const WizardTabsHeader = ({ activeStep, setActiveStep, formSteps }) => {
           key={step.index}
           eventKey={step.index}
           className="nav-item"
-          tabClassName="pb-3"
+          tabClassName={activeStep === step.index ? 'pb-3 text-primary' : 'pb-3 text-body'}
           title={
             <span className="fw-semibold">
               <IconifyIcon icon={step.icon} className="me-1 fs-16" />

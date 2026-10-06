@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import productoService from '@/services/productoService';
 import { getInitialProductState } from './initialProductState';
 import { validateAllProductData } from './productValidation';
+import { getProductErrorMessage } from '../productErrorMessage';
 
 export const useProductSaveHandler = ({
   productId,
@@ -35,7 +36,7 @@ export const useProductSaveHandler = ({
           setProductData(formatted);
         }
       })
-      .catch((err) => {
+      .catch(() => {
         setSaveError('Error al cargar datos del producto para edición');
       })
       .finally(() => setIsLoadingProduct(false));
@@ -72,8 +73,8 @@ export const useProductSaveHandler = ({
       }
       setIsSubmitted(true);
     } catch (e) {
-      const msg = e.response?.data?.message || e.message || 'Error al persistir producto';
-      setSaveError(typeof msg === 'string' ? msg : JSON.stringify(msg));
+      console.error('No se pudo guardar el producto:', e);
+      setSaveError(getProductErrorMessage(e, 'No se pudo guardar el producto.'));
     } finally {
       setIsSaving(false);
     }

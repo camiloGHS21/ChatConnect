@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import ListasPreciosForm from './ListasPreciosForm';
 import ListasPreciosTable from './ListasPreciosTable';
 import ModalEditarListaPrecio from './ModalEditarListaPrecio';
@@ -21,7 +21,7 @@ const ListasPreciosCard = ({
   triggerDeleteConfirm,
 }) => {
   const allPriceLists = priceListsCatalog;
-  const listasPrecios = formData?.listas_precios || [];
+  const listasPrecios = useMemo(() => formData?.listas_precios || [], [formData?.listas_precios]);
 
   const [newPriceList, setNewPriceList] = useState({
     lista_precio_id: '1',
@@ -45,7 +45,7 @@ const ListasPreciosCard = ({
         setNewPriceList(prev => ({ ...prev, lista_precio_id: String(firstAvail.id) }));
       }
     }
-  }, [listasPrecios, allPriceLists]);
+  }, [listasPrecios, allPriceLists, newPriceList.lista_precio_id]);
 
   const taxPercent = (formData?.impuestos_venta || [])
     .filter(t => t.tipo_calculo === 'PORCENTAJE')

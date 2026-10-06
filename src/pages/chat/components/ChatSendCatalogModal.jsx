@@ -55,7 +55,7 @@ const ChatSendCatalogModal = ({ show, onHide, activeChat, onCatalogSent }) => {
         emisor: 'asesor',
         tipo: 'interactive',
         texto: res.texto || (tab === 'producto' ? `📦 Producto enviado: ${selectedSku}` : `📦 Catálogo enviado`),
-        hora: res.hora || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        hora: res.hora || new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' }),
       });
       onHide();
     } catch (err) {
@@ -68,7 +68,7 @@ const ChatSendCatalogModal = ({ show, onHide, activeChat, onCatalogSent }) => {
 
   return (
     <Modal show={show} onHide={() => !sending && onHide()} centered size="lg">
-      <Modal.Header closeButton={!sending} className="bg-light py-2">
+      <Modal.Header closeLabel="Cerrar" closeButton={!sending} className="bg-body-tertiary py-2">
         <div className="d-flex align-items-center gap-2">
           <div className="avatar-xs rounded bg-success text-white d-flex align-items-center justify-content-center p-2">
             <IconifyIcon icon="bxl:whatsapp" className="fs-18" />
@@ -111,7 +111,7 @@ const ChatSendCatalogModal = ({ show, onHide, activeChat, onCatalogSent }) => {
           )}
         </Modal.Body>
 
-        <Modal.Footer className="bg-light py-2">
+        <Modal.Footer className="bg-body-tertiary py-2">
           <Button variant="outline-secondary" size="sm" onClick={onHide} disabled={sending}>Cancelar</Button>
           <Button variant="success" size="sm" type="submit" disabled={sending || loading || !isVentanaActiva || (tab === 'producto' ? !selectedSku : !selectedCatIds.length)} className="d-flex align-items-center gap-1 shadow-sm">
             {sending ? <><Spinner size="sm" className="me-1" /> Enviando...</> : (

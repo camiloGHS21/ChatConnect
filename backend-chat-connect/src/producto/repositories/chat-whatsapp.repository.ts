@@ -327,12 +327,15 @@ export class ChatWhatsappRepository {
       }
 
       const wamid = data.messages?.[0]?.id;
+      if (typeof wamid !== 'string' || !wamid.trim()) {
+        throw new BadRequestException('Meta no devolvió un identificador válido de mensaje; no se puede guardar.');
+      }
 
       const insertRes = await this.dataSource.query(
-        `INSERT INTO public.mensaje (empresa_id, conversacion_id, direccion, tipo, contenido, metadata, created_at)
-         VALUES ($1, $2, 'outbound', 'text', $3, $4, NOW())
+        `INSERT INTO public.mensaje (empresa_id, conversacion_id, direccion, tipo, contenido, metadata, external_message_id, created_at)
+         VALUES ($1, $2, 'outbound', 'text', $3, $4, $5, NOW())
          RETURNING id_mensaje, created_at;`,
-        [empresaId, conversacionId, texto.trim(), JSON.stringify({ wamid, origen: 'crm_asesor' })],
+        [empresaId, conversacionId, texto.trim(), JSON.stringify({ wamid, origen: 'crm_asesor' }), wamid],
       );
 
       await this.dataSource.query(

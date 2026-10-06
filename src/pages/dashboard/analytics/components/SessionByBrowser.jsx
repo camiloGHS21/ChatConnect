@@ -2,6 +2,7 @@ import IconifyIcon from '@/components/wrappers/IconifyIcon';
 import { canalesAtencion } from '../data';
 import { Card, CardBody, CardHeader, CardTitle, ProgressBar } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
+import { formatNumber } from '../../spanishPresentation';
 
 const SessionByBrowser = () => {
   return (
@@ -18,13 +19,13 @@ const SessionByBrowser = () => {
       <CardBody className="p-3 d-flex flex-column justify-content-between">
         <div className="d-flex flex-column gap-3">
           {canalesAtencion.map((canal, idx) => (
-            <div key={idx}>
+            <div key={canal.name}>
               <div className="d-flex justify-content-between align-items-center mb-1 fs-12">
                 <span className="fw-semibold text-dark d-flex align-items-center gap-1">
                   <IconifyIcon icon="bxl:whatsapp" className="text-success fs-14" />
                   {canal.name}
                 </span>
-                <span className="text-muted">{canal.amount} ({canal.percentage}%)</span>
+                <span className="text-muted">{canal.amount.replace(/(\d),(?=\d{3}\b)/g, '$1.')} ({formatNumber(canal.percentage)}%)</span>
               </div>
               <ProgressBar
                 variant={idx === 0 ? 'success' : idx === 1 ? 'primary' : 'info'}

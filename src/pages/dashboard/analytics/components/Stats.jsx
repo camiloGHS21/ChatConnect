@@ -1,6 +1,8 @@
 import IconifyIcon from '@/components/wrappers/IconifyIcon';
 import { Card, CardBody, Col, Row } from 'react-bootstrap';
 import { stateData } from '../data';
+
+const formatAmount = (amount) => amount.replace(/(\d),(?=\d{3}\b)/g, '$1.').replace(/(\d)\.(\d)(?=M\b)/g, '$1,$2');
 const StatCard = ({
   amount,
   icon,
@@ -17,7 +19,7 @@ const StatCard = ({
           </Col>
           <Col xs={6} className="text-end">
             <p className="text-muted mb-0 text-truncate">{name}</p>
-            <h3 className="text-dark mt-1 mb-0">{amount}</h3>
+            <h3 className="text-dark mt-1 mb-0">{formatAmount(amount)}</h3>
           </Col>
         </Row>
       </CardBody>
@@ -25,7 +27,7 @@ const StatCard = ({
 };
 const Stats = () => {
   return <Row>
-      {stateData.map((stat, idx) => <Col md={6} xxl={12} key={idx}>
+      {stateData.map((stat) => <Col md={6} xxl={12} key={stat.name}>
           <StatCard {...stat} />
         </Col>)}
     </Row>;

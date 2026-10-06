@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { Row, Col, Form } from 'react-bootstrap';
 import TextFormInput from '@/components/form/TextFormInput';
 import TextAreaFormInput from '@/components/form/TextAreaFormInput';
@@ -31,12 +31,13 @@ const SeoTargetAiCard = ({ control, formData, updateField, setValue }) => {
 
         <Col lg={4} md={12}>
           <Form.Group className="mb-3">
-            <Form.Label className="fw-semibold fs-13 text-dark d-block">Visibilidad en Buscadores</Form.Label>
-            <div className="p-2 border rounded bg-light-subtle d-flex align-items-center justify-content-between">
+            <Form.Label className="fw-semibold fs-13 text-body-emphasis d-block">Visibilidad en Buscadores</Form.Label>
+            <div className="p-2 border rounded bg-body-tertiary d-flex align-items-center justify-content-between">
               <span className="fs-13 text-muted">¿Indexable en Google/Bing?</span>
               <Form.Check
                 type="switch"
                 id="indexable"
+                aria-label="Permitir que Google y Bing indexen el producto"
                 checked={Boolean(formData?.indexable)}
                 onChange={e => {
                   updateField('indexable', e.target.checked);
@@ -68,7 +69,7 @@ const SeoTargetAiCard = ({ control, formData, updateField, setValue }) => {
             id="contenido_ia"
             label="Contexto para Agentes de IA / WhatsApp"
             rows={3}
-            placeholder="Instrucciones para que el bot de WhatsApp asesore al cliente sobre este producto..."
+            placeholder="Instrucciones para que el asistente de WhatsApp asesore al cliente sobre este producto..."
             containerClassName="mb-3"
           />
         </Col>

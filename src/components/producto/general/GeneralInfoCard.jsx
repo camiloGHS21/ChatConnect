@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { Row, Card, Badge } from 'react-bootstrap';
 import IconifyIcon from '@/components/wrappers/IconifyIcon';
 import GeneralCodeNameInputs from './GeneralCodeNameInputs';
@@ -22,7 +22,7 @@ const GeneralInfoCard = ({
   return (
     <Card className="border shadow-none mb-3 bg-light-subtle rounded-3">
       <Card.Header className="bg-transparent border-bottom py-2 d-flex align-items-center justify-content-between">
-        <h6 className="mb-0 fw-bold text-dark d-flex align-items-center fs-14">
+        <h6 className="mb-0 fw-bold text-body d-flex align-items-center fs-14">
           <IconifyIcon icon="bx:info-circle" className="me-2 text-primary fs-18" />
           Información Principal y Catálogo
         </h6>

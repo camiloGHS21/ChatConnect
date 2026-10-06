@@ -8,7 +8,7 @@ const DropzoneFormInput = ({
   helpText,
   iconProps,
   showPreview,
-  text,
+  text = 'Arrastra los archivos aquí o haz clic para seleccionarlos',
   textClassName,
   onFileUpload
 }) => {
@@ -26,7 +26,7 @@ const DropzoneFormInput = ({
         getInputProps
       }) => <div className="dropzone dropzone-custom">
             <div className="dz-message" {...getRootProps()}>
-              <input {...getInputProps()} />
+              <input {...getInputProps()} aria-label="Seleccionar archivos" />
               <IconifyIcon icon={iconProps?.icon ?? 'bx:cloud-upload'} {...iconProps} />
               <h3 className={textClassName}>{text}</h3>
               {helpText && typeof helpText === 'string' ? <FormText>{helpText}</FormText> : helpText}
@@ -41,13 +41,13 @@ const DropzoneFormInput = ({
                           {file.path?.split('.')[file.path?.split('.').length - 1]?.toUpperCase()}
                         </div>}
                       <div className="mt-2">
-                        <p role="button" className="text-body-secondary fw-bold">
+                        <p className="text-body-secondary fw-bold">
                           {file.path ?? file.name}
                         </p>
                         <p className="mb-0 small">{file.formattedSize}</p>
                       </div>
                       {removeFile && <div className="position-absolute top-0 start-100 translate-middle">
-                          <Button variant="danger" className="rounded-circle icon-sm p-0 d-flex align-items-center justify-content-center" onClick={() => removeFile(file)}>
+                          <Button variant="danger" className="rounded-circle icon-sm p-0 d-flex align-items-center justify-content-center" onClick={() => removeFile(file)} aria-label={`Eliminar archivo ${file.path ?? file.name}`}>
                             <IconifyIcon icon="bx:x" />
                           </Button>
                         </div>}

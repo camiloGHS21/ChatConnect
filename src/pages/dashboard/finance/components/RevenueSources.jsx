@@ -1,10 +1,12 @@
 import IconifyIcon from '@/components/wrappers/IconifyIcon';
 import { currency } from '@/context/constants';
 import ReactApexChart from 'react-apexcharts';
+import { spanishChartLocale, formatNumber } from '../../spanishPresentation';
 import { Card, CardBody, CardHeader, CardTitle, Dropdown, DropdownItem, DropdownMenu, DropdownToggle, Table } from 'react-bootstrap';
 const RevenueSources = () => {
   const chartOptions = {
     chart: {
+      ...spanishChartLocale,
       height: 205,
       type: 'donut'
     },
@@ -41,8 +43,9 @@ const RevenueSources = () => {
         }
       }
     },
+    tooltip: { y: { formatter: (val) => formatNumber(val) } },
     series: [140, 125, 85],
-    labels: ['Online', 'Offline', 'Direct'],
+    labels: ['En línea', 'Presencial', 'Directos'],
     colors: ['var(--bs-primary)', 'var(--bs-info)', 'var(--bs-light)'],
     dataLabels: {
       enabled: false
@@ -50,16 +53,16 @@ const RevenueSources = () => {
   };
   return <Card>
       <CardHeader className="d-flex justify-content-between align-items-center">
-        <CardTitle>Revenue Sources</CardTitle>
+        <CardTitle>Fuentes de ingresos</CardTitle>
         <Dropdown>
-          <DropdownToggle as={'a'} role="button" className="arrow-none card-drop">
+          <DropdownToggle as={'a'} role="button" aria-label="Opciones del informe" className="arrow-none card-drop">
             <IconifyIcon icon="iconamoon:menu-kebab-vertical-circle-duotone" className="fs-20 align-middle text-muted" />
           </DropdownToggle>
           <DropdownMenu className="dropdown-menu-end">
-            <DropdownItem href="">Sales Report</DropdownItem>
-            <DropdownItem href="">Export Report</DropdownItem>
-            <DropdownItem href="">Profit</DropdownItem>
-            <DropdownItem href="">Action</DropdownItem>
+            <DropdownItem href="">Informe de ventas</DropdownItem>
+            <DropdownItem href="">Exportar informe</DropdownItem>
+            <DropdownItem href="">Ganancias</DropdownItem>
+            <DropdownItem href="">Acción</DropdownItem>
           </DropdownMenu>
         </Dropdown>
       </CardHeader>
@@ -69,34 +72,34 @@ const RevenueSources = () => {
           <Table borderless size="sm" className="table-nowrap  table-centered mb-0">
             <thead className="bg-light bg-opacity-50 thead-sm">
               <tr>
-                <th className="py-1">Sources</th>
-                <th className="py-1">Revenue</th>
-                <th className="py-1">Perc.</th>
+                <th className="py-1">Fuentes</th>
+                <th className="py-1">Ingresos</th>
+                <th className="py-1">Porcentaje</th>
               </tr>
             </thead>
             <tbody>
               <tr>
-                <td>Online</td>
-                <td>{currency}187,232</td>
+                <td>En línea</td>
+                <td>{currency}187.232</td>
                 <td>
-                  48.63%&nbsp;
-                  <span className="badge badge-soft-success ms-1">2.5% Up</span>
+                  48,63%&nbsp;
+                  <span className="badge badge-soft-success ms-1">2,5% de aumento</span>
                 </td>
               </tr>
               <tr>
-                <td>Offline</td>
-                <td>{currency}126,874</td>
+                <td>Presencial</td>
+                <td>{currency}126.874</td>
                 <td>
-                  36.08%&nbsp;
-                  <span className="badge badge-soft-success ms-1">8.5% Up</span>
+                  36,08%&nbsp;
+                  <span className="badge badge-soft-success ms-1">8,5% de aumento</span>
                 </td>
               </tr>
               <tr>
-                <td>Direct</td>
-                <td>{currency}90,127</td>
+                <td>Directos</td>
+                <td>{currency}90.127</td>
                 <td>
-                  23.41%&nbsp;
-                  <span className="badge badge-soft-danger ms-1">10.98% Down</span>
+                  23,41%&nbsp;
+                  <span className="badge badge-soft-danger ms-1">10,98% de disminución</span>
                 </td>
               </tr>
             </tbody>

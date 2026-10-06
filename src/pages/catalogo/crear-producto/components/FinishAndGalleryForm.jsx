@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import DropzoneGalleryCard from '@/components/producto/gallery/DropzoneGalleryCard';
 import GalleryImagesGrid from '@/components/producto/gallery/GalleryImagesGrid';
 import { optimizeImageForMeta } from '@/utils/imageOptimizer';
@@ -89,7 +89,7 @@ const FinishAndGalleryForm = ({
       <div className="mb-3">
         <h5 className="card-title mb-1">Galería de Imágenes</h5>
         <p className="text-muted fs-14 mb-0">
-          Sube las imágenes del producto con Dropzone y define la foto principal del catálogo
+          Arrastra o selecciona las imágenes del producto y define la foto principal del catálogo
         </p>
       </div>
 

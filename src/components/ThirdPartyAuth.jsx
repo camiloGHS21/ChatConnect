@@ -4,7 +4,7 @@ const ThirdPartyAuth = () => {
   return <>
     <p className="mt-3 fw-semibold no-span">O ingresa con</p>
     <div className="text-center d-flex gap-1 justify-content-center">
-      <Button variant="light" className="shadow-none">
+      <Button variant="light" className="shadow-none" aria-label="Ingresar con Google">
         <IconifyIcon icon="bxl:google" height={20} width={100} />
       </Button>
       {/* <Button variant="light" className="shadow-none">

@@ -7,7 +7,7 @@ export const stateData = [{
   icon: 'iconamoon:shopping-card-add-duotone',
   iconColor: 'info',
   amount: '59.6',
-  title: 'Total Sales',
+  title: 'Ventas totales',
   change: '8.72',
   changeColor: 'success',
   badgeIcon: 'bx:doughnut-chart'
@@ -15,7 +15,7 @@ export const stateData = [{
   icon: 'iconamoon:link-external-duotone',
   iconColor: 'success',
   amount: '24.03',
-  title: 'Total Expenses',
+  title: 'Gastos totales',
   change: '3.28',
   changeColor: 'danger',
   badgeIcon: 'bx:bar-chart-alt-2'
@@ -23,7 +23,7 @@ export const stateData = [{
   icon: 'iconamoon:store-duotone',
   iconColor: 'purple',
   amount: '48.7',
-  title: 'Investments',
+  title: 'Inversiones',
   change: '5.69',
   changeColor: 'danger',
   badgeIcon: 'bx:building-house'
@@ -31,7 +31,7 @@ export const stateData = [{
   icon: 'iconamoon:gift-duotone',
   iconColor: 'orange',
   amount: '11.3',
-  title: 'Profit',
+  title: 'Ganancias',
   change: '10.58',
   changeColor: 'success',
   badgeIcon: 'bx:bowl-hot'
@@ -39,7 +39,7 @@ export const stateData = [{
   icon: 'iconamoon:certificate-badge-duotone',
   iconColor: 'warning',
   amount: '5.06',
-  title: 'Savings',
+  title: 'Ahorros',
   change: '8.72',
   changeColor: 'success',
   badgeIcon: 'bx:cricket-ball'

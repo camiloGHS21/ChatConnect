@@ -38,7 +38,7 @@ const ChatSendCollectionModal = ({ show, onHide, activeChat, onCollectionSent })
     setSending(true);
     setError(null);
     try {
-      const res = await productoService.enviarColeccionWhatsApp({
+      await productoService.enviarColeccionWhatsApp({
         telefono: activeChat.whatsapp,
         coleccionId: selectedCol?.id,
         nombreColeccion: selectedCol?.name || 'Catálogo Oficial',
@@ -51,7 +51,7 @@ const ChatSendCollectionModal = ({ show, onHide, activeChat, onCollectionSent })
         emisor: 'asesor',
         tipo: 'interactive',
         texto: `📦 Colección enviada por WhatsApp: "${selectedCol?.name || 'Catálogo'}" (${selectedCol?.product_count || 0} productos)`,
-        hora: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        hora: new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' }),
       });
       onHide();
     } catch (err) {
@@ -63,7 +63,7 @@ const ChatSendCollectionModal = ({ show, onHide, activeChat, onCollectionSent })
 
   return (
     <Modal show={show} onHide={() => !sending && onHide()} centered>
-      <Modal.Header closeButton={!sending} className="bg-light">
+      <Modal.Header closeLabel="Cerrar" closeButton={!sending} className="bg-body-tertiary">
         <div className="d-flex align-items-center gap-2">
           <div className="avatar-xs rounded bg-success text-white d-flex align-items-center justify-content-center p-2">
             <IconifyIcon icon="bxl:whatsapp" className="fs-18" />
@@ -95,10 +95,10 @@ const ChatSendCollectionModal = ({ show, onHide, activeChat, onCollectionSent })
                 </Form.Select>
               </Form.Group>
               {selectedCol && (
-                <div className="p-2 mb-3 bg-light rounded border d-flex justify-content-between align-items-center">
+                <div className="p-2 mb-3 bg-body-tertiary rounded border d-flex justify-content-between align-items-center">
                   <div>
-                    <span className="text-muted fs-11 d-block">ID en Meta Catalog:</span>
-                    <code className="text-dark fs-12">{selectedCol.id}</code>
+                    <span className="text-muted fs-11 d-block">ID en el catálogo de Meta:</span>
+                    <code className="text-body fs-12">{selectedCol.id}</code>
                   </div>
                   <Badge bg="success-subtle" className="text-success border border-success-subtle">
                     {selectedCol.product_count} productos
@@ -117,7 +117,7 @@ const ChatSendCollectionModal = ({ show, onHide, activeChat, onCollectionSent })
             </>
           )}
         </Modal.Body>
-        <Modal.Footer className="bg-light">
+        <Modal.Footer className="bg-body-tertiary">
           <Button variant="outline-secondary" size="sm" onClick={onHide} disabled={sending}>Cancelar</Button>
           <Button variant="success" size="sm" type="submit" disabled={sending || loading || !selectedColId}
             className="d-flex align-items-center gap-1 shadow-sm">

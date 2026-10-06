@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { Col, Form, Button } from 'react-bootstrap';
 import IconifyIcon from '@/components/wrappers/IconifyIcon';
 
@@ -36,7 +36,7 @@ const GeneralCodeNameInputs = ({
         <div>
           <div className="d-flex align-items-center justify-content-between mb-1">
             <Form.Label htmlFor="codigo_interno" className="form-label fw-semibold mb-0 fs-13">
-              Código Interno <span className="text-primary fw-normal fs-11">(Auto)</span>
+              Código Interno <span className="text-primary fw-normal fs-11">(Automático)</span>
             </Form.Label>
             <Button
               variant="link"
@@ -44,10 +44,10 @@ const GeneralCodeNameInputs = ({
               type="button"
               className="p-0 fs-11 text-primary fw-semibold d-inline-flex align-items-center text-decoration-none"
               onClick={onGenerateCode}
-              title="Auto-generar consecutivo siguiente"
+              title="Generar automáticamente el siguiente consecutivo"
             >
               <IconifyIcon icon="bx:refresh" className="me-1 fs-14" />
-              Auto
+              Generar
             </Button>
           </div>
           <Form.Control

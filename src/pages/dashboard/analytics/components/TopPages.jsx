@@ -26,12 +26,12 @@ const TopPages = () => {
               <th>Categoría</th>
               <th>Precio Unitario</th>
               <th>Consultas IA</th>
-              <th>Stock Disponible</th>
+              <th>Existencias disponibles</th>
             </tr>
           </thead>
           <tbody>
-            {topProductos.map((prod, idx) => (
-              <tr key={idx}>
+            {topProductos.map((prod) => (
+              <tr key={prod.sku}>
                 <td>
                   <div className="fw-semibold text-dark">{prod.nombre}</div>
                   <span className="badge bg-light text-muted fs-11">{prod.sku}</span>

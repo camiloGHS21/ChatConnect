@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { Card, Row, Col, Badge } from 'react-bootstrap';
 import IconifyIcon from '@/components/wrappers/IconifyIcon';
 
@@ -22,33 +22,33 @@ const ProductSummaryCard = ({
         </div>
       </div>
 
-      <Card className="border shadow-none bg-light-subtle mb-4 rounded-3">
+      <Card className="border shadow-none bg-body-tertiary mb-4 rounded-3">
         <Card.Body className="p-3">
           <Row className="g-3">
             <Col lg={3} sm={6}>
               <span className="text-muted fs-12 d-block">Código Interno:</span>
-              <span className="fw-bold font-monospace text-dark fs-14">
+              <span className="fw-bold font-monospace text-body-emphasis fs-14">
                 {formData?.codigo_interno || 'Automático'}
               </span>
             </Col>
 
             <Col lg={5} sm={6}>
               <span className="text-muted fs-12 d-block">Nombre del Producto:</span>
-              <span className="fw-bold text-dark fs-14">
+              <span className="fw-bold text-body-emphasis fs-14">
                 {formData?.nombre || '(Sin nombre)'}
               </span>
             </Col>
 
             <Col lg={4} sm={6}>
               <span className="text-muted fs-12 d-block">Categoría / Marca:</span>
-              <span className="fw-medium text-dark fs-13">
+              <span className="fw-medium text-body-emphasis fs-13">
                 {catName} {subName ? `• ${subName}` : ''} | {brandName}
               </span>
             </Col>
 
             <Col lg={3} sm={6}>
               <span className="text-muted fs-12 d-block">Costo con Impuestos:</span>
-              <span className="fw-bold text-dark fs-14 font-monospace">
+              <span className="fw-bold text-body-emphasis fs-14 font-monospace">
                 ${Number(formData?.costo_impuesto || 0).toLocaleString('es-CO', { minimumFractionDigits: 2 })}
               </span>
               <span className="text-muted fs-11 d-block">
@@ -82,7 +82,7 @@ const ProductSummaryCard = ({
                 {formData?.maneja_inventario ? (
                   <Badge bg="info">Activo (Mín: {formData?.stock_minimo || 0} / Máx: {formData?.stock_maximo || 0})</Badge>
                 ) : (
-                  <Badge bg="secondary">No maneja stock</Badge>
+                  <Badge bg="secondary">Sin control de existencias</Badge>
                 )}
               </span>
             </Col>

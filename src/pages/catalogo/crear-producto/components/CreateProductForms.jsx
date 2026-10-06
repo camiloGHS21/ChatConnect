@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import DeleteConfirmationModal from '@/components/DeleteConfirmationModal';
 import FullPageLoader from '@/components/FullPageLoader';
@@ -107,13 +107,13 @@ const CreateProductForms = ({ productId }) => {
             ? 'Guardando cambios en PostgreSQL y actualizando en WhatsApp Meta solo lo que cambió...'
             : 'Guardando en la base de datos y publicando en el catálogo de Meta WhatsApp...'
         }
-        badge="Meta WhatsApp Sync"
+        badge="Sincronización con Meta WhatsApp"
       />
       {stepError && (
         <div className="alert alert-warning py-2 px-3 fs-13 mb-3 d-flex align-items-center shadow-sm">
           <i className="bx bx-error-circle fs-18 me-2 text-warning" />
           <div className="flex-grow-1"><strong>Atención:</strong> {stepError}</div>
-          <button type="button" className="btn-close fs-11" onClick={() => setStepError('')} />
+          <button type="button" className="btn-close fs-11" aria-label="Cerrar aviso" onClick={() => setStepError('')} />
         </div>
       )}
       {saveError && <div className="alert alert-danger py-2 fs-13 mb-3">{saveError}</div>}

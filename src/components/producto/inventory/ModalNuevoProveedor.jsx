@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Modal, Button, Alert } from 'react-bootstrap';
 import IconifyIcon from '@/components/wrappers/IconifyIcon';
 import productoService from '@/services/productoService';
+import { getProductErrorMessage } from '../productErrorMessage';
 import { calcularDvDian, INITIAL_SUPPLIER_FORM } from './supplierUtils';
 import ModalNuevoProveedorFields from './ModalNuevoProveedorFields';
 
@@ -87,7 +88,7 @@ const ModalNuevoProveedor = ({ show, onHide, onSave, existingSuppliers = [] }) =
       onHide();
     } catch (err) {
       console.error('Error al guardar proveedor en DB:', err);
-      setError(err.response?.data?.message || 'Error al guardar el proveedor en la base de datos');
+      setError(getProductErrorMessage(err, 'No se pudo guardar el proveedor.'));
     } finally {
       setLoading(false);
     }
@@ -95,8 +96,8 @@ const ModalNuevoProveedor = ({ show, onHide, onSave, existingSuppliers = [] }) =
 
   return (
     <Modal show={show} onHide={onHide} size="lg" centered>
-      <Modal.Header closeButton className="py-2 px-3 border-bottom">
-        <Modal.Title className="fs-15 fw-semibold text-dark">Crear Proveedor (Tercero)</Modal.Title>
+      <Modal.Header closeButton closeLabel="Cerrar" className="py-2 px-3 border-bottom">
+        <Modal.Title className="fs-15 fw-semibold text-body-emphasis">Crear Proveedor (Tercero)</Modal.Title>
       </Modal.Header>
       <Modal.Body className="p-3">
         {error && <Alert variant="danger" className="py-2 fs-12 mb-3">{error}</Alert>}
@@ -107,7 +108,7 @@ const ModalNuevoProveedor = ({ show, onHide, onSave, existingSuppliers = [] }) =
         />
       </Modal.Body>
       <Modal.Footer className="py-2 px-3 border-top d-flex justify-content-end gap-2">
-        <Button variant="light" className="border text-secondary fs-13 px-3" onClick={onHide} disabled={loading}>
+        <Button variant="outline-secondary" className="fs-13 px-3" onClick={onHide} disabled={loading}>
           Cancelar
         </Button>
         <Button variant="primary" className="fs-13 fw-medium px-3 d-flex align-items-center" onClick={handleSave} disabled={loading}>

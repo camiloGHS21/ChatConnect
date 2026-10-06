@@ -1,6 +1,7 @@
 import { Col, Row, Form } from 'react-bootstrap';
-import ReactQuill from 'react-quill-new';
+import ProductRichTextEditor from './ProductRichTextEditor';
 import 'react-quill-new/dist/quill.snow.css';
+import './product-quill.css';
 
 /**
  * Campos de descripciones y ficha técnica con editor enriquecido ReactQuill.
@@ -29,8 +30,9 @@ const GeneralDescriptionFields = ({ formData, updateField }) => {
           <Form.Label className="fs-13 fw-semibold">
             Descripción Detallada / Comercial
           </Form.Label>
-          <div className="bg-white rounded border">
-            <ReactQuill
+          <div className="product-quill-wrapper bg-body rounded border">
+            <ProductRichTextEditor
+              label="Descripción detallada y comercial"
               theme="snow"
               value={formData?.descripcion_larga || ''}
               onChange={val => updateField('descripcion_larga', val)}
@@ -50,7 +52,7 @@ const GeneralDescriptionFields = ({ formData, updateField }) => {
             id="ficha_tecnica"
             as="textarea"
             rows={3}
-            placeholder="Potencia: 20V&#10;Velocidad: 0-2000 RPM&#10;Mandril: 1/2 Pulgada&#10;Peso: 1.8 Kg..."
+            placeholder={'Potencia: 20 V\nVelocidad: 0-2000 RPM\nMandril: 1/2 pulgada\nPeso: 1,8 kg...'}
             value={formData?.ficha_tecnica || ''}
             onChange={e => updateField('ficha_tecnica', e.target.value)}
           />

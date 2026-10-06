@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { Row, Col, Card, Badge, Button, Form } from 'react-bootstrap';
 import IconifyIcon from '@/components/wrappers/IconifyIcon';
 
@@ -28,7 +28,7 @@ const GalleryImagesGrid = ({
 
   return (
     <div className="mb-3">
-      <h6 className="fw-bold text-dark mb-2">
+      <h6 className="fw-bold text-body mb-2">
         Imágenes Cargadas en la Galería ({imagenes.length})
       </h6>
       <Row className="g-3 mb-4">
@@ -36,17 +36,17 @@ const GalleryImagesGrid = ({
           <Col lg={12}>
             <div className="text-center py-4 text-muted fs-13 border rounded bg-light-subtle">
               <IconifyIcon icon="bx:image" className="fs-32 text-muted mb-2 d-block mx-auto" />
-              No se han agregado imágenes al producto todavía. Utiliza el Dropzone superior para añadir fotos.
+              No se han agregado imágenes al producto todavía. Utiliza el área de carga superior para añadir fotos.
             </div>
           </Col>
         ) : (
           imagenes.map((img) => (
             <Col xl={3} lg={4} sm={6} key={img.id}>
               <Card className={`border shadow-none h-100 ${img.principal ? 'border-primary border-2' : ''}`}>
-                <div className="position-relative bg-light rounded-top text-center p-2" style={{ height: '160px' }}>
+                <div className="position-relative bg-body-tertiary rounded-top text-center p-2" style={{ height: '160px' }}>
                   <img
                     src={img.url}
-                    alt={img.nombre}
+                    alt={img.nombre || 'Imagen del producto'}
                     className="img-fluid rounded"
                     style={{ maxHeight: '100%', objectFit: 'contain' }}
                     onError={(e) => {
@@ -67,13 +67,14 @@ const GalleryImagesGrid = ({
                     style={{ width: '26px', height: '26px' }}
                     onClick={() => handleDelete(img)}
                     title="Eliminar imagen"
+                                        aria-label="Eliminar imagen"
                   >
                     <IconifyIcon icon="bx:x" className="fs-16" />
                   </Button>
                 </div>
 
                 <Card.Body className="p-2">
-                  <p className="fw-semibold text-truncate mb-1 fs-12 text-dark" title={img.nombre}>
+                  <p className="fw-semibold text-truncate mb-1 fs-12 text-body" title={img.nombre}>
                     {img.nombre}
                   </p>
                   <div className="d-flex align-items-center justify-content-between mb-2">
@@ -85,7 +86,8 @@ const GalleryImagesGrid = ({
                         type="number"
                         min="1"
                         style={{ width: '50px', height: '24px', fontSize: '11px', padding: '2px 4px' }}
-                        value={img.orden || 1}
+                        aria-label={`Orden de la imagen ${img.nombre || 'del producto'}`}
+                                                value={img.orden || 1}
                         onChange={e => onUpdateOrder(img.id, e.target.value)}
                       />
                     </div>

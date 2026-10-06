@@ -91,16 +91,16 @@ const PedidosTable = ({
                     <td><span className="font-monospace fw-bold text-primary fs-13">{ord.numero_pedido}</span></td>
                     <td>
                       <div className="fw-semibold text-dark">{ord.cliente_nombre}</div>
-                      <span
-                        role="button"
+                      <button
+                        type="button"
                         onClick={() => onNavigateChat(ord.cliente_id)}
-                        className="text-success fs-11 d-flex align-items-center gap-1 cursor-pointer"
+                        className="text-success fs-11 d-flex align-items-center gap-1 cursor-pointer border-0 bg-transparent p-0"
                         title="Abrir conversación en Consola WhatsApp"
                         style={{ cursor: 'pointer' }}
                       >
                         <IconifyIcon icon="bxl:whatsapp" />
                         {ord.whatsapp}
-                      </span>
+                      </button>
                     </td>
                     <td className="text-muted fs-12">{ord.fecha}</td>
                     <td>

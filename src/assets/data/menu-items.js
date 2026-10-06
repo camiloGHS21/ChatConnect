@@ -7,7 +7,7 @@ export const MENU_ITEMS = [
   {
     key: 'dashboard',
     icon: 'iconamoon:home-duotone',
-    label: 'Inicio (Dashboard)',
+    label: 'Inicio',
     url: '/dashboard',
   },
   {
@@ -59,7 +59,7 @@ export const MENU_ITEMS = [
       },
       {
         key: 'config-geo',
-        label: 'Departamentos y Ciudades',
+        label: 'Ciudades',
         parentKey: 'configuracion',
         url: '/configuracion/geo',
       },

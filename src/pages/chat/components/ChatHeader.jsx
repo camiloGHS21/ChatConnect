@@ -9,7 +9,7 @@ const ChatHeader = ({ activeChat, onToggleMode, togglingMode }) => {
 
   return (
     <>
-      <div className="p-3 border-bottom bg-white d-flex justify-content-between align-items-center flex-wrap gap-2">
+      <div className="p-3 border-bottom bg-body d-flex justify-content-between align-items-center flex-wrap gap-2">
         <div className="d-flex align-items-center gap-3">
           <img
             src={activeChat.avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${activeChat.id}`}
@@ -20,7 +20,7 @@ const ChatHeader = ({ activeChat, onToggleMode, togglingMode }) => {
           />
           <div>
             <div className="d-flex align-items-center gap-2 flex-wrap">
-              <h6 className="fw-bold mb-0 text-dark fs-14">{activeChat.nombre}</h6>
+              <h6 className="fw-bold mb-0 text-body-emphasis fs-14">{activeChat.nombre}</h6>
             </div>
             <div className="d-flex align-items-center gap-2 mt-1">
               <span className="text-muted fs-11">{activeChat.whatsapp}</span>

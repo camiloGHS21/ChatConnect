@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Modal, Button, Form, Row, Col, InputGroup } from 'react-bootstrap';
 import IconifyIcon from '@/components/wrappers/IconifyIcon';
 import {
@@ -76,8 +76,8 @@ const ModalEditarListaPrecio = ({
 
   return (
     <Modal show={show} onHide={onHide} centered backdrop="static">
-      <Modal.Header closeButton className="border-bottom py-2">
-        <Modal.Title className="fs-15 fw-semibold text-dark d-flex align-items-center">
+      <Modal.Header closeButton closeLabel="Cerrar" className="border-bottom py-2">
+        <Modal.Title className="fs-15 fw-semibold text-body-emphasis d-flex align-items-center">
           <IconifyIcon icon="bx:edit-alt" className="me-2 text-primary fs-18" />
           Editar Valores: {item.nombre_lista}
         </Modal.Title>
@@ -88,7 +88,7 @@ const ModalEditarListaPrecio = ({
             <Col md={12}>
               <Form.Label className="fs-12 fw-semibold text-secondary mb-1">Precio Base</Form.Label>
               <InputGroup>
-                <InputGroup.Text className="bg-light text-muted fs-13">$</InputGroup.Text>
+                <InputGroup.Text className="bg-body-tertiary text-muted fs-13">$</InputGroup.Text>
                 <Form.Control
                   type="number"
                   step="any"
@@ -110,7 +110,7 @@ const ModalEditarListaPrecio = ({
                   onChange={e => handleUtilChange(e.target.value)}
                   placeholder="0.00"
                 />
-                <InputGroup.Text className="bg-light text-muted fs-13">%</InputGroup.Text>
+                <InputGroup.Text className="bg-body-tertiary text-muted fs-13">%</InputGroup.Text>
               </InputGroup>
             </Col>
 
@@ -121,7 +121,7 @@ const ModalEditarListaPrecio = ({
                   type="text"
                   value={`${tax}%`}
                   disabled
-                  className="bg-light text-muted"
+                  className="bg-body-tertiary text-body"
                 />
               </InputGroup>
             </Col>
@@ -129,7 +129,7 @@ const ModalEditarListaPrecio = ({
             <Col md={12}>
               <Form.Label className="fs-12 fw-semibold text-secondary mb-1">Precio de Venta Final</Form.Label>
               <InputGroup>
-                <InputGroup.Text className="bg-light text-muted fs-13">$</InputGroup.Text>
+                <InputGroup.Text className="bg-body-tertiary text-muted fs-13">$</InputGroup.Text>
                 <Form.Control
                   type="number"
                   step="any"
@@ -147,7 +147,7 @@ const ModalEditarListaPrecio = ({
           </Row>
         </Modal.Body>
         <Modal.Footer className="py-2">
-          <Button variant="light" size="sm" onClick={onHide}>Cancelar</Button>
+          <Button variant="outline-secondary" size="sm" onClick={onHide}>Cancelar</Button>
           <Button variant="primary" size="sm" type="submit">Actualizar Lista</Button>
         </Modal.Footer>
       </Form>

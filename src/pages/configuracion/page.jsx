@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Nav, Alert, Spinner, Badge } from 'react-bootstrap';
 import PageMetaData from '@/components/PageTitle';
 import PageBreadcrumb from '@/components/layout/PageBreadcrumb';
@@ -31,10 +31,10 @@ const SECTION_CONFIG = {
     ],
   },
   geo: {
-    title: 'Código de Departamentos y Ciudades',
+    title: 'Código de Ciudades',
     subName: 'Ajustes Maestros DIVIPOLA',
     tabs: [
-      { key: 'geo', label: 'Departamentos & Ciudades', icon: 'bx:map-pin', countKey: 'departamentos' },
+      { key: 'geo', label: 'Ciudades', icon: 'bx:map-pin', countKey: 'departamentos' },
     ],
   },
   limpieza: {
@@ -104,7 +104,7 @@ const ConfiguracionPage = () => {
       {notification.message && (
         <Alert variant={notification.type} className="py-2 fs-13 mb-3 d-flex align-items-center justify-content-between">
           <span>{notification.message}</span>
-          <button type="button" className="btn-close fs-12" onClick={() => setNotification({ type: '', message: '' })} />
+          <button type="button" className="btn-close fs-12" aria-label="Cerrar aviso" onClick={() => setNotification({ type: '', message: '' })} />
         </Alert>
       )}
 

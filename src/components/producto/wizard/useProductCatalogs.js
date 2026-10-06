@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import productoService from '@/services/productoService';
 
 /**
@@ -7,6 +7,12 @@ import productoService from '@/services/productoService';
 export const useProductCatalogs = (updateField) => {
   const [catalogs, setCatalogs] = useState({});
   const [loading, setLoading] = useState(true);
+  const updateFieldRef = useRef(updateField);
+
+  // El callback del formulario cambia por render; no debe reiniciar la carga.
+  useEffect(() => {
+    updateFieldRef.current = updateField;
+  }, [updateField]);
 
   useEffect(() => {
     let isMounted = true;
@@ -40,13 +46,13 @@ export const useProductCatalogs = (updateField) => {
           atributos: attributesWithComps,
         });
 
-        if (code && updateField) {
-          updateField('codigo_interno', code);
+        if (code) {
+          updateFieldRef.current?.('codigo_interno', code);
         }
 
         const medida94 = (catData.medidas || []).find(m => String(m.codigo) === '94');
-        if (medida94 && updateField) {
-          updateField('medida_id', String(medida94.id));
+        if (medida94) {
+          updateFieldRef.current?.('medida_id', String(medida94.id));
         }
       } catch (err) {
         console.warn('Error al cargar catálogos desde backend:', err);

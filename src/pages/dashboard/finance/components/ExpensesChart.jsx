@@ -1,4 +1,5 @@
 import ReactApexChart from 'react-apexcharts';
+import { spanishChartLocale, formatNumber } from '../../spanishPresentation';
 import { Button, Card, CardBody, CardHeader, CardTitle } from 'react-bootstrap';
 const ExpensesChart = () => {
   const chartOptions = {
@@ -10,6 +11,7 @@ const ExpensesChart = () => {
       data: [-2.3, -1.9, -1, -2.1, -1.3, -2.2, -1.1, -2.3, -2.8, -1.1, -2.5, -1.5]
     }],
     chart: {
+      ...spanishChartLocale,
       toolbar: {
         show: false
       },
@@ -62,10 +64,11 @@ const ExpensesChart = () => {
       tickAmount: 4,
       labels: {
         formatter: function (val) {
-          return val + 'k';
+          return formatNumber(val) + ' mil';
         }
       }
     },
+    tooltip: { y: { formatter: (val) => formatNumber(val) + ' mil' } },
     xaxis: {
       axisBorder: {
         show: false
@@ -73,24 +76,24 @@ const ExpensesChart = () => {
       axisTicks: {
         show: false
       },
-      categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'July', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+      categories: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
     }
   };
   return <Card>
       <CardHeader className="d-flex justify-content-between align-items-center">
-        <CardTitle>Expenses</CardTitle>
+        <CardTitle>Gastos</CardTitle>
         <div className="flex-centered gap-1">
           <Button variant="outline-light" size="sm" type="button">
-            ALL
+            Todo
           </Button>
           <Button variant="outline-light" size="sm" type="button">
-            1M
+            1 mes
           </Button>
           <Button variant="outline-light" size="sm" type="button">
-            6M
+            6 meses
           </Button>
           <Button variant="outline-light" size="sm" type="button" active>
-            1Y
+            1 año
           </Button>
         </div>
       </CardHeader>

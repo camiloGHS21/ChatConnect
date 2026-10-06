@@ -1,5 +1,3 @@
-import React from 'react';
-
 /**
  * Overlay de pantalla completa que bloquea todas las acciones de la interfaz
  * durante operaciones críticas (subida, guardado, eliminación o sincronización con Meta WhatsApp).
@@ -8,7 +6,7 @@ const FullPageLoader = ({
   show = false,
   title = 'Procesando operación...',
   message = 'Por favor espera un momento, estamos actualizando la base de datos y el catálogo de Meta WhatsApp.',
-  badge = 'Meta WhatsApp Sync en Progreso',
+  badge = 'Sincronización con Meta WhatsApp en progreso',
 }) => {
   if (!show) return null;
 
@@ -50,11 +48,11 @@ const FullPageLoader = ({
             </div>
           </div>
 
-          <h5 className="fw-bold mb-2 text-dark">{title}</h5>
+          <h5 className="fw-bold mb-2 text-body-emphasis">{title}</h5>
           <p className="text-muted fs-13 mb-3">{message}</p>
 
           {badge && (
-            <div className="d-inline-flex align-items-center gap-2 px-3 py-1 rounded-pill bg-light text-success fs-12 fw-medium border border-success-subtle">
+            <div className="d-inline-flex align-items-center gap-2 px-3 py-1 rounded-pill bg-body-tertiary text-success fs-12 fw-medium border border-success-subtle">
               <span className="spinner-grow spinner-grow-sm text-success" style={{ width: '0.5rem', height: '0.5rem' }} />
               {badge}
             </div>

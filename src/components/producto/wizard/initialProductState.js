@@ -13,7 +13,7 @@ export const getInitialProductState = (siguienteCodigo = '') => ({
   subcategoria_id: '1',
   marca: 'DeWalt',
   marca_id: '1',
-  descripcion_corta: 'Taladro percutor inalámbrico con motor sin escobillas (Brushless) de alta eficiencia.',
+  descripcion_corta: 'Taladro percutor inalámbrico con motor sin escobillas de alta eficiencia.',
   descripcion_larga: '<h2>Taladro Percutor Inalámbrico 20V MAX XR</h2><p>Diseñado para aplicaciones exigentes de perforación en mampostería, madera y metal. Cuenta con mandril metálico de 1/2 pulgada y luz LED integrada.</p>',
   ficha_tecnica: 'Voltaje: 20V MAX\nVelocidad sin carga: 0-2000 RPM\nImpactos por minuto: 0-34000 IPM\nMandril: 1/2 pulg metálico\nPeso: 1.6 kg\nGarantía: 3 años',
   estado_producto: 'activo',
@@ -59,7 +59,7 @@ export const getInitialProductState = (siguienteCodigo = '') => ({
     { id: 2, referencia: 'CAT-IND-01', descripcion: 'Catálogo industrial', estado: 'activo' }
   ],
   codigos_barras: [
-    { id: 1, codigo_barras: '7701234567890', tipo: 'EAN-13 Comercial', descripcion: 'Código caja máster', principal: true, estado: 'activo' }
+    { id: 1, codigo_barras: '7701234567890', tipo: 'EAN-13 Comercial', descripcion: 'Código del embalaje exterior', principal: true, estado: 'activo' }
   ],
   proveedores: [
     { id: 1, proveedor_id: '1', nombre_proveedor: 'Distribuidora Ferretera del Valle S.A.S.', referencia_proveedor: 'PROV-DW-554', precio_proveedor: 85000, principal: true }
@@ -82,8 +82,8 @@ export const getInitialProductState = (siguienteCodigo = '') => ({
   palabras_clave: 'taladro, percutor, dewalt, herramientas electricas, taladro inalambrico',
   etiquetas: ['Herramientas', 'DeWalt', 'Inalámbrico', 'Profesional'],
   sinonimos: 'taladro percutor, taladro de impacto, perforador inalambrico',
-  texto_busqueda: 'Taladro Percutor Inalambrico 20V MAX XR DeWalt motor brushless perforacion',
-  caracteristicas: '• Motor sin escobillas Brushless de alta eficiencia\n• Mandril metálico de 1/2 pulgada\n• 3 modos de velocidad y luz LED integrada',
+  texto_busqueda: 'Taladro Percutor Inalambrico 20V MAX XR DeWalt motor sin escobillas perforacion',
+  caracteristicas: '• Motor sin escobillas de alta eficiencia\n• Mandril metálico de 1/2 pulgada\n• 3 modos de velocidad y luz LED integrada',
   usos: 'Perforación en mampostería, concreto, madera y metal para uso profesional e industrial.',
   publico_objetivo: 'Contratistas, instaladores, carpinteros y profesionales de la construcción.',
   indexable: true,

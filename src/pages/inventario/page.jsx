@@ -85,13 +85,6 @@ const InventarioPage = () => {
         </Col>
       </Row>
 
-      {/* Regla del SRS informativa */}
-      <div className="alert alert-light border border-primary-subtle d-flex align-items-center gap-2 py-2 px-3 mb-3">
-        <IconifyIcon icon="iconamoon:information-circle-duotone" className="fs-18 text-primary" />
-        <span className="fs-12 text-muted">
-          <strong>Fórmula del SRS ChatConnect:</strong> El bot de WhatsApp calcula el stock disponible en tiempo real con bloqueo transaccional ACID: <code>disponible = existencia - reservado</code>.
-        </span>
-      </div>
 
       {/* Tabla de Inventario */}
       <Card className="border-0 shadow-sm">
@@ -118,7 +111,7 @@ const InventarioPage = () => {
                 className={filterLevel === 'critical' ? 'text-white' : 'text-dark'}
                 onClick={() => setFilterLevel('critical')}
               >
-                Stock Crítico
+                Existencias críticas
               </Button>
             </div>
             <div className="search-bar" style={{ minWidth: 220 }}>
@@ -146,7 +139,7 @@ const InventarioPage = () => {
                   <th>Existencia Física</th>
                   <th>Reservado (WhatsApp)</th>
                   <th>Disponible</th>
-                  <th style={{ width: 180 }}>Nivel de Stock</th>
+                  <th style={{ width: 180 }}>Nivel de existencias</th>
                   <th>Estado</th>
                   <th className="text-end">Ajuste</th>
                 </tr>
@@ -189,11 +182,11 @@ const InventarioPage = () => {
                           bg={isCritical ? 'danger-subtle' : isLow ? 'warning-subtle' : 'success-subtle'}
                           className={isCritical ? 'text-danger' : isLow ? 'text-warning' : 'text-success'}
                         >
-                          {isCritical ? 'Crítico' : isLow ? 'Bajo Stock' : 'Óptimo'}
+                          {isCritical ? 'Crítico' : isLow ? 'Existencias bajas' : 'Óptimo'}
                         </Badge>
                       </td>
                       <td className="text-end">
-                        <Button variant="outline-primary" size="sm" title="Ajustar Stock">
+                        <Button variant="outline-primary" size="sm" title="Ajustar existencias">
                           <IconifyIcon icon="bx:refresh" />
                         </Button>
                       </td>

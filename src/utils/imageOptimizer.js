@@ -37,7 +37,7 @@ export const optimizeImageForMeta = async (fileOrBlob, targetSize = 1000, maxSiz
 
         // 3. Compresión progresiva (WebP preferido, JPEG fallback)
         const format = 'image/webp';
-        let quality = 0.88;
+        const quality = 0.88;
 
         const compressIterative = (q) => {
           canvas.toBlob(

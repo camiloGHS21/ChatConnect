@@ -9,8 +9,8 @@ import Transactions from './components/Transactions';
 import PageMetaData from '@/components/PageTitle';
 const SalesPage = () => {
   return <>
-      <PageBreadcrumb subName="Dashboards" title="Sales" />
-      <PageMetaData title="Sales" />
+      <PageBreadcrumb subName="Paneles de control" title="Ventas" />
+      <PageMetaData title="Ventas" />
 
       <Stats />
       <Row>

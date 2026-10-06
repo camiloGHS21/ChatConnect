@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Modal, Form, Button, Alert } from 'react-bootstrap';
 import IconifyIcon from '@/components/wrappers/IconifyIcon';
 import productoService from '@/services/productoService';
+import { getProductErrorMessage } from '../productErrorMessage';
 
 const ModalNuevoImpuesto = ({
   show,
@@ -50,7 +51,7 @@ const ModalNuevoImpuesto = ({
       onHide();
     } catch (err) {
       console.error('Error al guardar impuesto en DB:', err);
-      setError(err.response?.data?.message || 'Error al guardar el impuesto en la base de datos');
+      setError(getProductErrorMessage(err, 'No se pudo guardar el impuesto.'));
     } finally {
       setLoading(false);
     }
@@ -58,7 +59,7 @@ const ModalNuevoImpuesto = ({
 
   return (
     <Modal show={show} onHide={onHide} centered>
-      <Modal.Header closeButton>
+      <Modal.Header closeButton closeLabel="Cerrar">
         <Modal.Title className="fs-16 fw-bold">
           <IconifyIcon icon="bx:calculator" className="me-2 text-primary" />
           Crear Impuesto ({target === 'compra' ? 'Compra' : 'Venta'})
@@ -66,7 +67,7 @@ const ModalNuevoImpuesto = ({
       </Modal.Header>
       <Modal.Body>
         {error && <Alert variant="danger" className="py-2 fs-12 mb-3">{error}</Alert>}
-        <Form.Group className="mb-3">
+        <Form.Group className="mb-3" controlId="impuesto-nombre">
           <Form.Label className="fw-semibold">Nombre del Impuesto *</Form.Label>
           <Form.Control
             type="text"
@@ -76,7 +77,7 @@ const ModalNuevoImpuesto = ({
           />
         </Form.Group>
 
-        <Form.Group className="mb-3">
+        <Form.Group className="mb-3" controlId="impuesto-modalidad">
           <Form.Label className="fw-semibold">Modalidad de Cálculo</Form.Label>
           <Form.Select
             value={form.tipo_calculo}
@@ -88,7 +89,7 @@ const ModalNuevoImpuesto = ({
         </Form.Group>
 
         {form.tipo_calculo === 'PORCENTAJE' ? (
-          <Form.Group className="mb-3">
+          <Form.Group className="mb-3" controlId="impuesto-tasa">
             <Form.Label className="fw-semibold">Tasa Porcentual (%)</Form.Label>
             <div className="input-group">
               <Form.Control
@@ -102,7 +103,7 @@ const ModalNuevoImpuesto = ({
             </div>
           </Form.Group>
         ) : (
-          <Form.Group className="mb-3">
+          <Form.Group className="mb-3" controlId="impuesto-monto">
             <Form.Label className="fw-semibold">Monto Fijo ($)</Form.Label>
             <div className="input-group">
               <span className="input-group-text">$</span>
@@ -121,7 +122,7 @@ const ModalNuevoImpuesto = ({
         )}
       </Modal.Body>
       <Modal.Footer>
-        <Button variant="light" onClick={onHide} disabled={loading}>Cancelar</Button>
+        <Button variant="outline-secondary" onClick={onHide} disabled={loading}>Cancelar</Button>
         <Button variant="primary" onClick={handleSave} disabled={!form.nombre.trim() || loading}>
           {loading ? 'Guardando...' : 'Guardar y Asignar'}
         </Button>

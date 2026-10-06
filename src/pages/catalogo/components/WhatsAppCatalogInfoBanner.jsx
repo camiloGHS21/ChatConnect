@@ -35,7 +35,7 @@ const WhatsAppCatalogInfoBanner = () => {
           Meta revisa automáticamente cada producto e imagen (demora habitual: <strong>2 a 10 minutos</strong>).
         </p>
         <span className="text-muted d-block fs-12">
-          💡 <strong>Tip para ver cambios de inmediato:</strong> La app de WhatsApp en el celular guarda el catálogo en caché. Para refrescarlo, <strong>cierra WhatsApp</strong> (de apps recientes) y ábrelo nuevamente.
+          💡 <strong>Consejo para ver cambios de inmediato:</strong> La aplicación de WhatsApp en el celular guarda el catálogo en caché. Para actualizarlo, <strong>cierra WhatsApp</strong> (desde las aplicaciones recientes) y ábrelo nuevamente.
         </span>
       </div>
     </Alert>

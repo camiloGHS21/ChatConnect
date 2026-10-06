@@ -1,5 +1,4 @@
 import { Form, Badge } from 'react-bootstrap';
-import IconifyIcon from '@/components/wrappers/IconifyIcon';
 
 const ChatSendCategoriesTab = ({
   categorias = [],
@@ -35,23 +34,24 @@ const ChatSendCategoriesTab = ({
             return (
               <div
                 key={cat.id}
-                onClick={() => !disabled && onToggleCatId(cat.id)}
-                className={`d-flex align-items-center justify-content-between p-2 rounded mb-1 cursor-pointer transition-all ${
+                className={`position-relative d-flex align-items-center justify-content-between p-2 rounded mb-1 cursor-pointer transition-all ${
                   isChecked ? 'bg-success-subtle border border-success' : 'hover-bg-light border-bottom'
                 }`}
                 style={{ cursor: disabled ? 'not-allowed' : 'pointer' }}
               >
+                <label htmlFor={`catalogo-categoria-${cat.id}`} className="stretched-link"><span className="visually-hidden">{cat.nombre}</span></label>
                 <div className="d-flex align-items-center gap-2">
                   <Form.Check
+                    id={`catalogo-categoria-${cat.id}`}
                     type="checkbox"
                     checked={isChecked}
                     onChange={() => onToggleCatId(cat.id)}
                     disabled={disabled}
                     className="me-1"
                   />
-                  <span className="fw-semibold text-dark fs-12">{cat.nombre}</span>
+                  <span className="fw-semibold text-body fs-12">{cat.nombre}</span>
                 </div>
-                <Badge bg="light" className="text-dark border fs-11">
+                <Badge bg="body-tertiary" className="text-body border fs-11">
                   {cat.total_productos} prods
                 </Badge>
               </div>

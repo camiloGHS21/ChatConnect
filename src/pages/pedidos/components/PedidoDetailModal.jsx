@@ -7,7 +7,7 @@ const PedidoDetailModal = ({ show, onHide, order, onUpdateStatus, onNotificarDes
 
   return (
     <Modal show={show} onHide={onHide} size="lg" centered>
-      <Modal.Header closeButton>
+      <Modal.Header closeButton closeLabel="Cerrar">
         <Modal.Title className="fw-bold fs-16 d-flex align-items-center gap-2">
           <span>Detalle de Orden: {order.numero_pedido}</span>
           {getStatusBadge(order.estado)}
@@ -52,8 +52,8 @@ const PedidoDetailModal = ({ show, onHide, order, onUpdateStatus, onNotificarDes
                 </td>
               </tr>
             ) : (
-              order.items.map((it, idx) => (
-                <tr key={idx}>
+              order.items.map((it) => (
+                <tr key={it.id}>
                   <td className="fw-medium">{it.producto}</td>
                   <td className="text-center fw-bold">{it.cantidad}</td>
                   <td className="text-end">${Number(it.unitario || it.precio_unitario || 0).toLocaleString('es-CO')}</td>

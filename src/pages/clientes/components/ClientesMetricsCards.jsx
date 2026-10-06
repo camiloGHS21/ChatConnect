@@ -1,4 +1,3 @@
-import React from 'react';
 import { Row, Col, Card, CardBody } from 'react-bootstrap';
 import IconifyIcon from '@/components/wrappers/IconifyIcon';
 
@@ -38,7 +37,7 @@ const ClientesMetricsCards = ({ totalClientes = 0 }) => {
               <IconifyIcon icon="tabler:currency-dollar" className="fs-24" />
             </div>
             <div>
-              <h4 className="fw-bold mb-0">$26.9M</h4>
+              <h4 className="fw-bold mb-0">$26,9M</h4>
               <span className="text-muted fs-12">Ventas por WhatsApp</span>
             </div>
           </CardBody>

@@ -2,6 +2,7 @@ import IconifyIcon from '@/components/wrappers/IconifyIcon';
 import { Card, CardBody, Col, Row } from 'react-bootstrap';
 import { currency } from '@/context/constants';
 import { statData } from '../data';
+import { formatNumber } from '../../spanishPresentation';
 const StateCard = ({
   stat
 }) => {
@@ -19,10 +20,10 @@ const StateCard = ({
           <div>
             <h3 className="mb-0 fw-bold mb-2">
               {currency}
-              {amount}k
+              {formatNumber(amount)} mil
             </h3>
             <p className="text-muted">{name}</p>
-            <span className={`badge fs-12 badge-soft-${changeColor}`}>{change}%</span>
+            <span className={`badge fs-12 badge-soft-${changeColor}`}>{formatNumber(change)}%</span>
           </div>
           <div>
             <div className="avatar-lg d-inline-block me-1">
@@ -37,7 +38,7 @@ const StateCard = ({
 };
 const Stats = () => {
   return <Row>
-      {statData.map((stat, idx) => <Col key={idx}>
+      {statData.map((stat) => <Col key={stat.name}>
           <StateCard stat={stat} />
         </Col>)}
     </Row>;

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Card, Row, Col, Form, Button, Alert } from 'react-bootstrap';
 import IconifyIcon from '@/components/wrappers/IconifyIcon';
 import ProveedoresTable from './ProveedoresTable';
@@ -36,7 +36,7 @@ const ProveedoresCard = ({
     const isFirst = currentList.length === 0;
     const shouldBePrincipal = newSup.principal || isFirst;
 
-    let updated = currentList.map(item => ({
+    const updated = currentList.map(item => ({
       ...item,
       principal: shouldBePrincipal ? false : item.principal,
     }));
@@ -74,7 +74,7 @@ const ProveedoresCard = ({
 
   return (
     <Card className="border shadow-none mb-4 rounded-3">
-      <Card.Header className="bg-light-subtle py-3 border-bottom d-flex align-items-center justify-content-between">
+      <Card.Header className="bg-body-tertiary py-3 border-bottom d-flex align-items-center justify-content-between">
         <div className="d-flex align-items-center gap-2">
           <IconifyIcon icon="bx:buildings" className="fs-20 text-primary" />
           <h5 className="card-title mb-0">Proveedores del Producto (Terceros)</h5>
@@ -129,6 +129,8 @@ const ProveedoresCard = ({
               className="w-100 d-flex align-items-center justify-content-center"
               style={{ height: '38px' }}
               onClick={handleAdd}
+              aria-label="Asignar proveedor al producto"
+              title="Asignar proveedor al producto"
             >
               <IconifyIcon icon="bx:plus" className="fs-18" />
             </Button>

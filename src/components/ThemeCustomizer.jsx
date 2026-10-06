@@ -1,7 +1,7 @@
 import { Button, Col, Offcanvas, OffcanvasBody, OffcanvasHeader, Row } from 'react-bootstrap';
 import SimplebarReactClient from './wrappers/SimplebarReactClient';
 import { useLayoutContext } from '@/context/useLayoutContext';
-import { toSentenceCase } from '@/utils/change-casing';
+const themeLabels = { light: 'Claro', dark: 'Oscuro' };
 const ColorScheme = () => {
   const {
     theme,
@@ -9,11 +9,11 @@ const ColorScheme = () => {
   } = useLayoutContext();
   const modes = ['light', 'dark'];
   return <div>
-      <h5 className="mb-3 font-16 fw-semibold">Color Scheme</h5>
-      {modes.map((mode, idx) => <div key={mode + idx} className="form-check mb-2">
+      <h5 className="mb-3 font-16 fw-semibold">Esquema de colores</h5>
+      {modes.map(mode => <div key={mode} className="form-check mb-2">
           <input className="form-check-input" type="radio" name="data-bs-theme" id={`layout-color-${mode}`} onChange={() => changeTheme(mode)} checked={theme === mode} />
           <label className="form-check-label" htmlFor={`layout-color-${mode}`}>
-            {toSentenceCase(mode)}
+            {themeLabels[mode]}
           </label>
         </div>)}
     </div>;
@@ -25,11 +25,11 @@ const TopbarTheme = () => {
   } = useLayoutContext();
   const modes = ['light', 'dark'];
   return <div>
-      <h5 className="my-3 font-16 fw-semibold">Topbar Color</h5>
-      {modes.map((mode, idx) => <div key={idx + mode} className="form-check mb-2">
+      <h5 className="my-3 font-16 fw-semibold">Color de la barra superior</h5>
+      {modes.map(mode => <div key={mode} className="form-check mb-2">
           <input className="form-check-input" type="radio" name="data-topbar-color" id={`topbar-color-${mode}`} onChange={() => changeTopbarTheme(mode)} checked={topbarTheme === mode} />
           <label className="form-check-label" htmlFor={`topbar-color-${mode}`}>
-            {toSentenceCase(mode)}
+            {themeLabels[mode]}
           </label>
         </div>)}
     </div>;
@@ -45,11 +45,11 @@ const MenuTheme = () => {
   } = useLayoutContext();
   const modes = ['light', 'dark'];
   return <div>
-      <h5 className="my-3 font-16 fw-semibold">Menu Color</h5>
-      {modes.map((mode, idx) => <div key={idx + mode + idx} className="form-check mb-2">
+      <h5 className="my-3 font-16 fw-semibold">Color del menú</h5>
+      {modes.map(mode => <div key={mode} className="form-check mb-2">
           <input className="form-check-input" type="radio" name="data-menu-color" id={`leftbar-color-${mode}`} onChange={() => changeMenuTheme(mode)} checked={theme === mode} />
           <label className="form-check-label" htmlFor={`leftbar-color-${mode}`}>
-            {toSentenceCase(mode)}
+            {themeLabels[mode]}
           </label>
         </div>)}
     </div>;
@@ -64,24 +64,24 @@ const SidebarSize = () => {
     }
   } = useLayoutContext();
   const sizes = [{
-    name: 'Default',
+    name: 'Predeterminado',
     size: 'default'
   }, {
-    name: 'Condensed',
+    name: 'Compacto',
     size: 'condensed'
   }, {
-    name: 'Hidden',
+    name: 'Oculto',
     size: 'hidden'
   }, {
-    name: 'Small Hover Active',
+    name: 'Pequeño al pasar el cursor (expandido)',
     size: 'sm-hover-active'
   }, {
-    name: 'Small Hover',
+    name: 'Pequeño al pasar el cursor',
     size: 'sm-hover'
   }];
   return <div>
-      <h5 className="my-3 font-16 fw-semibold">Sidebar Size</h5>
-      {sizes.map((size, idx) => <div key={size.size + idx} className="form-check mb-2">
+      <h5 className="my-3 font-16 fw-semibold">Tamaño de la barra lateral</h5>
+      {sizes.map(size => <div key={size.size} className="form-check mb-2">
           <input className="form-check-input" type="radio" name="data-menu-size" id={`leftbar-size-${size.size}`} onChange={() => changeMenuSize(size.size)} checked={menuSize === size.size} />
           <label className="form-check-label" htmlFor={`leftbar-size-${size.size}`}>
             {size.name}
@@ -99,8 +99,8 @@ const ThemeCustomizer = ({
   } = useLayoutContext();
   return <div>
       <Offcanvas placement="end" show={open} onHide={toggle} className="border-0" tabIndex={-1}>
-        <OffcanvasHeader closeVariant="white" closeButton className="d-flex align-items-center bg-primary p-3">
-          <h5 className="text-white m-0">Theme Settings</h5>
+        <OffcanvasHeader closeLabel="Cerrar" closeVariant="white" closeButton className="d-flex align-items-center bg-primary p-3">
+          <h5 className="text-white m-0">Configuración del tema</h5>
         </OffcanvasHeader>
         <OffcanvasBody className="p-0">
           <SimplebarReactClient className="h-100">
@@ -119,7 +119,7 @@ const ThemeCustomizer = ({
           <Row>
             <Col>
               <Button variant="danger" onClick={resetSettings} className="w-100">
-                Reset
+                Restablecer
               </Button>
             </Col>
           </Row>

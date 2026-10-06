@@ -9,12 +9,12 @@ const getVisiblePages = (totalPages, currentPage) => {
     return Array.from({ length: totalPages }, (_, i) => i + 1);
   }
   if (currentPage <= 4) {
-    return [1, 2, 3, 4, 5, '...', totalPages];
+    return [1, 2, 3, 4, 5, 'ellipsis-end', totalPages];
   }
   if (currentPage >= totalPages - 3) {
-    return [1, '...', totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
+    return [1, 'ellipsis-start', totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
   }
-  return [1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages];
+  return [1, 'ellipsis-start', currentPage - 1, currentPage, currentPage + 1, 'ellipsis-end', totalPages];
 };
 
 const Pagination = ({ table, rowsPerPageList, currentPage, totalPages }) => {
@@ -35,11 +35,11 @@ const Pagination = ({ table, rowsPerPageList, currentPage, totalPages }) => {
       <div className="col-sm">
         <div className="d-flex align-items-center gap-2">
           <div className="text-muted text-nowrap">
-            Showing <span className="fw-semibold">{activePage}</span> of{' '}
-            <span className="fw-semibold">{pagesCount}</span> Pages
+            Página <span className="fw-semibold">{activePage}</span> de{' '}
+            <span className="fw-semibold">{pagesCount}</span>
           </div>
           <div className="d-flex align-items-center gap-2">
-            <label htmlFor="page-size-select">Show: </label>
+            <label htmlFor="page-size-select">Filas por página: </label>
             <select
               name="page-size-select"
               id="page-size-select"
@@ -71,15 +71,15 @@ const Pagination = ({ table, rowsPerPageList, currentPage, totalPages }) => {
               disabled={!canPrevious}
               className={clsx('page-link', { disabled: !canPrevious })}
               style={{ cursor: !canPrevious ? 'not-allowed' : 'pointer' }}
-              aria-label="Previous Page"
+              aria-label="Página anterior"
             >
               <IconifyIcon icon="bx:left-arrow-alt" height={18} width={18} />
             </button>
           </li>
-          {visiblePages.map((page, idx) => {
-            if (page === '...') {
+          {visiblePages.map(page => {
+            if (typeof page === 'string') {
               return (
-                <li key={`ellipsis-${idx}`} className="page-item disabled">
+                <li key={page} className="page-item disabled">
                   <span className="page-link border-0 text-muted">...</span>
                 </li>
               );
@@ -94,6 +94,8 @@ const Pagination = ({ table, rowsPerPageList, currentPage, totalPages }) => {
                     table.setPageIndex(page - 1);
                   }}
                   className="page-link"
+                  aria-label={`Ir a la página ${page}`}
+                  aria-current={isActive ? 'page' : undefined}
                 >
                   {page}
                 </button>
@@ -110,7 +112,7 @@ const Pagination = ({ table, rowsPerPageList, currentPage, totalPages }) => {
               disabled={!canNext}
               className={clsx('page-link', { disabled: !canNext })}
               style={{ cursor: !canNext ? 'not-allowed' : 'pointer' }}
-              aria-label="Next Page"
+              aria-label="Página siguiente"
             >
               <IconifyIcon icon="bx:right-arrow-alt" height={18} width={18} />
             </button>

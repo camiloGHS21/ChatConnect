@@ -9,7 +9,7 @@ import signInImg from '@/assets/images/sign-in.svg';
 const SignIn = () => {
   return (
     <>
-      <PageMetaData title="Sign In" />
+      <PageMetaData title="Iniciar sesión" />
 
       <Card className="auth-card">
         <CardBody className="p-0">
@@ -23,7 +23,7 @@ const SignIn = () => {
                   src={signInImg}
                   width={520}
                   height={520}
-                  alt="ChatConnect Omnichannel CRM"
+                  alt="CRM omnicanal ChatConnect"
                   className="img-fluid"
                   style={{ maxHeight: 460, objectFit: 'contain' }}
                 />

@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { Card, CardBody, Col, Row, Spinner, Alert } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import PageBreadcrumb from '@/components/layout/PageBreadcrumb';
@@ -23,10 +23,11 @@ const CatalogoPage = () => {
   const [isSeeding, setIsSeeding] = useState(false);
   const [feedback, setFeedback] = useState(null);
 
-  const fetchCatalogData = async () => {
+  const fetchCatalogData = useCallback(async (signal) => {
     setLoading(true);
     try {
       const rawDb = await productoService.getProductos();
+      if (signal?.aborted) return;
       setProductsList(Array.isArray(rawDb) ? rawDb.map(p => ({
         id: p.id, name: p.nombre,
         description: `${p.sku || ''} - ${p.marca || ''}`.trim().replace(/^-|-$/g, ''),
@@ -36,11 +37,15 @@ const CatalogoPage = () => {
         price: Number(p.precio) || 0, quantity: Number(p.disponible ?? p.existencia) || 0,
         images: p.imagen_principal ? [p.imagen_principal] : [],
       })) : []);
-    } catch { setProductsList([]); }
-    finally { setLoading(false); }
-  };
+    } catch { if (!signal?.aborted) setProductsList([]); }
+    finally { if (!signal?.aborted) setLoading(false); }
+  }, []);
 
-  useEffect(() => { fetchCatalogData(); }, []);
+  useEffect(() => {
+    const controller = new AbortController();
+    fetchCatalogData(controller.signal);
+    return () => controller.abort();
+  }, [fetchCatalogData]);
 
   const handleConfirmDelete = async () => {
     if (!productToDelete) return;
@@ -75,14 +80,14 @@ const CatalogoPage = () => {
     <>
       <FullPageLoader show={isDeleting || isSyncing || isSeeding || isDeletingAll}
         title={isSeeding ? 'Sincronizando...' : isDeletingAll ? 'Vaciando...' : 'Procesando...'}
-        message={isSeeding ? 'Cargando productos demo en PostgreSQL y Meta...' : ''} badge="PostgreSQL" />
+        message={isSeeding ? 'Cargando productos de demostración en PostgreSQL y Meta...' : ''} badge="PostgreSQL" />
       <PageMetaData title="Productos - Catálogo" />
       <PageBreadcrumb title="Catálogo de Productos" subName="Meta Commerce & WhatsApp" />
 
       <Row><Col><Card><CardBody>
         <WhatsAppCatalogInfoBanner />
         {feedback && (
-          <Alert variant={feedback.type} dismissible onClose={() => setFeedback(null)} className="mb-3 fs-13 py-2">
+          <Alert variant={feedback.type} dismissible closeLabel="Cerrar aviso" onClose={() => setFeedback(null)} className="mb-3 fs-13 py-2">
             <IconifyIcon icon={feedback.type === 'success' ? 'bx:check-circle' : 'bx:error-circle'} className="me-1 fs-16 align-middle" />
             {feedback.text}
           </Alert>

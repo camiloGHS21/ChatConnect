@@ -24,17 +24,17 @@ export const validateStep1 = (data) => {
 export const validateStep2 = (data) => {
   const errors = {};
   const costo = parseFloat(data?.costo_base);
-  if (isNaN(costo) || costo < 0) errors.costo_base = 'El costo base no puede ser negativo.';
+  if (Number.isNaN(costo) || costo < 0) errors.costo_base = 'El costo base no puede ser negativo.';
 
   const precio = parseFloat(data?.precio_base);
-  if (isNaN(precio) || precio < 0) errors.precio_base = 'El precio base no puede ser negativo.';
+  if (Number.isNaN(precio) || precio < 0) errors.precio_base = 'El precio base no puede ser negativo.';
   else if (precio === 0) errors.precio_base = 'El precio base de venta debe ser superior a 0.';
 
   if (Array.isArray(data?.retenciones)) {
     data.retenciones.forEach((ret, idx) => {
       if (ret.tipo === 'PORCENTAJE') {
         const p = parseFloat(ret.porcentaje);
-        if (isNaN(p) || p < 0 || p > 100) errors[`retencion_${idx}`] = 'El porcentaje debe estar entre 0 y 100%.';
+        if (Number.isNaN(p) || p < 0 || p > 100) errors[`retencion_${idx}`] = 'El porcentaje debe estar entre 0 y 100%.';
       }
     });
   }
@@ -48,13 +48,13 @@ export const validateStep3 = (data) => {
   if (data?.maneja_inventario) {
     const min = parseInt(data?.stock_minimo, 10);
     const max = parseInt(data?.stock_maximo, 10);
-    if (isNaN(min) || min < 0) errors.stock_minimo = 'El stock mínimo no puede ser negativo.';
-    if (isNaN(max) || max < 0) errors.stock_maximo = 'El stock máximo no puede ser negativo.';
-    if (!isNaN(min) && !isNaN(max) && max < min) {
-      errors.stock_maximo = `El stock máximo (${max}) no puede ser inferior al stock mínimo (${min}).`;
+    if (Number.isNaN(min) || min < 0) errors.stock_minimo = 'Las existencias mínimas no pueden ser negativas.';
+    if (Number.isNaN(max) || max < 0) errors.stock_maximo = 'Las existencias máximas no pueden ser negativas.';
+    if (!Number.isNaN(min) && !Number.isNaN(max) && max < min) {
+      errors.stock_maximo = `Las existencias máximas (${max}) no pueden ser inferiores a las existencias mínimas (${min}).`;
     }
     const initStock = parseInt(data?.existencia_inicial, 10);
-    if (!isNaN(initStock) && initStock < 0) errors.existencia_inicial = 'La existencia inicial no puede ser negativa.';
+    if (!Number.isNaN(initStock) && initStock < 0) errors.existencia_inicial = 'La existencia inicial no puede ser negativa.';
   }
 
   if (Array.isArray(data?.variantes)) {

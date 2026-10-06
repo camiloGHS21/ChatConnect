@@ -4,28 +4,28 @@ import avatar3 from '@/assets/images/users/avatar-10.jpg';
 import avatar4 from '@/assets/images/users/avatar-5.jpg';
 import avatar5 from '@/assets/images/users/avatar-4.jpg';
 export const statData = [{
-  name: 'Wallet Balance',
+  name: 'Saldo de la cuenta',
   amount: '55.6',
   icon: 'iconamoon:credit-card-duotone',
   iconColor: 'info',
   change: '8.72',
   changeColor: 'success'
 }, {
-  name: 'Total Income',
+  name: 'Ingresos totales',
   amount: '75.09',
   icon: 'iconamoon:store-duotone',
   iconColor: 'primary',
   change: '7.36',
   changeColor: 'success'
 }, {
-  name: 'Total Expenses',
+  name: 'Gastos totales',
   amount: '62.8',
   icon: 'iconamoon:3d-duotone',
   iconColor: 'success',
   change: '5.62',
   changeColor: 'danger'
 }, {
-  name: 'Investments',
+  name: 'Inversiones',
   amount: '6.4',
   icon: 'iconamoon:3d-duotone',
   iconColor: 'warning',

@@ -1,17 +1,19 @@
 import ReactApexChart from 'react-apexcharts';
+import { spanishChartLocale, formatNumber } from '../../spanishPresentation';
 import { Button, Card, CardBody, CardHeader, CardTitle } from 'react-bootstrap';
 const RevenueChart = () => {
   const chartOptions = {
     series: [{
-      name: 'Revenue',
+      name: 'Ingresos',
       type: 'area',
       data: [34, 65, 46, 68, 49, 61, 42, 44, 78, 52, 63, 67]
     }, {
-      name: 'Expenses',
+      name: 'Gastos',
       type: 'line',
       data: [8, 12, 7, 17, 21, 11, 5, 9, 7, 29, 12, 35]
     }],
     chart: {
+      ...spanishChartLocale,
       height: 280,
       type: 'line',
       toolbar: {
@@ -43,7 +45,7 @@ const RevenueChart = () => {
       }
     },
     xaxis: {
-      categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+      categories: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'],
       axisTicks: {
         show: false
       },
@@ -56,7 +58,7 @@ const RevenueChart = () => {
       tickAmount: 4,
       labels: {
         formatter: function (val) {
-          return val + 'k';
+          return formatNumber(val) + ' mil';
         },
         offsetX: -15
       },
@@ -90,38 +92,26 @@ const RevenueChart = () => {
     colors: ['#7f56da', '#22c55e'],
     tooltip: {
       shared: true,
-      y: [{
-        formatter: function (y) {
-          if (typeof y !== 'undefined') {
-            return '$' + y.toFixed(2) + 'k';
-          }
-          return y;
-        }
-      }, {
-        formatter: function (y) {
-          if (typeof y !== 'undefined') {
-            return '$' + y.toFixed(2) + 'k';
-          }
-          return y;
-        }
-      }]
+      y: {
+        formatter: (y) => typeof y === 'undefined' ? y : '$' + formatNumber(y, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' mil'
+      }
     }
   };
   return <Card>
       <CardHeader className="d-flex justify-content-between align-items-center">
-        <CardTitle>Revenue</CardTitle>
+        <CardTitle>Ingresos</CardTitle>
         <div className="flex-centered gap-1">
           <Button variant="outline-light" size="sm" type="button">
-            ALL
+            Todo
           </Button>
           <Button variant="outline-light" size="sm" type="button">
-            1M
+            1 mes
           </Button>
           <Button variant="outline-light" size="sm" type="button">
-            6M
+            6 meses
           </Button>
           <Button variant="outline-light" size="sm" type="button" active>
-            1Y
+            1 año
           </Button>
         </div>
       </CardHeader>

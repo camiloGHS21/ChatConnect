@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { Card, Row, Col, Form, Button } from 'react-bootstrap';
 import IconifyIcon from '@/components/wrappers/IconifyIcon';
 
@@ -27,8 +27,8 @@ const ListasPreciosForm = ({
 
   return (
     <Card
-      className="border shadow-none mb-3 bg-white rounded-3"
-      style={{ borderColor: '#e2e8f0' }}
+      className="border shadow-none mb-3 bg-body rounded-3"
+      style={{ borderColor: 'var(--bs-border-color)' }}
     >
       <Card.Body className="p-3 px-3 px-md-4">
         <Row className="g-3 align-items-end">
@@ -52,7 +52,7 @@ const ListasPreciosForm = ({
               value={newPriceList.lista_precio_id}
               isInvalid={isListAlreadyAdded}
               onChange={e => handleSelectChange(e.target.value)}
-              style={{ borderColor: '#dee2e6', borderRadius: '6px' }}
+              style={{ borderRadius: '6px' }}
             >
               {allPriceLists.map(lp => (
                 <option key={lp.id} value={lp.id} disabled={lp.isAssigned}>
@@ -83,7 +83,7 @@ const ListasPreciosForm = ({
               placeholder="145000"
               value={newPriceList.precio_base ?? ''}
               onChange={e => onPriceBaseChange(e.target.value)}
-              style={{ borderColor: '#dee2e6', borderRadius: '6px' }}
+              style={{ borderRadius: '6px' }}
             />
           </Col>
 
@@ -98,7 +98,7 @@ const ListasPreciosForm = ({
               placeholder="70.59"
               value={newPriceList.utilidad_porcentaje ?? ''}
               onChange={e => onUtilidadChange(e.target.value)}
-              style={{ borderColor: '#dee2e6', borderRadius: '6px' }}
+              style={{ borderRadius: '6px' }}
             />
           </Col>
 
@@ -114,7 +114,7 @@ const ListasPreciosForm = ({
               placeholder="172550"
               value={newPriceList.precio_venta ?? ''}
               onChange={e => onPrecioVentaChange(e.target.value)}
-              style={{ borderColor: '#dee2e6', borderRadius: '6px' }}
+              style={{ borderRadius: '6px' }}
             />
           </Col>
 

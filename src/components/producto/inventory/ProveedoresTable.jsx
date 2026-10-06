@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { Table, Button } from 'react-bootstrap';
 import IconifyIcon from '@/components/wrappers/IconifyIcon';
 
@@ -23,14 +23,14 @@ const ProveedoresTable = ({ proveedores = [], onRemove, triggerDeleteConfirm }) 
   };
 
   return (
-    <div className="table-responsive border rounded-3 mb-0" style={{ borderColor: '#eef2f6' }}>
+    <div className="table-responsive border rounded-3 mb-0" style={{ borderColor: 'var(--bs-border-color)' }}>
       <Table hover className="table-sm align-middle mb-0">
-        <thead style={{ backgroundColor: '#f4f6fa' }}>
-          <tr style={{ backgroundColor: '#f4f6fa' }}>
-            <th className="py-2.5 px-3 fs-13 fw-semibold text-dark border-0">Proveedor</th>
-            <th className="py-2.5 px-3 fs-13 fw-semibold text-dark border-0">Ref. Proveedor</th>
-            <th className="py-2.5 px-3 fs-13 fw-semibold text-dark border-0">Precio Proveedor</th>
-            <th className="py-2.5 px-3 fs-13 fw-semibold text-dark border-0 text-end">Acción</th>
+        <thead style={{ '--bs-table-bg': 'var(--bs-tertiary-bg)', '--bs-table-color': 'var(--bs-body-color)' }}>
+          <tr>
+            <th className="py-2.5 px-3 fs-13 fw-semibold text-body-emphasis border-0">Proveedor</th>
+            <th className="py-2.5 px-3 fs-13 fw-semibold text-body-emphasis border-0">Ref. Proveedor</th>
+            <th className="py-2.5 px-3 fs-13 fw-semibold text-body-emphasis border-0">Precio Proveedor</th>
+            <th className="py-2.5 px-3 fs-13 fw-semibold text-body-emphasis border-0 text-end">Acción</th>
           </tr>
         </thead>
         <tbody>
@@ -42,8 +42,8 @@ const ProveedoresTable = ({ proveedores = [], onRemove, triggerDeleteConfirm }) 
             </tr>
           ) : (
             proveedores.map(p => (
-              <tr key={p.id} style={{ borderTop: '1px solid #f1f5f9' }}>
-                <td className="py-2.5 px-3 fw-semibold text-dark fs-13">
+              <tr key={p.id} style={{ borderTop: '1px solid var(--bs-border-color)' }}>
+                <td className="py-2.5 px-3 fw-semibold text-body-emphasis fs-13">
                   {p.nombre_proveedor}
                 </td>
                 <td className="py-2.5 px-3 text-secondary fs-13">
@@ -58,6 +58,7 @@ const ProveedoresTable = ({ proveedores = [], onRemove, triggerDeleteConfirm }) 
                     className="text-danger p-0 border-0"
                     onClick={() => handleDelete(p)}
                     title="Eliminar proveedor"
+                                        aria-label="Eliminar proveedor"
                     style={{ color: '#ef4444' }}
                   >
                     <IconifyIcon icon="bx:trash" className="fs-17" />

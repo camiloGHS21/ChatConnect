@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { Form, Button } from 'react-bootstrap';
 import IconifyIcon from '@/components/wrappers/IconifyIcon';
 
@@ -10,10 +10,10 @@ const CostosCompraSummary = ({
   onSmartRound
 }) => {
   return (
-    <div className="p-3 bg-light rounded-2 border">
+    <div className="p-3 bg-body-tertiary rounded-2 border">
       <div className="d-flex justify-content-between align-items-center mb-1">
         <span className="text-muted fs-12">Costo Base:</span>
-        <span className="fw-semibold fs-13 text-dark">
+        <span className="fw-semibold fs-13 text-body-emphasis">
           ${Number(costoBase || 0).toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
         </span>
       </div>
@@ -40,12 +40,12 @@ const CostosCompraSummary = ({
 
       <div className="border-top pt-2 mt-2 d-flex flex-wrap justify-content-between align-items-center gap-2">
         <div>
-          <span className="fw-bold fs-13 text-dark d-block">Costo Final con Impuestos:</span>
-          <small className="text-muted fs-11 font-monospace">(costo_impuesto - editable para redondear)</small>
+          <span className="fw-bold fs-13 text-body-emphasis d-block">Costo Final con Impuestos:</span>
+          <small className="text-muted fs-11 font-monospace">(puedes editar el costo final para redondearlo)</small>
         </div>
         <div className="d-flex align-items-center gap-1">
           <div className="input-group input-group-sm" style={{ maxWidth: '230px' }}>
-            <span className="input-group-text bg-white fw-bold text-info">$</span>
+            <span className="input-group-text bg-body fw-bold text-info">$</span>
             <Form.Control
               type="number"
               step="1"
@@ -54,6 +54,7 @@ const CostosCompraSummary = ({
               value={costoImpuesto ?? ''}
               onChange={e => onCostoImpuestoChange(e.target.value)}
               title="Costo final con impuestos redondeable"
+                            aria-label="Costo final con impuestos"
             />
             <Button
               variant="info"

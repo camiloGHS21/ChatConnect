@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 export default function useLocalStorage(key, initialValue, override = false) {
   const [storedValue, setStoredValue] = useState(() => {
     if (override) return initialValue;
@@ -14,19 +14,19 @@ export default function useLocalStorage(key, initialValue, override = false) {
       return initialValue;
     }
   });
-  const getStoredItem = () => {
-    if (key) {
-      const item = window.localStorage.getItem(key);
-      if (item) {
-        setStoredValue(JSON.parse(item));
-      }
-    }
-  };
   useEffect(() => {
+    const getStoredItem = () => {
+      if (key) {
+        const item = window.localStorage.getItem(key);
+        if (item) {
+          setStoredValue(JSON.parse(item));
+        }
+      }
+    };
     window.addEventListener('storage', getStoredItem, false);
     return () => window.removeEventListener('storage', getStoredItem);
-  }, []);
-  const setValue = value => {
+  }, [key]);
+  const setValue = useCallback(value => {
     try {
       const valueToStore = value instanceof Function ? value(storedValue) : value;
       setStoredValue(valueToStore);
@@ -36,6 +36,6 @@ export default function useLocalStorage(key, initialValue, override = false) {
     } catch (error) {
       console.error(error);
     }
-  };
+  }, [key, storedValue]);
   return [storedValue, setValue];
 }

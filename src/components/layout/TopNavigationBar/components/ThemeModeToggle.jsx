@@ -7,7 +7,7 @@ const ThemeModeToggle = () => {
   } = useLayoutContext();
   const isDark = theme === 'dark';
   return <div className="topbar-item">
-      <button onClick={() => changeTheme(isDark ? 'light' : 'dark')} className="topbar-button">
+      <button type="button" onClick={() => changeTheme(isDark ? 'light' : 'dark')} className="topbar-button" aria-label={isDark ? 'Activar tema claro' : 'Activar tema oscuro'}>
         <IconifyIcon icon={`iconamoon:mode-${isDark ? 'light' : 'dark'}-duotone`} className="fs-24 align-middle" />
       </button>
     </div>;

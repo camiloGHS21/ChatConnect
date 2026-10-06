@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Row, Col, Card } from 'react-bootstrap';
 import PageBreadcrumb from '@/components/layout/PageBreadcrumb';
 import PageMetaData from '@/components/PageTitle';
@@ -19,30 +19,40 @@ const ChatPage = () => {
   const [togglingMode, setTogglingMode] = useState(false);
   const [sendingMsg, setSendingMsg] = useState(false);
 
-  const fetchConversaciones = async () => {
+  const fetchConversaciones = useCallback(async (signal) => {
     try {
       const convs = await productoService.getConversaciones();
+      if (signal?.aborted) return;
       if (Array.isArray(convs) && convs.length > 0) {
         setConversaciones(convs);
         setActiveChatId((prev) => prev || convs[0].id);
       }
     } catch {
-      setConversaciones([]);
+      if (!signal?.aborted) setConversaciones([]);
     }
-  };
+  }, []);
 
-  const fetchMensajes = async (convId) => {
+  const fetchMensajes = useCallback(async (convId, signal) => {
     if (!convId) return;
     try {
       const msgs = await productoService.getMensajesConversacion(convId);
+      if (signal?.aborted) return;
       setMensajes(Array.isArray(msgs) ? msgs : []);
     } catch {
-      setMensajes([]);
+      if (!signal?.aborted) setMensajes([]);
     }
-  };
+  }, []);
 
-  useEffect(() => { fetchConversaciones(); }, []);
-  useEffect(() => { if (activeChatId) fetchMensajes(activeChatId); }, [activeChatId]);
+  useEffect(() => {
+    const controller = new AbortController();
+    fetchConversaciones(controller.signal);
+    return () => controller.abort();
+  }, [fetchConversaciones]);
+  useEffect(() => {
+    const controller = new AbortController();
+    if (activeChatId) fetchMensajes(activeChatId, controller.signal);
+    return () => controller.abort();
+  }, [activeChatId, fetchMensajes]);
 
   const activeChat = conversaciones.find((c) => c.id === activeChatId) || conversaciones[0];
 
@@ -70,7 +80,7 @@ const ChatPage = () => {
       emisor: activeChat?.modo === 'ia' ? 'ia' : 'asesor',
       tipo: 'text',
       texto: textToSend,
-      hora: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      hora: new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' }),
     };
     setMensajes((prev) => [...prev, tempMsg]);
 
@@ -100,9 +110,9 @@ const ChatPage = () => {
       <PageMetaData title="Consola WhatsApp - ChatConnect" />
       <PageBreadcrumb title="Consola de WhatsApp" subName="Atención en Vivo & Catálogo Interactivo" />
 
-      <Card className="border-0 shadow-sm overflow-hidden" style={{ height: 'calc(100vh - 210px)', minHeight: 620 }}>
+      <Card className="border-0 shadow-sm overflow-hidden" style={{ height: 'calc(100dvh - 210px)', minHeight: 0 }}>
         <Row className="g-0 h-100">
-          <Col md={5} lg={4} className="border-end d-flex flex-column h-100 bg-white">
+          <Col md={5} lg={4} className="border-end d-flex flex-column h-100 bg-body">
             <ChatSidebar
               conversaciones={conversaciones}
               activeChatId={activeChatId}

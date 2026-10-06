@@ -45,7 +45,7 @@ const DeleteConfirmationModal = ({
         </div>
 
         {/* Título de la acción */}
-        <h5 className="fs-16 fw-bold text-dark mb-2">
+        <h5 className="fs-16 fw-bold text-body-emphasis mb-2">
           {title}
         </h5>
 
@@ -61,7 +61,7 @@ const DeleteConfirmationModal = ({
 
         {/* Detalle o nombre del ítem a eliminar */}
         {itemName && (
-          <div className="alert alert-light border border-danger-subtle py-2 px-3 mb-3 rounded-2 text-dark fs-12 fw-semibold text-truncate text-start d-flex align-items-center gap-2">
+          <div className="bg-body-tertiary border border-danger-subtle py-2 px-3 mb-3 rounded-2 text-body fs-12 fw-semibold text-truncate text-start d-flex align-items-center gap-2">
             <IconifyIcon icon="bx:error-circle" className="text-danger fs-16 flex-shrink-0" />
             <span className="text-truncate">{itemName}</span>
           </div>
@@ -70,7 +70,7 @@ const DeleteConfirmationModal = ({
         {/* Botones de acción */}
         <div className="d-flex justify-content-center gap-2 mt-3">
           <Button
-            variant="light"
+            variant="outline-secondary"
             size="sm"
             className="px-3 fw-semibold border"
             onClick={onHide}

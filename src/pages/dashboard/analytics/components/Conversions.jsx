@@ -1,9 +1,11 @@
 import { Button, Card, CardBody, CardTitle, Col, Row } from 'react-bootstrap';
 import ReactApexChart from 'react-apexcharts';
+import { spanishChartLocale, formatNumber } from '../../spanishPresentation';
 
 const Conversions = () => {
   const chartOptions = {
     chart: {
+      ...spanishChartLocale,
       height: 292,
       type: 'radialBar',
     },
@@ -22,7 +24,7 @@ const Conversions = () => {
             fontSize: '22px',
             color: undefined,
             formatter: function (val) {
-              return val + '%';
+              return formatNumber(val) + '%';
             },
           },
         },
@@ -62,6 +64,7 @@ const Conversions = () => {
 
   const chartOptions2 = {
     chart: {
+      ...spanishChartLocale,
       height: 313,
       type: 'line',
       toolbar: {
@@ -93,8 +96,10 @@ const Conversions = () => {
         show: false,
       },
     },
+    tooltip: { y: { formatter: (val) => formatNumber(val) } },
     yaxis: {
       min: 0,
+      labels: { formatter: (val) => formatNumber(val) },
       axisBorder: {
         show: false,
       },
@@ -146,8 +151,8 @@ const Conversions = () => {
               />
               <Row className="text-center">
                 <Col xs={6}>
-                  <p className="text-muted mb-1 fs-12">Atención IA (Auto)</p>
-                  <h4 className="text-success mb-2 fw-bold">1,106</h4>
+                  <p className="text-muted mb-1 fs-12">Atención IA (automática)</p>
+                  <h4 className="text-success mb-2 fw-bold">1.106</h4>
                 </Col>
                 <Col xs={6}>
                   <p className="text-muted mb-1 fs-12">Asesor Humano</p>

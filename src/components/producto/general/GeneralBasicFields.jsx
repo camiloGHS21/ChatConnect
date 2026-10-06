@@ -13,7 +13,7 @@ const GeneralBasicFields = ({ formData, updateField, onGenerateCode }) => {
             <Form.Label htmlFor="codigo_interno" className="mb-0 fs-13 fw-semibold">
               Código Interno <span className="text-danger">*</span>
             </Form.Label>
-            <span className="badge bg-light text-muted border fs-11">Auto / Manual</span>
+            <span className="badge bg-body-tertiary text-muted border fs-11">Automático / Manual</span>
           </div>
           <div className="input-group">
             <Form.Control
@@ -32,7 +32,7 @@ const GeneralBasicFields = ({ formData, updateField, onGenerateCode }) => {
                 title="Generar consecutivo automático de la empresa"
               >
                 <IconifyIcon icon="bx:refresh" className="fs-15" />
-                Auto
+                Generar
               </Button>
             )}
           </div>
@@ -68,7 +68,7 @@ const GeneralBasicFields = ({ formData, updateField, onGenerateCode }) => {
           <Form.Control
             id="presentacion"
             type="text"
-            placeholder="Ej. Caja x 1 Und / Bulto 50Kg"
+            placeholder="Ej. Caja de 1 unidad / Bulto de 50 kg"
             value={formData?.presentacion || ''}
             onChange={e => updateField('presentacion', e.target.value)}
           />
@@ -101,7 +101,7 @@ const GeneralBasicFields = ({ formData, updateField, onGenerateCode }) => {
             value={formData?.estado_publicacion || 'publicado'}
             onChange={e => updateField('estado_publicacion', e.target.value)}
           >
-            <option value="publicado">Publicado (Visible en chatbot y web)</option>
+            <option value="publicado">Publicado (Visible en el asistente virtual y el sitio web)</option>
             <option value="no_publicado">No Publicado (Oculto)</option>
           </Form.Select>
         </Form.Group>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Modal, Button, Form } from 'react-bootstrap';
 import IconifyIcon from '@/components/wrappers/IconifyIcon';
 
@@ -36,7 +36,7 @@ const ModalEditarNombre = ({
 
   return (
     <Modal show={show} onHide={onHide} centered backdrop="static">
-      <Modal.Header closeButton className="border-bottom py-2">
+      <Modal.Header closeButton closeLabel="Cerrar" className="border-bottom py-2">
         <Modal.Title className="fs-15 fw-semibold text-dark d-flex align-items-center">
           <IconifyIcon icon="bx:edit-alt" className="me-2 text-primary fs-18" />
           {title}

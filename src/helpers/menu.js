@@ -14,7 +14,7 @@ export const findAllParent = (menuItems, menuItem) => {
   return parents;
 };
 export const getMenuItemFromURL = (items, url) => {
-  if (items instanceof Array) {
+  if (Array.isArray(items)) {
     for (const item of items) {
       const foundItem = getMenuItemFromURL(item, url);
       if (foundItem) {
@@ -22,13 +22,13 @@ export const getMenuItemFromURL = (items, url) => {
       }
     }
   } else {
-    if (items.url == url) return items;
+    if (items.url === url) return items;
     if (items.url && url.startsWith(items.url) && items.url !== '/' && items.url !== '/dashboard') {
       return items;
     }
     if (items.children != null) {
       for (const item of items.children) {
-        if (item.url == url) return item;
+        if (item.url === url) return item;
       }
     }
   }

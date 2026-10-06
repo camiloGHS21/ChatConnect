@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { Card, Col, Badge } from 'react-bootstrap';
 import IconifyIcon from '@/components/wrappers/IconifyIcon';
 import CostosCompraInputs from './CostosCompraInputs';
@@ -62,9 +62,9 @@ const CostosCompraCard = ({
 
   return (
     <Col lg={6} md={12}>
-      <Card className="border shadow-none mb-3 bg-light-subtle rounded-3">
+      <Card className="border shadow-none mb-3 bg-body-tertiary rounded-3">
         <Card.Header className="bg-transparent border-bottom py-2 d-flex align-items-center justify-content-between">
-          <h6 className="mb-0 fw-bold text-dark d-flex align-items-center">
+          <h6 className="mb-0 fw-bold text-body-emphasis d-flex align-items-center">
             <IconifyIcon icon="bx:cart-download" className="me-2 text-info fs-18" />
             Costos de Adquisición / Compra
           </h6>

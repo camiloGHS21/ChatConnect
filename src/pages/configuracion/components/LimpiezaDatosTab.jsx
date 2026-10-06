@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, Row, Col, Form, Button, Alert, Spinner, Modal, Badge } from 'react-bootstrap';
 import IconifyIcon from '@/components/wrappers/IconifyIcon';
 import empresaDatosService from '@/services/empresaDatosService';
@@ -21,21 +21,24 @@ const LimpiezaDatosTab = ({ onDataPurged }) => {
   const [showModal, setShowModal] = useState(false);
   const [confirmText, setConfirmText] = useState('');
 
-  const cargarResumen = async () => {
+  const cargarResumen = useCallback(async (signal) => {
     try {
       setLoading(true);
       const data = await empresaDatosService.getResumen(1);
-      setResumen(data);
-    } catch (err) {
+      if (!signal?.aborted) setResumen(data);
+    } catch {
+      if (signal?.aborted) return;
       setFeedback({ type: 'danger', message: 'Error consultando registros en PostgreSQL.' });
     } finally {
-      setLoading(false);
+      if (!signal?.aborted) setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
-    cargarResumen();
-  }, []);
+    const controller = new AbortController();
+    cargarResumen(controller.signal);
+    return () => controller.abort();
+  }, [cargarResumen]);
 
   const handleToggleOption = (key) => {
     if (key === 'eliminarTodo') {
@@ -76,7 +79,7 @@ const LimpiezaDatosTab = ({ onDataPurged }) => {
 
     try {
       setActionLoading(true);
-      const res = await empresaDatosService.purgarDatos(
+      await empresaDatosService.purgarDatos(
         {
           ...options,
           confirmacion: 'ELIMINAR',
@@ -119,6 +122,7 @@ const LimpiezaDatosTab = ({ onDataPurged }) => {
           className="d-flex justify-content-between align-items-center py-2 fs-13 mb-3"
           onClose={() => setFeedback({ type: '', message: '' })}
           dismissible
+          closeLabel="Cerrar aviso"
         >
           <span>{feedback.message}</span>
         </Alert>
@@ -135,7 +139,7 @@ const LimpiezaDatosTab = ({ onDataPurged }) => {
             <p className="text-muted fs-12 mb-0">
               Esta sección permite depurar la base de datos de la empresa de forma irreversible. Puedes elegir
               eliminar únicamente las interacciones de IA y mensajes, los clientes, los productos, o realizar un
-              <strong> Reset Total</strong> de los datos operativos.
+              <strong> borrado total</strong> de los datos operativos.
             </p>
           </div>
         </Card.Body>
@@ -157,7 +161,7 @@ const LimpiezaDatosTab = ({ onDataPurged }) => {
               variant="outline-secondary"
               size="sm"
               className="py-0 px-2 fs-11"
-              onClick={cargarResumen}
+              onClick={() => cargarResumen()}
             >
               <IconifyIcon icon="bx:refresh" className="me-1" />
               Actualizar conteos
@@ -188,11 +192,11 @@ const LimpiezaDatosTab = ({ onDataPurged }) => {
               {/* Opción 1: Mensajes e IA */}
               <Col md={6}>
                 <div
-                  className={`p-3 border rounded-3 h-100 cursor-pointer transition-all ${
+                  className={`position-relative p-3 border rounded-3 h-100 cursor-pointer transition-all ${
                     options.eliminarMensajesIa ? 'border-danger bg-danger bg-opacity-10' : 'bg-light'
                   }`}
-                  onClick={() => handleToggleOption('eliminarMensajesIa')}
                 >
+                  <label htmlFor="purga-eliminarMensajesIa" className="stretched-link"><span className="visually-hidden">Seleccionar mensajes e interacciones de IA</span></label>
                   <div className="d-flex justify-content-between align-items-start mb-2">
                     <span className="fw-bold text-dark fs-13 d-flex align-items-center gap-2">
                       <IconifyIcon icon="bx:bot" className="fs-18 text-primary" />
@@ -200,8 +204,9 @@ const LimpiezaDatosTab = ({ onDataPurged }) => {
                     </span>
                     <Form.Check
                       type="checkbox"
+                      id="purga-eliminarMensajesIa"
                       checked={options.eliminarMensajesIa}
-                      onChange={() => {}}
+                      onChange={() => handleToggleOption('eliminarMensajesIa')}
                     />
                   </div>
                   <p className="text-muted fs-12 mb-2">
@@ -224,11 +229,11 @@ const LimpiezaDatosTab = ({ onDataPurged }) => {
               {/* Opción 2: Clientes */}
               <Col md={6}>
                 <div
-                  className={`p-3 border rounded-3 h-100 cursor-pointer transition-all ${
+                  className={`position-relative p-3 border rounded-3 h-100 cursor-pointer transition-all ${
                     options.eliminarClientes ? 'border-danger bg-danger bg-opacity-10' : 'bg-light'
                   }`}
-                  onClick={() => handleToggleOption('eliminarClientes')}
                 >
+                  <label htmlFor="purga-eliminarClientes" className="stretched-link"><span className="visually-hidden">Seleccionar clientes y contactos</span></label>
                   <div className="d-flex justify-content-between align-items-start mb-2">
                     <span className="fw-bold text-dark fs-13 d-flex align-items-center gap-2">
                       <IconifyIcon icon="bx:user-x" className="fs-18 text-warning" />
@@ -236,8 +241,9 @@ const LimpiezaDatosTab = ({ onDataPurged }) => {
                     </span>
                     <Form.Check
                       type="checkbox"
+                      id="purga-eliminarClientes"
                       checked={options.eliminarClientes}
-                      onChange={() => {}}
+                      onChange={() => handleToggleOption('eliminarClientes')}
                     />
                   </div>
                   <p className="text-muted fs-12 mb-2">
@@ -254,11 +260,11 @@ const LimpiezaDatosTab = ({ onDataPurged }) => {
               {/* Opción 3: Productos e Inventario */}
               <Col md={6}>
                 <div
-                  className={`p-3 border rounded-3 h-100 cursor-pointer transition-all ${
+                  className={`position-relative p-3 border rounded-3 h-100 cursor-pointer transition-all ${
                     options.eliminarProductos ? 'border-danger bg-danger bg-opacity-10' : 'bg-light'
                   }`}
-                  onClick={() => handleToggleOption('eliminarProductos')}
                 >
+                  <label htmlFor="purga-eliminarProductos" className="stretched-link"><span className="visually-hidden">Seleccionar productos, inventario y precios</span></label>
                   <div className="d-flex justify-content-between align-items-start mb-2">
                     <span className="fw-bold text-dark fs-13 d-flex align-items-center gap-2">
                       <IconifyIcon icon="bx:package" className="fs-18 text-info" />
@@ -266,8 +272,9 @@ const LimpiezaDatosTab = ({ onDataPurged }) => {
                     </span>
                     <Form.Check
                       type="checkbox"
+                      id="purga-eliminarProductos"
                       checked={options.eliminarProductos}
-                      onChange={() => {}}
+                      onChange={() => handleToggleOption('eliminarProductos')}
                     />
                   </div>
                   <p className="text-muted fs-12 mb-2">
@@ -284,11 +291,11 @@ const LimpiezaDatosTab = ({ onDataPurged }) => {
               {/* Opción 4: Pedidos y Carritos */}
               <Col md={6}>
                 <div
-                  className={`p-3 border rounded-3 h-100 cursor-pointer transition-all ${
+                  className={`position-relative p-3 border rounded-3 h-100 cursor-pointer transition-all ${
                     options.eliminarPedidos ? 'border-danger bg-danger bg-opacity-10' : 'bg-light'
                   }`}
-                  onClick={() => handleToggleOption('eliminarPedidos')}
                 >
+                  <label htmlFor="purga-eliminarPedidos" className="stretched-link"><span className="visually-hidden">Seleccionar pedidos y carritos</span></label>
                   <div className="d-flex justify-content-between align-items-start mb-2">
                     <span className="fw-bold text-dark fs-13 d-flex align-items-center gap-2">
                       <IconifyIcon icon="bx:cart-alt" className="fs-18 text-danger" />
@@ -296,8 +303,9 @@ const LimpiezaDatosTab = ({ onDataPurged }) => {
                     </span>
                     <Form.Check
                       type="checkbox"
+                      id="purga-eliminarPedidos"
                       checked={options.eliminarPedidos}
-                      onChange={() => {}}
+                      onChange={() => handleToggleOption('eliminarPedidos')}
                     />
                   </div>
                   <p className="text-muted fs-12 mb-2">
@@ -317,11 +325,11 @@ const LimpiezaDatosTab = ({ onDataPurged }) => {
               {/* Opción 5: Catálogos Secundarios */}
               <Col md={12}>
                 <div
-                  className={`p-3 border rounded-3 cursor-pointer transition-all ${
+                  className={`position-relative p-3 border rounded-3 cursor-pointer transition-all ${
                     options.eliminarCatalogos ? 'border-danger bg-danger bg-opacity-10' : 'bg-light'
                   }`}
-                  onClick={() => handleToggleOption('eliminarCatalogos')}
                 >
+                  <label htmlFor="purga-eliminarCatalogos" className="stretched-link"><span className="visually-hidden">Seleccionar catálogos comerciales</span></label>
                   <div className="d-flex justify-content-between align-items-start mb-1">
                     <span className="fw-bold text-dark fs-13 d-flex align-items-center gap-2">
                       <IconifyIcon icon="bx:purchase-tag" className="fs-18 text-secondary" />
@@ -329,8 +337,9 @@ const LimpiezaDatosTab = ({ onDataPurged }) => {
                     </span>
                     <Form.Check
                       type="checkbox"
+                      id="purga-eliminarCatalogos"
                       checked={options.eliminarCatalogos}
-                      onChange={() => {}}
+                      onChange={() => handleToggleOption('eliminarCatalogos')}
                     />
                   </div>
                   <p className="text-muted fs-12 mb-2">
@@ -362,7 +371,7 @@ const LimpiezaDatosTab = ({ onDataPurged }) => {
                 onClick={handleOpenModal}
               >
                 <IconifyIcon icon="bx:trash" className="fs-16" />
-                {options.eliminarTodo ? 'Ejecutar Reset Total de Empresa' : 'Purgar Módulos Seleccionados'}
+                {options.eliminarTodo ? 'Ejecutar borrado total de la empresa' : 'Purgar Módulos Seleccionados'}
               </Button>
             </div>
           </Card.Body>
@@ -371,7 +380,7 @@ const LimpiezaDatosTab = ({ onDataPurged }) => {
 
       {/* Modal de Confirmación de Seguridad */}
       <Modal show={showModal} onHide={() => !actionLoading && setShowModal(false)} centered>
-        <Modal.Header closeButton={!actionLoading} className="border-danger bg-danger bg-opacity-10">
+        <Modal.Header closeLabel="Cerrar" closeButton={!actionLoading} className="border-danger bg-danger bg-opacity-10">
           <Modal.Title className="fs-15 fw-bold text-danger d-flex align-items-center gap-2">
             <IconifyIcon icon="bx:error-alt" className="fs-20" />
             Confirmación de Purga Permanente
@@ -387,16 +396,17 @@ const LimpiezaDatosTab = ({ onDataPurged }) => {
             {options.eliminarTodo && <li className="text-danger fw-bold">Borrado completo de todos los datos operativos de la empresa</li>}
             {options.eliminarMensajesIa && !options.eliminarTodo && <li>Mensajes, conversaciones y procesamientos de IA</li>}
             {options.eliminarClientes && !options.eliminarTodo && <li>Clientes y contactos registrados</li>}
-            {options.eliminarProductos && !options.eliminarTodo && <li>Productos, variantes, stock e inventario</li>}
+            {options.eliminarProductos && !options.eliminarTodo && <li>Productos, variantes, existencias e inventario</li>}
             {options.eliminarPedidos && !options.eliminarTodo && <li>Órdenes de pedido, detalles con impuestos y carritos</li>}
             {options.eliminarCatalogos && !options.eliminarTodo && <li>Categorías, subcategorías y marcas</li>}
           </ul>
 
           <div className="p-2 border rounded bg-light mb-3">
-            <label className="fs-12 fw-semibold text-dark mb-1">
+            <label htmlFor="confirmar-purga" className="fs-12 fw-semibold text-dark mb-1">
               Escribe la palabra <span className="text-danger font-monospace">ELIMINAR</span> para confirmar:
             </label>
             <Form.Control
+              id="confirmar-purga"
               type="text"
               size="sm"
               placeholder="ELIMINAR"

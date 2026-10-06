@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { getUserById } from '@/helpers/data';
 const ChatContext = createContext(undefined);
 export const useChatContext = () => {
@@ -19,10 +19,10 @@ export const ChatProvider = ({
     showVideoCall: false,
     showUserSetting: false
   });
-  const changeActiveChat = async userId => {
+  const changeActiveChat = useCallback(async userId => {
     const user = await getUserById(userId);
     if (user) setActiveChat(user);
-  };
+  }, []);
   const toggleChatList = () => {
     setOffcanvasStates({
       ...offcanvasStates,
@@ -75,7 +75,7 @@ export const ChatProvider = ({
   };
   useEffect(() => {
     changeActiveChat('101');
-  }, []);
+  }, [changeActiveChat]);
   return <ChatContext.Provider value={{
     chatSetting,
     activeChat,

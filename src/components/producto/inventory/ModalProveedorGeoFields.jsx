@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Col, Form } from 'react-bootstrap';
 import productoService from '@/services/productoService';
 

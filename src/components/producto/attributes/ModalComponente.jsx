@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Modal, Form, Button, Alert } from 'react-bootstrap';
 import IconifyIcon from '@/components/wrappers/IconifyIcon';
 import productoService from '@/services/productoService';
+import { getProductErrorMessage } from '../productErrorMessage';
 
 const ModalComponente = ({
   show,
@@ -16,6 +17,7 @@ const ModalComponente = ({
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    if (!show) return;
     if (initialData) {
       setNombre(initialData.nombre || '');
       setValor(initialData.valor || '');
@@ -74,15 +76,15 @@ const ModalComponente = ({
       onHide();
     } catch (err) {
       console.error('Error al guardar componente en DB:', err);
-      setError(err.response?.data?.message || 'Error al guardar la opción en la base de datos');
+      setError(getProductErrorMessage(err, 'No se pudo guardar la opción.'));
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <Modal show={show} onHide={onHide} centered>
-      <Modal.Header closeButton>
+    <Modal show={show} onHide={onHide} centered style={{ '--bs-modal-bg': 'var(--bs-body-bg)', '--bs-modal-color': 'var(--bs-body-color)', '--bs-modal-border-color': 'var(--bs-border-color)', '--bs-modal-header-border-color': 'var(--bs-border-color)', '--bs-modal-footer-border-color': 'var(--bs-border-color)' }}>
+      <Modal.Header closeButton closeLabel="Cerrar">
         <Modal.Title className="fs-16 fw-bold">
           <IconifyIcon icon="bx:layer-plus" className="me-2 text-primary" />
           {initialData ? 'Editar Opción' : 'Nueva Opción'} ({attribute?.nombre})
@@ -90,7 +92,7 @@ const ModalComponente = ({
       </Modal.Header>
       <Modal.Body>
         {error && <Alert variant="danger" className="py-2 fs-12 mb-3">{error}</Alert>}
-        <Form.Group className="mb-3">
+        <Form.Group className="mb-3" controlId="componente-nombre">
           <Form.Label className="fw-semibold fs-12">Nombre de la Opción *</Form.Label>
           <Form.Control
             type="text"
@@ -100,7 +102,7 @@ const ModalComponente = ({
           />
         </Form.Group>
 
-        <Form.Group className="mb-3">
+        <Form.Group className="mb-3" controlId="componente-valor">
           <Form.Label className="fw-semibold fs-12">Valor Interno / Técnico</Form.Label>
           <Form.Control
             type="text"
@@ -111,7 +113,7 @@ const ModalComponente = ({
         </Form.Group>
       </Modal.Body>
       <Modal.Footer>
-        <Button variant="light" onClick={onHide} disabled={loading}>Cancelar</Button>
+        <Button variant="outline-secondary" onClick={onHide} disabled={loading}>Cancelar</Button>
         <Button variant="primary" onClick={handleSave} disabled={!nombre.trim() || loading}>
           {loading ? 'Guardando...' : (initialData ? 'Guardar Cambios' : 'Crear Opción')}
         </Button>

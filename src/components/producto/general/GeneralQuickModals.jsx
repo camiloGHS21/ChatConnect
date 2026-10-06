@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Modal, Button, Form, Alert } from 'react-bootstrap';
+import { getProductErrorMessage } from '../productErrorMessage';
 
 /**
  * Modales rápidos de creación de Categoría, Subcategoría y Marca al vuelo.
@@ -31,8 +32,8 @@ const GeneralQuickModals = ({
       resetFn('');
       closeFn(false);
     } catch (err) {
-      const msg = err.response?.data?.message || err.message || 'Error al guardar';
-      setError(typeof msg === 'string' ? msg : JSON.stringify(msg));
+      console.error('No se pudo guardar el registro:', err);
+      setError(getProductErrorMessage(err, 'No se pudo guardar el registro.'));
     } finally {
       setLoading(false);
     }
@@ -58,13 +59,13 @@ const GeneralQuickModals = ({
   return (
     <>
       {/* Modal Nueva Categoría */}
-      <Modal show={categoryModal} onHide={() => closeReset(setCategoryModal)} centered size="sm">
-        <Modal.Header closeButton>
+      <Modal show={categoryModal} onHide={() => closeReset(setCategoryModal)} centered size="sm" style={{ '--bs-modal-bg': 'var(--bs-body-bg)', '--bs-modal-color': 'var(--bs-body-color)', '--bs-modal-border-color': 'var(--bs-border-color)', '--bs-modal-header-border-color': 'var(--bs-border-color)', '--bs-modal-footer-border-color': 'var(--bs-border-color)' }}>
+        <Modal.Header closeButton closeLabel="Cerrar">
           <Modal.Title className="fs-15 fw-bold">Nueva Categoría</Modal.Title>
         </Modal.Header>
         <Modal.Body>
           {error && <Alert variant="danger" className="py-1 px-2 fs-12 mb-2">{error}</Alert>}
-          <Form.Group>
+          <Form.Group controlId="nueva-categoria-nombre">
             <Form.Label className="fs-13 fw-semibold">Nombre de la Categoría</Form.Label>
             <Form.Control
               type="text"
@@ -78,7 +79,7 @@ const GeneralQuickModals = ({
           </Form.Group>
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="light" size="sm" onClick={() => closeReset(setCategoryModal)} disabled={loading}>Cancelar</Button>
+          <Button variant="outline-secondary" size="sm" onClick={() => closeReset(setCategoryModal)} disabled={loading}>Cancelar</Button>
           <Button variant="primary" size="sm" onClick={submitCategory} disabled={loading || !catName.trim()}>
             {loading ? 'Guardando...' : 'Guardar'}
           </Button>
@@ -86,16 +87,16 @@ const GeneralQuickModals = ({
       </Modal>
 
       {/* Modal Nueva Subcategoría */}
-      <Modal show={subcategoryModal} onHide={() => closeReset(setSubcategoryModal)} centered size="sm">
-        <Modal.Header closeButton>
+      <Modal show={subcategoryModal} onHide={() => closeReset(setSubcategoryModal)} centered size="sm" style={{ '--bs-modal-bg': 'var(--bs-body-bg)', '--bs-modal-color': 'var(--bs-body-color)', '--bs-modal-border-color': 'var(--bs-border-color)', '--bs-modal-header-border-color': 'var(--bs-border-color)', '--bs-modal-footer-border-color': 'var(--bs-border-color)' }}>
+        <Modal.Header closeButton closeLabel="Cerrar">
           <Modal.Title className="fs-15 fw-bold">Nueva Subcategoría</Modal.Title>
         </Modal.Header>
         <Modal.Body>
           {error && <Alert variant="danger" className="py-1 px-2 fs-12 mb-2">{error}</Alert>}
           <div className="mb-2 text-muted fs-12">
-            Categoría Padre: <strong className="text-dark">{currentCategoryName || 'Categoría actual'}</strong>
+            Categoría Padre: <strong className="text-body">{currentCategoryName || 'Categoría actual'}</strong>
           </div>
-          <Form.Group>
+          <Form.Group controlId="nueva-subcategoria-nombre">
             <Form.Label className="fs-13 fw-semibold">Nombre de la Subcategoría</Form.Label>
             <Form.Control
               type="text"
@@ -109,7 +110,7 @@ const GeneralQuickModals = ({
           </Form.Group>
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="light" size="sm" onClick={() => closeReset(setSubcategoryModal)} disabled={loading}>Cancelar</Button>
+          <Button variant="outline-secondary" size="sm" onClick={() => closeReset(setSubcategoryModal)} disabled={loading}>Cancelar</Button>
           <Button variant="primary" size="sm" onClick={submitSubcategory} disabled={loading || !subName.trim()}>
             {loading ? 'Guardando...' : 'Guardar'}
           </Button>
@@ -117,13 +118,13 @@ const GeneralQuickModals = ({
       </Modal>
 
       {/* Modal Nueva Marca */}
-      <Modal show={brandModal} onHide={() => closeReset(setBrandModal)} centered size="sm">
-        <Modal.Header closeButton>
+      <Modal show={brandModal} onHide={() => closeReset(setBrandModal)} centered size="sm" style={{ '--bs-modal-bg': 'var(--bs-body-bg)', '--bs-modal-color': 'var(--bs-body-color)', '--bs-modal-border-color': 'var(--bs-border-color)', '--bs-modal-header-border-color': 'var(--bs-border-color)', '--bs-modal-footer-border-color': 'var(--bs-border-color)' }}>
+        <Modal.Header closeButton closeLabel="Cerrar">
           <Modal.Title className="fs-15 fw-bold">Nueva Marca</Modal.Title>
         </Modal.Header>
         <Modal.Body>
           {error && <Alert variant="danger" className="py-1 px-2 fs-12 mb-2">{error}</Alert>}
-          <Form.Group>
+          <Form.Group controlId="nueva-marca-nombre">
             <Form.Label className="fs-13 fw-semibold">Nombre de la Marca</Form.Label>
             <Form.Control
               type="text"
@@ -137,7 +138,7 @@ const GeneralQuickModals = ({
           </Form.Group>
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="light" size="sm" onClick={() => closeReset(setBrandModal)} disabled={loading}>Cancelar</Button>
+          <Button variant="outline-secondary" size="sm" onClick={() => closeReset(setBrandModal)} disabled={loading}>Cancelar</Button>
           <Button variant="primary" size="sm" onClick={submitBrand} disabled={loading || !brName.trim()}>
             {loading ? 'Guardando...' : 'Guardar'}
           </Button>

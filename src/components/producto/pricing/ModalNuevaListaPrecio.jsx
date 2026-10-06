@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Modal, Form, Button, Alert } from 'react-bootstrap';
 import IconifyIcon from '@/components/wrappers/IconifyIcon';
 import productoService from '@/services/productoService';
+import { getProductErrorMessage } from '../productErrorMessage';
 
 const ModalNuevaListaPrecio = ({
   show,
@@ -34,7 +35,7 @@ const ModalNuevaListaPrecio = ({
       onHide();
     } catch (err) {
       console.error('Error al guardar lista de precios en DB:', err);
-      setError(err.response?.data?.message || 'Error al guardar la lista de precios en la base de datos');
+      setError(getProductErrorMessage(err, 'No se pudo guardar la lista de precios.'));
     } finally {
       setLoading(false);
     }
@@ -42,7 +43,7 @@ const ModalNuevaListaPrecio = ({
 
   return (
     <Modal show={show} onHide={onHide} centered>
-      <Modal.Header closeButton>
+      <Modal.Header closeButton closeLabel="Cerrar">
         <Modal.Title className="fs-16 fw-bold">
           <IconifyIcon icon="bx:purchase-tag-alt" className="me-2 text-primary" />
           Crear Nueva Lista de Precios
@@ -53,7 +54,7 @@ const ModalNuevaListaPrecio = ({
           Crea una lista de precios para canales comerciales, distribuidores o contratistas.
         </p>
         {error && <Alert variant="danger" className="py-2 fs-12 mb-3">{error}</Alert>}
-        <Form.Group className="mb-3">
+        <Form.Group className="mb-3" controlId="lista-precios-nombre">
           <Form.Label className="fw-semibold">Nombre de la Lista *</Form.Label>
           <Form.Control
             type="text"
@@ -64,7 +65,7 @@ const ModalNuevaListaPrecio = ({
         </Form.Group>
       </Modal.Body>
       <Modal.Footer>
-        <Button variant="light" onClick={onHide} disabled={loading}>Cancelar</Button>
+        <Button variant="outline-secondary" onClick={onHide} disabled={loading}>Cancelar</Button>
         <Button variant="primary" onClick={handleSave} disabled={!nombre.trim() || loading}>
           {loading ? 'Guardando...' : 'Guardar Lista'}
         </Button>

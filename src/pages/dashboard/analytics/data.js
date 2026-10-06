@@ -19,7 +19,7 @@ export const stateData = [
   },
   {
     icon: 'iconamoon:box-duotone',
-    name: 'Alertas de Stock',
+    name: 'Alertas de existencias',
     amount: '4 Críticos',
     variant: 'danger',
   },

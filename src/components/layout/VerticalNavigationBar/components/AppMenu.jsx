@@ -27,19 +27,19 @@ const MenuItemWithChildren = ({
     return activeMenuItems?.includes(item.key) ? 'active' : '';
   }, [activeMenuItems]);
   return <li className={className}>
-      <div onClick={toggleMenuItem} aria-expanded={open} role="button" className={clsx(linkClassName)}>
+      <button type="button" onClick={toggleMenuItem} aria-expanded={open} className={clsx(linkClassName, 'btn rounded-0 w-100 text-start')} style={{ borderTop: 0, borderRight: 0, borderBottom: 0 }}>
         {item.icon && <span className="nav-icon">
             {' '}
             <IconifyIcon icon={item.icon} />{' '}
           </span>}
         <span className="nav-text">{item.label}</span>
         {!item.badge ? <IconifyIcon icon="bx:chevron-down" className="menu-arrow" /> : <span className={`badge badge-pill text-end bg-${item.badge.variant}`}>{item.badge.text}</span>}
-      </div>
+      </button>
       <Collapse in={open}>
         <div>
           <ul className={clsx(subMenuClassName)}>
-            {(item.children || []).map((child, idx) => {
-            return <Fragment key={child.key + idx}>
+            {(item.children || []).map(child => {
+            return <Fragment key={child.key}>
                   {child.children ? <MenuItemWithChildren item={child} linkClassName={clsx('nav-link', getActiveClass(child))} activeMenuItems={activeMenuItems} className="sub-nav-item" subMenuClassName="nav sub-navbar-nav" toggleMenu={toggleMenu} /> : <MenuItem item={child} className="sub-nav-item" linkClassName={clsx('sub-nav-link', getActiveClass(child))} />}
                 </Fragment>;
           })}
@@ -116,7 +116,7 @@ const AppMenu = ({
           change = to - start,
           increment = 20;
         let currentTime = 0;
-        const animateScroll = function () {
+        const animateScroll = () => {
           currentTime += increment;
           const val = easeInOutQuad(currentTime, start, change, duration);
           element.scrollTop = val;
@@ -132,8 +132,8 @@ const AppMenu = ({
     if (menuItems && menuItems.length > 0) activeMenu();
   }, [activeMenu, menuItems]);
   return <ul className="navbar-nav">
-      {(menuItems || []).map((item, idx) => {
-      return <Fragment key={item.key + idx}>
+      {(menuItems || []).map(item => {
+      return <Fragment key={item.key}>
             {item.isTitle ? <li className="menu-title">{item.label}</li> : <>
                 {item.children ? <MenuItemWithChildren item={item} toggleMenu={toggleMenu} className="nav-item" linkClassName={clsx('nav-link', getActiveClass(item))} subMenuClassName="nav sub-navbar-nav" activeMenuItems={activeMenuItems} /> : <MenuItem item={item} linkClassName={clsx('nav-link', getActiveClass(item))} className="nav-item" />}
               </>}

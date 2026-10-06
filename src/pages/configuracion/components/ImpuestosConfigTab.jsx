@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Card, Table, Button, Form, Badge, InputGroup, Modal } from 'react-bootstrap';
 import IconifyIcon from '@/components/wrappers/IconifyIcon';
 
@@ -6,7 +6,7 @@ const ImpuestosConfigTab = ({
   impuestos = [],
   onUpdateImpuesto,
   onToggleStatus,
-  onCreate,
+
   loading = false,
 }) => {
   const [search, setSearch] = useState('');
@@ -78,7 +78,7 @@ const ImpuestosConfigTab = ({
                   <td><Badge bg="secondary-subtle" className="text-secondary">{imp.codigo}</Badge></td>
                   <td className="fw-semibold text-dark fs-14">{imp.nombre}</td>
                   <td className="fw-bold fs-13 text-primary">
-                    {imp.tipo === 'VALOR_FIJO' ? `$${Number(imp.valor || 0).toLocaleString('es-CO')}` : `${imp.porcentaje}%`}
+                    {imp.tipo === 'VALOR_FIJO' ? `$${Number(imp.valor || 0).toLocaleString('es-CO')}` : `${Number(imp.porcentaje).toLocaleString('es-CO')}%`}
                   </td>
                   <td className="text-center">
                     <Badge
@@ -110,7 +110,7 @@ const ImpuestosConfigTab = ({
       </Card.Body>
 
       <Modal show={Boolean(editingItem)} onHide={() => setEditingItem(null)} centered>
-        <Modal.Header closeButton className="py-2 border-bottom">
+        <Modal.Header closeButton closeLabel="Cerrar" className="py-2 border-bottom">
           <Modal.Title className="fs-15 fw-semibold text-dark">Editar Impuesto: {editingItem?.nombre}</Modal.Title>
         </Modal.Header>
         <Form onSubmit={handleEditSubmit}>

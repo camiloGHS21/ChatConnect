@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { Table, Badge, Button } from 'react-bootstrap';
 import IconifyIcon from '@/components/wrappers/IconifyIcon';
 
@@ -18,7 +18,7 @@ const CodigosBarrasTable = ({ codigosBarras = [], onSetPrincipal, onRemove, trig
   return (
     <div className="table-responsive border rounded">
       <Table hover className="table-sm align-middle mb-0">
-        <thead className="table-light">
+        <thead style={{ '--bs-table-bg': 'var(--bs-tertiary-bg)', '--bs-table-color': 'var(--bs-body-color)' }}>
           <tr>
             <th>Código</th>
             <th>Descripción</th>
@@ -36,7 +36,7 @@ const CodigosBarrasTable = ({ codigosBarras = [], onSetPrincipal, onRemove, trig
           ) : (
             codigosBarras.map(b => (
               <tr key={b.id}>
-                <td className="fw-bold font-monospace text-dark">{b.codigo_barras}</td>
+                <td className="fw-bold font-monospace text-body-emphasis">{b.codigo_barras}</td>
                 <td className="text-muted">{b.descripcion || '-'}</td>
                 <td>
                   {b.principal ? (
@@ -56,7 +56,9 @@ const CodigosBarrasTable = ({ codigosBarras = [], onSetPrincipal, onRemove, trig
                   <Button
                     variant="link"
                     className="text-danger p-0"
-                    onClick={() => handleDelete(b)}
+                    aria-label={`Eliminar código de barras ${b.codigo_barras}`}
+                                        title="Eliminar código de barras"
+                                        onClick={() => handleDelete(b)}
                   >
                     <IconifyIcon icon="bx:trash" className="fs-16" />
                   </Button>

@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { Row, Col, Form } from 'react-bootstrap';
 import { DOC_TYPES } from './supplierUtils';
 import ModalProveedorGeoFields from './ModalProveedorGeoFields';

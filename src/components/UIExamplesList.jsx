@@ -10,7 +10,7 @@ const UIExamplesList = ({
   }, []);
   return <Card ref={navRef} className="docs-nav">
       <ul className="nav bg-transparent flex-column">
-        {examples.map((example, idx) => <li key={example.link + idx} className="nav-item">
+        {examples.map(example => <li key={example.link} className="nav-item">
             <a href={example.link} className="nav-link">
               {example.label}
             </a>

@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import { useMemo } from 'react';
 import clsx from 'clsx';
 import { Link } from 'react-router-dom';
 import ReactTable from '@/components/Table';
@@ -10,7 +10,7 @@ import WhatsAppStatusBadge from './WhatsAppStatusBadge';
 
 const buildColumns = (onDeleteProduct, onSyncProduct) => [
   {
-    header: 'Product Name',
+    header: 'Nombre del producto',
     cell: ({
       row: {
         original: { id, images, name, description, referencia, fb_product_id, meta_sync_status },
@@ -56,20 +56,20 @@ const buildColumns = (onDeleteProduct, onSyncProduct) => [
     },
   },
   {
-    header: 'Category',
+    header: 'Categoría',
     cell: ({ row: { original } }) => original.category?.name || original.category || 'General',
   },
   {
-    header: 'Price',
+    header: 'Precio',
     cell: ({ row: { original } }) => {
       if (original.sale) {
-        return currency + getCalculatedPrice(original);
+        return currency + getCalculatedPrice(original).toLocaleString('es-CO');
       }
-      return currency + (Number(original.price) || 0).toLocaleString('en-US');
+      return currency + (Number(original.price) || 0).toLocaleString('es-CO');
     },
   },
   {
-    header: 'Inventory',
+    header: 'Inventario',
     cell: ({
       row: {
         original: { quantity },
@@ -85,7 +85,7 @@ const buildColumns = (onDeleteProduct, onSyncProduct) => [
     },
   },
   {
-    header: 'Action',
+    header: 'Acciones',
     cell: ({ row: { original } }) => (
       <>
         <button

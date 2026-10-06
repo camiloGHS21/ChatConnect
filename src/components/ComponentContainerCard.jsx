@@ -11,7 +11,7 @@ const ComponentContainerCard = ({
       <CardBody>
         <CardTitle as={'h5'} className={clsx('anchor mb-1', titleClass)} id={id}>
           {title}
-          <a className="anchor-link" href={`#${id}`}>
+          <a className="anchor-link" href={`#${id}`} aria-label={typeof title === 'string' ? `Enlace a ${title}` : 'Enlace a esta sección'}>
             #
           </a>
         </CardTitle>

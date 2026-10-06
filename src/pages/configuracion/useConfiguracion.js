@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import productoService from '@/services/productoService';
 
@@ -72,20 +72,25 @@ export const useConfiguracion = () => {
   const [actionLoading, setActionLoading] = useState(false);
   const [notification, setNotification] = useState({ type: '', message: '' });
 
-  const loadData = async () => {
+  const loadData = useCallback(async (signal) => {
     try {
       setLoading(true);
       const data = await productoService.getConfiguraciones(1);
-      setCatalogs(data);
+      if (!signal?.aborted) setCatalogs(data);
     } catch (err) {
+      if (signal?.aborted) return;
       console.error('Error cargando configuraciones:', err);
       setNotification({ type: 'danger', message: 'Error cargando catálogos de PostgreSQL' });
     } finally {
-      setLoading(false);
+      if (!signal?.aborted) setLoading(false);
     }
-  };
+  }, []);
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => {
+    const controller = new AbortController();
+    loadData(controller.signal);
+    return () => controller.abort();
+  }, [loadData]);
 
   const notify = (msg, type = 'success') => {
     setNotification({ type, message: msg });
@@ -109,7 +114,7 @@ export const useConfiguracion = () => {
       await productoService.actualizarCategoria(cat.id, { estado: nextState }, 1);
       setCatalogs(p => ({ ...p, categorias: p.categorias.map(c => c.id === cat.id ? { ...c, estado: nextState } : c) }));
       notify(`Categoría "${cat.nombre}" marcada como ${nextState}`);
-    } catch (err) { notify('Error al cambiar estado', 'danger'); }
+    } catch { notify('Error al cambiar estado', 'danger'); }
   };
 
   const handleCreateCat = async (nombre) => {
@@ -138,7 +143,7 @@ export const useConfiguracion = () => {
       await productoService.actualizarMarca(marca.id, { estado: nextState }, 1);
       setCatalogs(p => ({ ...p, marcas: p.marcas.map(m => m.id === marca.id ? { ...m, estado: nextState } : m) }));
       notify(`Marca "${marca.nombre}" marcada como ${nextState}`);
-    } catch (err) { notify('Error al cambiar estado', 'danger'); }
+    } catch { notify('Error al cambiar estado', 'danger'); }
   };
 
   const handleCreateMarca = async (nombre) => {
@@ -167,7 +172,7 @@ export const useConfiguracion = () => {
       await productoService.actualizarListaPrecio(item.id, { estado: nextState }, 1);
       setCatalogs(p => ({ ...p, listasPrecios: p.listasPrecios.map(l => l.id === item.id ? { ...l, estado: nextState } : l) }));
       notify(`Lista "${item.nombre}" marcada como ${nextState}`);
-    } catch (err) { notify('Error al cambiar estado', 'danger'); }
+    } catch { notify('Error al cambiar estado', 'danger'); }
   };
 
   const handleCreateLista = async (nombre) => {

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Card, Row, Col, Form, Button, Table, Alert } from 'react-bootstrap';
 import IconifyIcon from '@/components/wrappers/IconifyIcon';
 
@@ -40,7 +40,7 @@ const ReferenciasCard = ({ formData, updateField, triggerDeleteConfirm }) => {
 
   return (
     <Card className="border shadow-none mb-4 rounded-3">
-      <Card.Header className="bg-light-subtle py-3 border-bottom d-flex align-items-center justify-content-between">
+      <Card.Header className="bg-body-tertiary py-3 border-bottom d-flex align-items-center justify-content-between">
         <div className="d-flex align-items-center gap-2">
           <IconifyIcon icon="bx:purchase-tag" className="fs-20 text-primary" />
           <h5 className="card-title mb-0">Referencias del Producto</h5>
@@ -80,7 +80,7 @@ const ReferenciasCard = ({ formData, updateField, triggerDeleteConfirm }) => {
 
         <div className="table-responsive border rounded">
           <Table hover className="table-sm align-middle mb-0">
-            <thead className="table-light">
+            <thead style={{ '--bs-table-bg': 'var(--bs-tertiary-bg)', '--bs-table-color': 'var(--bs-body-color)' }}>
               <tr>
                 <th>Referencia</th>
                 <th>Descripción</th>
@@ -97,12 +97,14 @@ const ReferenciasCard = ({ formData, updateField, triggerDeleteConfirm }) => {
               ) : (
                 (formData.referencias || []).map(r => (
                   <tr key={r.id}>
-                    <td className="fw-bold font-monospace text-dark">{r.referencia}</td>
+                    <td className="fw-bold font-monospace text-body-emphasis">{r.referencia}</td>
                     <td className="text-muted">{r.descripcion || '-'}</td>
                     <td className="text-end">
                       <Button
                         variant="link"
                         className="text-danger p-0"
+                        aria-label={`Eliminar referencia ${r.referencia}`}
+                        title="Eliminar referencia"
                         onClick={() => triggerDeleteConfirm ? triggerDeleteConfirm({
                           title: '¿Eliminar referencia?',
                           itemName: r.referencia,

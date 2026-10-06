@@ -17,7 +17,7 @@ const SeedFerreteriBtn = ({ onComplete, onError, onLoadingChange }) => {
       const res = await productoService.seedFerreteria();
       onComplete?.(res);
     } catch (err) {
-      const msg = err.response?.data?.message || err.message || 'Error al ejecutar seed';
+      const msg = err.response?.data?.message || err.message || 'Error al cargar los productos de demostración';
       onError?.(typeof msg === 'string' ? msg : JSON.stringify(msg));
     } finally {
       setLoading(false);
@@ -28,7 +28,7 @@ const SeedFerreteriBtn = ({ onComplete, onError, onLoadingChange }) => {
   return (
     <Button variant="warning" className="d-flex align-items-center" onClick={handleSeed} disabled={loading}>
       <IconifyIcon icon={loading ? 'bx:loader-alt' : 'bx:data'} className={`me-1 ${loading ? 'bx-spin' : ''}`} />
-      {loading ? 'Cargando y Sincronizando...' : 'Cargar Productos Demo'}
+      {loading ? 'Cargando y Sincronizando...' : 'Cargar productos de demostración'}
     </Button>
   );
 };

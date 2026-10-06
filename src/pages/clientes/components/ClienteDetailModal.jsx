@@ -1,4 +1,3 @@
-import React from 'react';
 import { Row, Col, Modal, Table, Badge, Button } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import IconifyIcon from '@/components/wrappers/IconifyIcon';
@@ -8,7 +7,7 @@ const ClienteDetailModal = ({ show, onHide, client, orders = [] }) => {
 
   return (
     <Modal show={show} onHide={onHide} size="lg" centered>
-      <Modal.Header closeButton>
+      <Modal.Header closeButton closeLabel="Cerrar">
         <Modal.Title className="fw-bold fs-16">
           Ficha del Cliente: {client.nombre}
         </Modal.Title>

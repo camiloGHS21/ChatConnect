@@ -16,84 +16,22 @@ const LayoutProvider = ({
 }) => {
   const queryParams = useQueryParams();
   const override = !!(queryParams.layout_theme || queryParams.topbar_theme || queryParams.menu_theme || queryParams.menu_size);
-  const INIT_STATE = {
-    theme: queryParams['layout_theme'] ? queryParams['layout_theme'] : getPreferredTheme(),
-    topbarTheme: queryParams['topbar_theme'] ? queryParams['topbar_theme'] : 'light',
+  const { layout_theme, topbar_theme, menu_theme, menu_size } = queryParams;
+  const preferredTheme = getPreferredTheme();
+  const INIT_STATE = useMemo(() => ({
+    theme: layout_theme ? layout_theme : preferredTheme,
+    topbarTheme: topbar_theme ? topbar_theme : 'light',
     menu: {
-      theme: queryParams['menu_theme'] ? queryParams['menu_theme'] : 'light',
-      size: queryParams['menu_size'] ? queryParams['menu_size'] : 'condensed'
+      theme: menu_theme ? menu_theme : 'light',
+      size: menu_size ? menu_size : 'condensed'
     }
-  };
+  }), [layout_theme, topbar_theme, menu_theme, menu_size, preferredTheme]);
   const [settings, setSettings] = useLocalStorage('__CHATCONNECT_CONFIG__', INIT_STATE, override);
   const [offcanvasStates, setOffcanvasStates] = useState({
     showThemeCustomizer: false,
     showActivityStream: false,
     showBackdrop: false
   });
-
-  // update settings
-  const updateSettings = _newSettings => setSettings({
-    ...settings,
-    ..._newSettings
-  });
-
-  // update theme mode
-  const changeTheme = newTheme => {
-    updateSettings({
-      theme: newTheme
-    });
-  };
-
-  // change topbar theme
-  const changeTopbarTheme = newTheme => {
-    updateSettings({
-      topbarTheme: newTheme
-    });
-  };
-
-  // change menu theme
-  const changeMenuTheme = newTheme => {
-    updateSettings({
-      menu: {
-        ...settings.menu,
-        theme: newTheme
-      }
-    });
-  };
-
-  // change menu theme
-  const changeMenuSize = newSize => {
-    updateSettings({
-      menu: {
-        ...settings.menu,
-        size: newSize
-      }
-    });
-  };
-
-  // toggle theme customizer offcanvas
-  const toggleThemeCustomizer = () => {
-    setOffcanvasStates({
-      ...offcanvasStates,
-      showThemeCustomizer: !offcanvasStates.showThemeCustomizer
-    });
-  };
-
-  // toggle activity stream offcanvas
-  const toggleActivityStream = () => {
-    setOffcanvasStates({
-      ...offcanvasStates,
-      showActivityStream: !offcanvasStates.showActivityStream
-    });
-  };
-  const themeCustomizer = {
-    open: offcanvasStates.showThemeCustomizer,
-    toggle: toggleThemeCustomizer
-  };
-  const activityStream = {
-    open: offcanvasStates.showActivityStream,
-    toggle: toggleActivityStream
-  };
 
   // toggle backdrop
   const toggleBackdrop = useCallback(() => {
@@ -103,7 +41,88 @@ const LayoutProvider = ({
       ...offcanvasStates,
       showBackdrop: !offcanvasStates.showBackdrop
     });
-  }, [offcanvasStates.showBackdrop]);
+  }, [offcanvasStates]);
+  const contextValue = useMemo(() => {
+    // update settings
+    const updateSettings = _newSettings => setSettings({
+      ...settings,
+      ..._newSettings
+    });
+
+    // update theme mode
+    const changeTheme = newTheme => {
+      updateSettings({
+        theme: newTheme
+      });
+    };
+
+    // change topbar theme
+    const changeTopbarTheme = newTheme => {
+      updateSettings({
+        topbarTheme: newTheme
+      });
+    };
+
+    // change menu theme
+    const changeMenuTheme = newTheme => {
+      updateSettings({
+        menu: {
+          ...settings.menu,
+          theme: newTheme
+        }
+      });
+    };
+
+    // change menu theme
+    const changeMenuSize = newSize => {
+      updateSettings({
+        menu: {
+          ...settings.menu,
+          size: newSize
+        }
+      });
+    };
+
+    // toggle theme customizer offcanvas
+    const toggleThemeCustomizer = () => {
+      setOffcanvasStates({
+        ...offcanvasStates,
+        showThemeCustomizer: !offcanvasStates.showThemeCustomizer
+      });
+    };
+
+    // toggle activity stream offcanvas
+    const toggleActivityStream = () => {
+      setOffcanvasStates({
+        ...offcanvasStates,
+        showActivityStream: !offcanvasStates.showActivityStream
+      });
+    };
+    const themeCustomizer = {
+      open: offcanvasStates.showThemeCustomizer,
+      toggle: toggleThemeCustomizer
+    };
+    const activityStream = {
+      open: offcanvasStates.showActivityStream,
+      toggle: toggleActivityStream
+    };
+
+    const resetSettings = () => updateSettings(INIT_STATE);
+    return {
+      ...settings,
+      themeMode: settings.theme,
+      changeTheme,
+      changeTopbarTheme,
+      changeMenu: {
+        theme: changeMenuTheme,
+        size: changeMenuSize
+      },
+      themeCustomizer,
+      activityStream,
+      toggleBackdrop,
+      resetSettings
+    };
+  }, [settings, setSettings, offcanvasStates, INIT_STATE, toggleBackdrop]);
   useEffect(() => {
     toggleDocumentAttribute('data-bs-theme', settings.theme);
     toggleDocumentAttribute('data-topbar-color', settings.topbarTheme);
@@ -116,23 +135,9 @@ const LayoutProvider = ({
       toggleDocumentAttribute('data-menu-size', settings.menu.size, true);
     };
   }, [settings]);
-  const resetSettings = () => updateSettings(INIT_STATE);
-  return <ThemeContext.Provider value={useMemo(() => ({
-    ...settings,
-    themeMode: settings.theme,
-    changeTheme,
-    changeTopbarTheme,
-    changeMenu: {
-      theme: changeMenuTheme,
-      size: changeMenuSize
-    },
-    themeCustomizer,
-    activityStream,
-    toggleBackdrop,
-    resetSettings
-  }), [settings, offcanvasStates])}>
+  return <ThemeContext.Provider value={contextValue}>
       {children}
-      {offcanvasStates.showBackdrop && <div className="offcanvas-backdrop fade show" onClick={toggleBackdrop} />}
+      {offcanvasStates.showBackdrop && <button type="button" className="offcanvas-backdrop fade show" style={{ border: 0, padding: 0 }} aria-label="Cerrar menú" onClick={toggleBackdrop} />}
     </ThemeContext.Provider>;
 };
 export { LayoutProvider, useLayoutContext };

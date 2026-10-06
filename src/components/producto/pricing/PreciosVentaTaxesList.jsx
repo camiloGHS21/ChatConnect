@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Form, Button, Badge } from 'react-bootstrap';
 import IconifyIcon from '@/components/wrappers/IconifyIcon';
 
@@ -23,7 +23,7 @@ const PreciosVentaTaxesList = ({
   return (
     <div className="mb-3">
       <div className="d-flex align-items-center justify-content-between mb-2">
-        <label className="form-label fw-semibold mb-0 fs-13">Impuestos Aplicables a la Venta</label>
+        <label htmlFor="producto-impuesto-venta" className="form-label fw-semibold mb-0 fs-13">Impuestos Aplicables a la Venta</label>
         {onOpenCustomTax && (
           <Button variant="link" size="sm" className="p-0 fs-12 text-primary fw-semibold" onClick={onOpenCustomTax}>
             + Crear Impuesto Fijo/%
@@ -33,6 +33,7 @@ const PreciosVentaTaxesList = ({
 
       <div className="input-group mb-2">
         <Form.Select
+          id="producto-impuesto-venta"
           size="sm"
           value={selectedTaxId}
           onChange={e => {
@@ -56,7 +57,7 @@ const PreciosVentaTaxesList = ({
         </Button>
       </div>
 
-      <div className="border rounded bg-light-subtle p-2">
+      <div className="border rounded bg-body-tertiary p-2">
         {impuestosVenta.length === 0 ? (
           <div className="text-center py-2 text-muted fs-12">Sin impuestos de venta (Precio base = Precio final).</div>
         ) : (
@@ -64,12 +65,12 @@ const PreciosVentaTaxesList = ({
             const isFixed = tax.tipo_calculo === 'VALOR_FIJO';
             const valorCalc = isFixed ? (parseFloat(tax.valor_fijo) || 0) : (precioBase * (parseFloat(tax.porcentaje) || 0)) / 100;
             return (
-              <div key={tax.id} className="d-flex align-items-center justify-content-between bg-white p-2 mb-1 rounded border border-light-subtle shadow-xs">
+              <div key={tax.id} className="d-flex align-items-center justify-content-between bg-body p-2 mb-1 rounded border shadow-xs">
                 <div className="d-flex align-items-center gap-2">
                   <Badge bg={isFixed ? 'warning-subtle' : 'primary-subtle'} className={isFixed ? 'text-warning fs-11' : 'text-primary fs-11'}>
                     {isFixed ? 'Fijo $' : `${tax.porcentaje}%`}
                   </Badge>
-                  <span className="fs-13 fw-medium text-dark">{tax.nombre}</span>
+                  <span className="fs-13 fw-medium text-body">{tax.nombre}</span>
                 </div>
                 <div className="d-flex align-items-center gap-2">
                   {isFixed ? (
@@ -79,8 +80,9 @@ const PreciosVentaTaxesList = ({
                         size="sm"
                         type="number"
                         min="0"
-                        className="py-0 px-2 fs-12 text-end font-monospace fw-semibold text-dark"
-                        value={tax.valor_fijo ?? ''}
+                        className="py-0 px-2 fs-12 text-end font-monospace fw-semibold text-body-emphasis"
+                        aria-label={`Valor fijo del impuesto de venta ${tax.nombre}`}
+                                                value={tax.valor_fijo ?? ''}
                         onChange={e => onUpdateValorFijo(tax.id, e.target.value)}
                       />
                     </div>
@@ -91,6 +93,8 @@ const PreciosVentaTaxesList = ({
                     variant="link"
                     size="sm"
                     className="text-danger p-0 ms-1"
+                    aria-label={`Eliminar impuesto de venta ${tax.nombre}`}
+                    title="Eliminar impuesto de venta"
                     onClick={() => triggerDeleteConfirm ? triggerDeleteConfirm({
                       title: '¿Eliminar impuesto de venta?',
                       itemName: `${tax.nombre}`,

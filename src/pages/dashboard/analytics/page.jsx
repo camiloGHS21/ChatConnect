@@ -9,7 +9,7 @@ import TopPages from './components/TopPages';
 export default function Home() {
   return <>
       <PageBreadcrumb title="Panel de Control WhatsApp CRM" subName="ChatConnect" />
-      <PageMetaData title="Dashboard - ChatConnect" />
+      <PageMetaData title="Panel de control - ChatConnect" />
 
       <Row>
         <Col xxl={3}>

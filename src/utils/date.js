@@ -8,7 +8,7 @@ export const timeSince = date => {
   if (typeof date !== 'object') {
     date = new Date(date);
   }
-  const seconds = Math.floor((new Date().valueOf() - date.valueOf()) / 1000);
+  const seconds = Math.floor((Date.now() - date.valueOf()) / 1000);
   let interval = 0;
   let intervalType = '';
   const intervals = {

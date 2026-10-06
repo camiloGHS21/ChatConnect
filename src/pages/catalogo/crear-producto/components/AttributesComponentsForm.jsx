@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import AttributesSelectorCard from '@/components/producto/attributes/AttributesSelectorCard';
 import AttributesAssignedList from '@/components/producto/attributes/AttributesAssignedList';
 import VariantsTableCard from '@/components/producto/attributes/VariantsTableCard';

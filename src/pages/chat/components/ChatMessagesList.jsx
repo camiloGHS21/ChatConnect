@@ -1,18 +1,21 @@
 import { useEffect, useRef } from 'react';
-import { Badge } from 'react-bootstrap';
 import IconifyIcon from '@/components/wrappers/IconifyIcon';
 
 const ChatMessagesList = ({ mensajes = [], activeChat }) => {
-  const bottomRef = useRef(null);
+  const messagesRef = useRef(null);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const container = messagesRef.current;
+    if (container) {
+      container.scrollTop = mensajes.length === 0 ? 0 : container.scrollHeight;
+    }
   }, [mensajes]);
 
   return (
     <div
-      className="flex-grow-1 p-3 overflow-auto d-flex flex-column gap-3"
-      style={{ backgroundColor: '#efeae2' }}
+      ref={messagesRef}
+      className="chat-messages flex-grow-1 p-3 overflow-auto d-flex flex-column gap-3"
+      style={{ minHeight: 0, overscrollBehavior: 'contain' }}
     >
       {mensajes.length === 0 ? (
         <div className="text-center py-5 text-muted fs-13">
@@ -28,12 +31,12 @@ const ChatMessagesList = ({ mensajes = [], activeChat }) => {
           return (
             <div
               key={msg.id}
-              className={`d-flex flex-column ${isClient ? 'align-items-start' : 'align-items-end'}`}
+              className={`d-flex flex-column flex-shrink-0 ${isClient ? 'align-items-start' : 'align-items-end'}`}
             >
               <div
                 className={`p-3 rounded shadow-sm position-relative ${
                   isClient
-                    ? 'bg-white text-dark'
+                    ? 'bg-body text-body'
                     : isIA
                     ? 'bg-success text-white'
                     : 'bg-primary text-white'
@@ -52,7 +55,7 @@ const ChatMessagesList = ({ mensajes = [], activeChat }) => {
 
                 {/* Renderizado de Mensaje Interactivo de Colección de WhatsApp */}
                 {isInteractive ? (
-                  <div className="mt-1 p-2 rounded bg-white text-dark border">
+                  <div className="mt-1 p-2 rounded bg-body text-body border">
                     <div className="d-flex align-items-center gap-2 mb-2 pb-1 border-bottom">
                       <div className="avatar-xs rounded bg-success-subtle text-success d-flex align-items-center justify-content-center p-1">
                         <IconifyIcon icon="bxl:whatsapp" className="fs-16" />
@@ -66,7 +69,7 @@ const ChatMessagesList = ({ mensajes = [], activeChat }) => {
                       {msg.texto}
                     </div>
                     <div className="d-flex align-items-center justify-content-between pt-1 border-top fs-11 text-muted">
-                      <span className="badge bg-light text-dark border">
+                      <span className="badge bg-body-tertiary text-body border">
                         <IconifyIcon icon="bx:store" className="me-1 align-middle" />
                         Catálogo de WhatsApp
                       </span>
@@ -86,7 +89,7 @@ const ChatMessagesList = ({ mensajes = [], activeChat }) => {
           );
         })
       )}
-      <div ref={bottomRef} />
+
     </div>
   );
 };

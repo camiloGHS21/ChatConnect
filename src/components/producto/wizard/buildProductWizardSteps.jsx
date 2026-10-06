@@ -1,4 +1,4 @@
-import React from 'react';
+
 import GeneralDetailsForm from '@/pages/catalogo/crear-producto/components/GeneralDetailsForm';
 import PricingCostsForm from '@/pages/catalogo/crear-producto/components/PricingCostsForm';
 import InventoryCodesForm from '@/pages/catalogo/crear-producto/components/InventoryCodesForm';
@@ -76,7 +76,7 @@ export const buildProductWizardSteps = ({
   },
   {
     index: 5,
-    name: 'Metadata',
+    name: 'Metadatos',
     icon: 'bxs:brain',
     tab: (
       <MetaDataForm

@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Modal, Form, Button, Alert, Row, Col } from 'react-bootstrap';
 import IconifyIcon from '@/components/wrappers/IconifyIcon';
 import productoService from '@/services/productoService';
+import { getProductErrorMessage } from '../productErrorMessage';
 
 const ModalNuevoAtributo = ({ show, onHide, onSave, existingAttributes = [] }) => {
   const initialForm = {
@@ -53,15 +54,15 @@ const ModalNuevoAtributo = ({ show, onHide, onSave, existingAttributes = [] }) =
       onHide();
     } catch (err) {
       console.error('Error al guardar atributo en DB:', err);
-      setError(err.response?.data?.message || 'Error al guardar el atributo en la base de datos');
+      setError(getProductErrorMessage(err, 'No se pudo guardar el atributo.'));
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <Modal show={show} onHide={onHide} centered>
-      <Modal.Header closeButton>
+    <Modal show={show} onHide={onHide} centered style={{ '--bs-modal-bg': 'var(--bs-body-bg)', '--bs-modal-color': 'var(--bs-body-color)', '--bs-modal-border-color': 'var(--bs-border-color)', '--bs-modal-header-border-color': 'var(--bs-border-color)', '--bs-modal-footer-border-color': 'var(--bs-border-color)' }}>
+      <Modal.Header closeButton closeLabel="Cerrar">
         <Modal.Title className="fs-16 fw-bold">
           <IconifyIcon icon="bx:customize" className="me-2 text-primary" />
           Crear Nuevo Atributo
@@ -69,7 +70,7 @@ const ModalNuevoAtributo = ({ show, onHide, onSave, existingAttributes = [] }) =
       </Modal.Header>
       <Modal.Body>
         {error && <Alert variant="danger" className="py-2 fs-12 mb-3">{error}</Alert>}
-        <Form.Group className="mb-3">
+        <Form.Group className="mb-3" controlId="atributo-nombre">
           <Form.Label className="fw-semibold fs-12">Nombre del Atributo *</Form.Label>
           <Form.Control
             type="text"
@@ -79,7 +80,7 @@ const ModalNuevoAtributo = ({ show, onHide, onSave, existingAttributes = [] }) =
           />
         </Form.Group>
 
-        <Form.Group className="mb-3">
+        <Form.Group className="mb-3" controlId="atributo-componentes">
           <Form.Label className="fw-semibold fs-12">Opciones / Componentes Iniciales</Form.Label>
           <Form.Control
             type="text"
@@ -113,7 +114,7 @@ const ModalNuevoAtributo = ({ show, onHide, onSave, existingAttributes = [] }) =
         </Row>
       </Modal.Body>
       <Modal.Footer>
-        <Button variant="light" onClick={onHide} disabled={loading}>Cancelar</Button>
+        <Button variant="outline-secondary" onClick={onHide} disabled={loading}>Cancelar</Button>
         <Button variant="primary" onClick={handleSave} disabled={!form.nombre.trim() || loading}>
           {loading ? 'Guardando...' : 'Guardar Atributo'}
         </Button>

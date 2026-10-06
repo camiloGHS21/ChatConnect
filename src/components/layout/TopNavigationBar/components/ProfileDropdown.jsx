@@ -10,9 +10,9 @@ const ProfileDropdown = () => {
 
   return (
     <Dropdown className="topbar-item" align={'end'}>
-      <DropdownToggle as="button" type="button" className="topbar-button content-none" id="page-header-user-dropdown" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+      <DropdownToggle as="button" type="button" className="topbar-button content-none" id="page-header-user-dropdown" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" aria-label="Menú de usuario">
         <span className="d-flex align-items-center">
-          <img className="rounded-circle" width={32} height={32} src={avatar1} alt="avatar-3" />
+          <img className="rounded-circle" width={32} height={32} src={avatar1} alt={`Foto de ${userName}`} />
         </span>
       </DropdownToggle>
       <DropdownMenu>

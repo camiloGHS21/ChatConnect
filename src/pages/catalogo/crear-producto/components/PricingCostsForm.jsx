@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Row } from 'react-bootstrap';
 import CostosCompraCard from '@/components/producto/pricing/CostosCompraCard';
 import PreciosVentaCard from '@/components/producto/pricing/PreciosVentaCard';
@@ -26,18 +26,18 @@ const PricingCostsForm = ({ formData, updateField, catalogs = {}, triggerDeleteC
   const handleCostoBaseChange = (val) => {
     const num = Math.max(0, parseFloat(val) || 0);
     const fin = syncFinancials(num, parseFloat(formData.precio_base) || 0, formData.impuestos_compra, formData.impuestos_venta);
-    Object.entries(fin).forEach(([k, v]) => updateField(k, v));
+    Object.entries(fin).forEach(([k, v]) => { updateField(k, v); });
   };
 
   const handlePrecioBaseChange = (val) => {
     const num = Math.max(0, parseFloat(val) || 0);
     const fin = syncFinancials(parseFloat(formData.costo_base) || 0, num, formData.impuestos_compra, formData.impuestos_venta);
-    Object.entries(fin).forEach(([k, v]) => updateField(k, v));
+    Object.entries(fin).forEach(([k, v]) => { updateField(k, v); });
   };
 
   const handleCostoImpuestoChange = (val) => {
     const finalVal = parseFloat(val);
-    if (isNaN(finalVal)) { updateField('costo_impuesto', val); return; }
+    if (Number.isNaN(finalVal)) { updateField('costo_impuesto', val); return; }
     const { baseCalculada } = calculateReverseBase(finalVal, formData.impuestos_compra || []);
     handleCostoBaseChange(baseCalculada);
     updateField('costo_impuesto', finalVal);
@@ -49,7 +49,7 @@ const PricingCostsForm = ({ formData, updateField, catalogs = {}, triggerDeleteC
 
   const handlePrecioImpuestoChange = (val) => {
     const finalVal = parseFloat(val);
-    if (isNaN(finalVal)) { updateField('precio_impuesto', val); return; }
+    if (Number.isNaN(finalVal)) { updateField('precio_impuesto', val); return; }
     const { baseCalculada } = calculateReverseBase(finalVal, formData.impuestos_venta || []);
     handlePrecioBaseChange(baseCalculada);
     updateField('precio_impuesto', finalVal);
@@ -77,7 +77,7 @@ const PricingCostsForm = ({ formData, updateField, catalogs = {}, triggerDeleteC
       target === 'compra' ? updated : formData.impuestos_compra || [],
       target === 'venta' ? updated : formData.impuestos_venta || []
     );
-    Object.entries(fin).forEach(([k, v]) => updateField(k, v));
+    Object.entries(fin).forEach(([k, v]) => { updateField(k, v); });
   };
 
   return (

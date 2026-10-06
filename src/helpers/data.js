@@ -218,7 +218,7 @@ export const getSavedFeedPosts = async () => {
   return postsData;
 };
 export const getMemoriesFeedPosts = async () => {
-  const timeStamp = new Date().getTime() - 1 * 24 * 60 * 60 * 1000;
+  const timeStamp = Date.now() - 1 * 24 * 60 * 60 * 1000;
   const postsData = socialPostsData.filter(post => !post.saved && post.createdAt < new Date(timeStamp)).map(post => {
     const socialUser = socialUsersData.find(user => user.id === post.socialUserId);
     const commentsData = socialCommentsData.filter(comment => comment.postId === post.id);

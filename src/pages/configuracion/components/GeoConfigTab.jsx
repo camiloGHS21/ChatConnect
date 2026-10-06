@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Card, Table, Button, Form, Row, Col, Badge, Modal } from 'react-bootstrap';
 import IconifyIcon from '@/components/wrappers/IconifyIcon';
 
@@ -105,7 +105,7 @@ const GeoConfigTab = ({
 
       <Modal show={showModalCiudad} onHide={() => setShowModalCiudad(false)} centered>
         <Form onSubmit={handleSaveCiudad}>
-          <Modal.Header closeButton><Modal.Title className="fs-15">Nueva Ciudad / Municipio en {activeDepto?.nombre}</Modal.Title></Modal.Header>
+          <Modal.Header closeButton closeLabel="Cerrar"><Modal.Title className="fs-15">Nueva Ciudad / Municipio en {activeDepto?.nombre}</Modal.Title></Modal.Header>
           <Modal.Body className="py-2">
             <Form.Group className="mb-2">
               <Form.Label className="fs-12 fw-semibold">Nombre Ciudad o Municipio *</Form.Label>
@@ -121,7 +121,7 @@ const GeoConfigTab = ({
 
       <Modal show={showModalDepto} onHide={() => setShowModalDepto(false)} centered>
         <Form onSubmit={handleSaveDepto}>
-          <Modal.Header closeButton><Modal.Title className="fs-15">Nuevo Departamento</Modal.Title></Modal.Header>
+          <Modal.Header closeButton closeLabel="Cerrar"><Modal.Title className="fs-15">Nuevo Departamento</Modal.Title></Modal.Header>
           <Modal.Body className="py-2">
             <Form.Group className="mb-2">
               <Form.Label className="fs-12 fw-semibold">Nombre Departamento *</Form.Label>

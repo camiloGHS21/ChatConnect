@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { Card, Row, Col, Form, Button } from 'react-bootstrap';
 import IconifyIcon from '@/components/wrappers/IconifyIcon';
 
@@ -22,7 +22,7 @@ const AttributesAssignedList = ({
   return (
     <div className="mb-4">
       <div className="mb-3">
-        <h5 className="card-title mb-1 fw-bold text-dark fs-15">Componentes y Opciones Disponibles</h5>
+        <h5 className="card-title mb-1 fw-bold text-body fs-15">Componentes y Opciones Disponibles</h5>
         <p className="text-muted fs-14 mb-0">
           Selecciona los componentes o valores de cada atributo para este producto
         </p>
@@ -39,14 +39,14 @@ const AttributesAssignedList = ({
 
           return (
             <Col lg={6} md={12} key={assigned.id_atributo}>
-              <Card className="border shadow-none rounded-3 bg-white h-100" style={{ borderColor: '#eef2f6' }}>
+              <Card className="border shadow-none rounded-3 bg-body h-100" style={{ borderColor: 'var(--bs-border-color)' }}>
                 <Card.Header
                   className="py-2.5 px-3 d-flex align-items-center justify-content-between"
-                  style={{ backgroundColor: '#f8fafc', borderBottom: '1px solid #eef2f6' }}
+                  style={{ backgroundColor: 'var(--bs-tertiary-bg)', borderBottom: '1px solid var(--bs-border-color)' }}
                 >
                   <div className="d-flex align-items-center">
                     <span className="badge bg-primary rounded-pill px-2 py-1 fs-11 me-2 fw-bold">#{idx + 1}</span>
-                    <span className="fw-bold text-dark fs-14">Atributo: {assigned.nombre}</span>
+                    <span className="fw-bold text-body fs-14">Atributo: {assigned.nombre}</span>
                   </div>
                   <div className="d-flex align-items-center">
                     <Form.Check
@@ -54,7 +54,7 @@ const AttributesAssignedList = ({
                       id={`switch-obligatorio-${assigned.id_atributo}`}
                       label="Obligatorio"
                       checked={assigned.obligatorio ?? true}
-                      onChange={(e) => onToggleObligatorio && onToggleObligatorio(assigned.id_atributo, e.target.checked)}
+                      onChange={(e) => onToggleObligatorio?.(assigned.id_atributo, e.target.checked)}
                       className="fs-12 fw-semibold text-secondary me-2 d-inline-flex align-items-center"
                     />
                     <Button
@@ -66,6 +66,7 @@ const AttributesAssignedList = ({
                         onConfirm: () => onRemoveAttribute(assigned.id_atributo)
                       }) : onRemoveAttribute(assigned.id_atributo)}
                       title="Eliminar atributo del producto"
+                                            aria-label="Eliminar atributo del producto"
                     >
                       <IconifyIcon icon="bx:x" className="fs-18 text-danger" />
                     </Button>
@@ -97,27 +98,33 @@ const AttributesAssignedList = ({
                           <div
                             key={comp.id_atributo_componente}
                             className={`p-2 px-3 rounded border d-inline-flex align-items-center gap-2 transition-all cursor-pointer ${
-                              isSelected ? 'bg-white border-primary shadow-sm' : 'bg-light border-light-subtle opacity-75'
+                              isSelected ? 'bg-body border-primary shadow-sm' : 'bg-body-tertiary border-light-subtle opacity-75'
                             }`}
                             style={{ userSelect: 'none' }}
-                            onClick={() => onToggleComponent(assigned.id_atributo, comp.id_atributo_componente)}
                           >
-                            <Form.Check
-                              type="checkbox"
-                              id={`comp_${assigned.id_atributo}_${comp.id_atributo_componente}`}
-                              checked={isSelected}
-                              onChange={() => {}}
-                              className="m-0"
-                            />
-                            <span className={`fs-13 ${isSelected ? 'fw-bold text-dark' : 'text-muted'}`}>
-                              {comp.nombre}
-                            </span>
+                            <label
+                              htmlFor={`comp_${assigned.id_atributo}_${comp.id_atributo_componente}`}
+                              className="d-inline-flex align-items-center gap-2 cursor-pointer mb-0"
+                            >
+                              <Form.Check.Input
+                                type="checkbox"
+                                id={`comp_${assigned.id_atributo}_${comp.id_atributo_componente}`}
+                                aria-label={`Seleccionar ${comp.nombre} para ${assigned.nombre}`}
+                                checked={isSelected}
+                                onChange={() => onToggleComponent(assigned.id_atributo, comp.id_atributo_componente)}
+                                className="m-0"
+                              />
+                              <span className={`fs-13 ${isSelected ? 'fw-bold text-body' : 'text-muted'}`}>
+                                {comp.nombre}
+                              </span>
+                            </label>
                             <div className="d-inline-flex align-items-center ms-1 gap-1 border-start ps-1">
                               <Button
                                 variant="link"
                                 size="sm"
                                 className="p-0 text-muted hover-text-primary border-0"
                                 title="Editar componente"
+                                                                aria-label={`Editar componente ${comp.nombre}`}
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   onOpenEditComponent(assigned.id_atributo, assigned.nombre, comp);
@@ -130,6 +137,7 @@ const AttributesAssignedList = ({
                                 size="sm"
                                 className="p-0 text-danger opacity-75 hover-opacity-100 border-0"
                                 title="Eliminar componente"
+                                                                aria-label={`Eliminar componente ${comp.nombre}`}
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   onDeleteComponent(assigned.id_atributo, comp.id_atributo_componente);

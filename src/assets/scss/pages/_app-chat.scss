@@ -217,3 +217,11 @@
 .chat-setting-height {
     max-height: calc(100vh - 428px);
 }
+
+.chat-messages {
+    background-color: #efeae2;
+}
+
+[data-bs-theme='dark'] .chat-messages {
+    background-color: var(--#{$prefix}body-bg);
+}

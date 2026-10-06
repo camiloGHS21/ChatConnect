@@ -1,0 +1,163 @@
+.product-quill-wrapper .ql-toolbar.ql-snow {
+  background-color: var(--bs-tertiary-bg);
+  border-color: var(--bs-border-color);
+  color: var(--bs-body-color);
+}
+
+.product-quill-wrapper .ql-container.ql-snow {
+  background-color: var(--bs-body-bg);
+  border-color: var(--bs-border-color);
+  color: var(--bs-body-color);
+}
+
+.product-quill-wrapper .ql-editor.ql-blank::before {
+  color: var(--bs-secondary-color);
+}
+
+.product-quill-wrapper .ql-toolbar.ql-snow button,
+.product-quill-wrapper .ql-toolbar.ql-snow .ql-picker,
+.product-quill-wrapper .ql-toolbar.ql-snow .ql-picker-label,
+.product-quill-wrapper .ql-toolbar.ql-snow .ql-picker-item {
+  color: var(--bs-body-color);
+}
+
+/* Only theme control icons, not the document or the selected color indicator. */
+.product-quill-wrapper .ql-toolbar.ql-snow button .ql-stroke:not(.ql-color-label),
+.product-quill-wrapper .ql-toolbar.ql-snow .ql-picker-label .ql-stroke:not(.ql-color-label) {
+  stroke: currentColor;
+}
+
+.product-quill-wrapper .ql-toolbar.ql-snow button .ql-fill:not(.ql-color-label),
+.product-quill-wrapper .ql-toolbar.ql-snow .ql-picker-label .ql-fill:not(.ql-color-label) {
+  fill: currentColor;
+}
+
+.product-quill-wrapper .ql-toolbar.ql-snow button:hover,
+.product-quill-wrapper .ql-toolbar.ql-snow button:focus,
+.product-quill-wrapper .ql-toolbar.ql-snow button.ql-active,
+.product-quill-wrapper .ql-toolbar.ql-snow .ql-picker-label:hover,
+.product-quill-wrapper .ql-toolbar.ql-snow .ql-picker-label.ql-active,
+.product-quill-wrapper .ql-toolbar.ql-snow .ql-picker-item:hover,
+.product-quill-wrapper .ql-toolbar.ql-snow .ql-picker-item.ql-selected {
+  color: var(--bs-primary-text-emphasis);
+}
+
+.product-quill-wrapper .ql-toolbar.ql-snow button:is(:hover, :focus, .ql-active) .ql-stroke:not(.ql-color-label),
+.product-quill-wrapper .ql-toolbar.ql-snow .ql-picker-label:is(:hover, .ql-active) .ql-stroke:not(.ql-color-label) {
+  stroke: currentColor;
+}
+
+.product-quill-wrapper .ql-toolbar.ql-snow button:is(:hover, :focus, .ql-active) .ql-fill:not(.ql-color-label),
+.product-quill-wrapper .ql-toolbar.ql-snow .ql-picker-label:is(:hover, .ql-active) .ql-fill:not(.ql-color-label) {
+  fill: currentColor;
+}
+
+/* Override the existing editor plugin's important border rule only here. */
+.product-quill-wrapper .ql-toolbar.ql-snow .ql-picker-options {
+  background-color: var(--bs-body-bg);
+  border-color: var(--bs-border-color) !important;
+  box-shadow: 0 2px 8px rgba(var(--bs-emphasis-color-rgb), 0.15);
+}
+
+.product-quill-wrapper .ql-toolbar.ql-snow .ql-picker.ql-expanded .ql-picker-label {
+  color: var(--bs-body-color);
+  border-color: var(--bs-border-color);
+}
+
+.product-quill-wrapper .ql-toolbar.ql-snow .ql-picker.ql-expanded .ql-picker-label .ql-stroke:not(.ql-color-label) {
+  stroke: currentColor;
+}
+
+.product-quill-wrapper .ql-toolbar.ql-snow .ql-picker.ql-expanded .ql-picker-label .ql-fill:not(.ql-color-label) {
+  fill: currentColor;
+}
+
+/* The editor plugin forces hover colors on spans with !important. */
+.product-quill-wrapper .ql-toolbar.ql-snow .ql-picker-label:hover,
+.product-quill-wrapper .ql-toolbar.ql-snow .ql-picker-item:hover {
+  color: var(--bs-primary-text-emphasis) !important;
+}
+
+.product-quill-wrapper .ql-toolbar.ql-snow .ql-color-picker .ql-picker-item:hover,
+.product-quill-wrapper .ql-toolbar.ql-snow .ql-color-picker .ql-picker-item.ql-selected {
+  border-color: var(--bs-emphasis-color);
+}
+
+.product-quill-wrapper .ql-snow .ql-tooltip {
+  background-color: var(--bs-body-bg);
+  border-color: var(--bs-border-color);
+  color: var(--bs-body-color);
+  box-shadow: 0 2px 8px rgba(var(--bs-emphasis-color-rgb), 0.15);
+}
+
+.product-quill-wrapper .ql-snow .ql-tooltip input[type='text'] {
+  background-color: var(--bs-body-bg);
+  border-color: var(--bs-border-color);
+  color: var(--bs-body-color);
+}
+
+.product-quill-wrapper .ql-snow .ql-tooltip input[type='text']::placeholder {
+  color: var(--bs-secondary-color);
+}
+
+.product-quill-wrapper .ql-snow .ql-tooltip a {
+  color: var(--bs-link-color);
+}
+
+.product-quill-wrapper .ql-snow .ql-tooltip a:hover {
+  color: var(--bs-link-hover-color);
+}
+
+.product-quill-wrapper .ql-snow .ql-tooltip a.ql-action::after {
+  border-right-color: var(--bs-border-color);
+}
+
+.product-quill-wrapper .ql-container.ql-snow:focus-within,
+.product-quill-wrapper .ql-snow .ql-tooltip input[type='text']:focus {
+  border-color: var(--bs-primary);
+  box-shadow: 0 0 0 0.2rem rgba(var(--bs-primary-rgb), 0.25);
+}
+
+/* Quill genera estos textos con pseudoelementos; no forman parte del documento. */
+.product-quill-wrapper .ql-snow .ql-picker.ql-header {
+  width: 145px;
+}
+
+.product-quill-wrapper .ql-snow .ql-picker.ql-header .ql-picker-label::before,
+.product-quill-wrapper .ql-snow .ql-picker.ql-header .ql-picker-item::before {
+  content: 'Texto normal';
+}
+
+.product-quill-wrapper .ql-snow .ql-picker.ql-header [data-value='1']::before { content: 'Encabezado 1'; }
+.product-quill-wrapper .ql-snow .ql-picker.ql-header [data-value='2']::before { content: 'Encabezado 2'; }
+.product-quill-wrapper .ql-snow .ql-picker.ql-header [data-value='3']::before { content: 'Encabezado 3'; }
+.product-quill-wrapper .ql-snow .ql-picker.ql-header [data-value='4']::before { content: 'Encabezado 4'; }
+.product-quill-wrapper .ql-snow .ql-picker.ql-header [data-value='5']::before { content: 'Encabezado 5'; }
+.product-quill-wrapper .ql-snow .ql-picker.ql-header [data-value='6']::before { content: 'Encabezado 6'; }
+
+.product-quill-wrapper .ql-snow .ql-picker.ql-font .ql-picker-label::before,
+.product-quill-wrapper .ql-snow .ql-picker.ql-font .ql-picker-item::before { content: 'Sin remates'; }
+.product-quill-wrapper .ql-snow .ql-picker.ql-font [data-value='serif']::before { content: 'Con remates'; }
+.product-quill-wrapper .ql-snow .ql-picker.ql-font [data-value='monospace']::before { content: 'Monoespaciada'; }
+.product-quill-wrapper .ql-snow .ql-picker.ql-size .ql-picker-label::before,
+.product-quill-wrapper .ql-snow .ql-picker.ql-size .ql-picker-item::before { content: 'Normal'; }
+.product-quill-wrapper .ql-snow .ql-picker.ql-size [data-value='small']::before { content: 'Pequeño'; }
+.product-quill-wrapper .ql-snow .ql-picker.ql-size [data-value='large']::before { content: 'Grande'; }
+.product-quill-wrapper .ql-snow .ql-picker.ql-size [data-value='huge']::before { content: 'Muy grande'; }
+
+.product-quill-wrapper .ql-snow .ql-tooltip::before { content: 'Visitar URL:'; }
+.product-quill-wrapper .ql-snow .ql-tooltip a.ql-action::after { content: 'Editar'; }
+.product-quill-wrapper .ql-snow .ql-tooltip a.ql-remove::before { content: 'Eliminar'; }
+.product-quill-wrapper .ql-snow .ql-tooltip.ql-editing a.ql-action::after { content: 'Guardar'; }
+.product-quill-wrapper .ql-snow .ql-tooltip[data-mode='link']::before { content: 'Introducir enlace:'; }
+.product-quill-wrapper .ql-snow .ql-tooltip[data-mode='formula']::before { content: 'Introducir fórmula:'; }
+.product-quill-wrapper .ql-snow .ql-tooltip[data-mode='video']::before { content: 'Introducir vídeo:'; }
+
+.product-quill-wrapper .ql-toolbar.ql-snow button:focus-visible,
+.product-quill-wrapper .ql-toolbar.ql-snow .ql-picker-label:focus-visible,
+.product-quill-wrapper .ql-toolbar.ql-snow .ql-picker-item:focus-visible,
+.product-quill-wrapper .ql-snow .ql-tooltip a:focus-visible {
+  /* Restore focus outlines suppressed by the editor plugin's span rule. */
+  outline: 2px solid var(--bs-primary) !important;
+  outline-offset: 2px;
+}

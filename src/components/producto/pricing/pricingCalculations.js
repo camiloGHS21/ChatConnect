@@ -95,7 +95,7 @@ export const syncFinancials = (costoBase, precioBase, taxesCompra = [], taxesVen
 };
 
 export const calcPriceListByBase = (pBase, cBase, taxPercent = 19) => {
-  if (pBase === '' || isNaN(parseFloat(pBase))) {
+  if (pBase === '' || Number.isNaN(parseFloat(pBase))) {
     return { precio_base: pBase, utilidad_porcentaje: '', precio_venta: '' };
   }
   const base = parseFloat(pBase);
@@ -110,7 +110,7 @@ export const calcPriceListByBase = (pBase, cBase, taxPercent = 19) => {
 };
 
 export const calcPriceListByUtilidad = (utilPorc, cBase, currentBase, taxPercent = 19) => {
-  if (utilPorc === '' || isNaN(parseFloat(utilPorc))) {
+  if (utilPorc === '' || Number.isNaN(parseFloat(utilPorc))) {
     return { utilidad_porcentaje: utilPorc };
   }
   const util = parseFloat(utilPorc);
@@ -125,7 +125,7 @@ export const calcPriceListByUtilidad = (utilPorc, cBase, currentBase, taxPercent
 };
 
 export const calcPriceListByVenta = (pVenta, cBase, taxPercent = 19) => {
-  if (pVenta === '' || isNaN(parseFloat(pVenta))) {
+  if (pVenta === '' || Number.isNaN(parseFloat(pVenta))) {
     return { precio_venta: pVenta, precio_base: '', utilidad_porcentaje: '' };
   }
   const venta = parseFloat(pVenta);

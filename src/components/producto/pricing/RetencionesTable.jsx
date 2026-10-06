@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { Table, Badge, Button } from 'react-bootstrap';
 import IconifyIcon from '@/components/wrappers/IconifyIcon';
 
@@ -18,7 +18,7 @@ const RetencionesTable = ({ retenciones = [], onRemove, triggerDeleteConfirm }) 
   return (
     <div className="table-responsive border rounded mb-2">
       <Table hover className="table-sm align-middle mb-0">
-        <thead className="table-light">
+        <thead style={{ '--bs-table-bg': 'var(--bs-tertiary-bg)', '--bs-table-color': 'var(--bs-body-color)' }}>
           <tr>
             <th>Retención</th>
             <th>Tipo</th>
@@ -38,13 +38,13 @@ const RetencionesTable = ({ retenciones = [], onRemove, triggerDeleteConfirm }) 
           ) : (
             retenciones.map(item => (
               <tr key={item.id}>
-                <td className="fw-semibold text-dark">{item.nombre_retencion}</td>
+                <td className="fw-semibold text-body-emphasis">{item.nombre_retencion}</td>
                 <td>
                   <Badge
                     bg={item.tipo === 'PORCENTAJE' ? 'primary-subtle' : 'warning-subtle'}
                     className={item.tipo === 'PORCENTAJE' ? 'text-primary' : 'text-warning'}
                   >
-                    {item.tipo}
+                    {item.tipo === 'VALOR_FIJO' ? 'Valor fijo' : 'Porcentaje'}
                   </Badge>
                 </td>
                 <td>{item.porcentaje ? `${item.porcentaje}%` : '-'}</td>
@@ -56,7 +56,9 @@ const RetencionesTable = ({ retenciones = [], onRemove, triggerDeleteConfirm }) 
                   <Button
                     variant="link"
                     className="text-danger p-0"
-                    onClick={() => handleDelete(item)}
+                    aria-label={`Eliminar retención ${item.nombre_retencion}`}
+                                        title="Eliminar retención"
+                                        onClick={() => handleDelete(item)}
                   >
                     <IconifyIcon icon="bx:trash" className="fs-16" />
                   </Button>

@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { Card, Badge, Row, Col, Form } from 'react-bootstrap';
 import IconifyIcon from '@/components/wrappers/IconifyIcon';
 import StatusRadioCard from './StatusRadioCard';
@@ -21,7 +21,7 @@ const GeneralStatusCard = ({ formData, updateField }) => {
       `}</style>
 
       <Card.Header className="bg-transparent border-bottom py-2 d-flex align-items-center justify-content-between">
-        <h6 className="mb-0 fw-bold text-dark d-flex align-items-center fs-14">
+        <h6 className="mb-0 fw-bold text-body d-flex align-items-center fs-14">
           <IconifyIcon icon="bx:check-shield" className="me-2 text-success fs-18" />
           Estado y Visibilidad del Producto
         </h6>

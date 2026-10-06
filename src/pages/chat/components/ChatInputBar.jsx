@@ -19,7 +19,7 @@ const ChatInputBar = ({
   ];
 
   return (
-    <div className="p-3 bg-white border-top">
+    <div className="p-3 bg-body border-top">
       {/* Sugerencias Rápidas y Botón de Catálogo */}
       <div className="d-flex align-items-center gap-2 mb-2 overflow-auto pb-1">
         <Button
@@ -34,12 +34,12 @@ const ChatInputBar = ({
         </Button>
 
         <span className="fs-11 text-muted text-nowrap ms-1">Respuestas:</span>
-        {quickTemplates.map((t, idx) => (
+        {quickTemplates.map((t) => (
           <Button
-            key={idx}
-            variant="outline-light"
+            key={t.label}
+            variant="outline-secondary"
             size="sm"
-            className="text-dark fs-11 text-nowrap py-0 px-2"
+            className="fs-11 text-nowrap py-0 px-2"
             onClick={() => setInputText(t.text)}
             disabled={isBloqueadoPorVentana}
           >
@@ -52,12 +52,12 @@ const ChatInputBar = ({
       <Form onSubmit={onSendMessage}>
         <InputGroup>
           <Button
-            variant="light"
+            variant="outline-success"
             type="button"
             title="Enviar Producto o Categorías"
             onClick={onOpenSendCollection}
             disabled={isBloqueadoPorVentana}
-            className="text-success border-end-0"
+            className="border-end-0"
           >
             <IconifyIcon icon="bx:package" className="fs-18" />
           </Button>

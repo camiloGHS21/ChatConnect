@@ -50,7 +50,7 @@ const WizardNavigation = ({
 
       <div className="text-muted fs-13 d-none d-sm-block">
         Paso <strong>{activeStep}</strong> de <strong>{totalSteps}</strong>:{' '}
-        <span className="text-dark fw-semibold">{stepName}</span>
+        <span className="text-body-emphasis fw-semibold">{stepName}</span>
       </div>
 
       <div className="next">

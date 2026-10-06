@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import GeneralInfoCard from '@/components/producto/general/GeneralInfoCard';
 import GeneralDescriptionCard from '@/components/producto/general/GeneralDescriptionCard';
 import GeneralStatusCard from '@/components/producto/general/GeneralStatusCard';

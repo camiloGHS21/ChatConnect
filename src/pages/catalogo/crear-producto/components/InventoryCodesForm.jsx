@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Row, Col } from 'react-bootstrap';
 import InventarioConfigCard from '@/components/producto/inventory/InventarioConfigCard';
 import CodigosBarrasCard from '@/components/producto/inventory/CodigosBarrasCard';

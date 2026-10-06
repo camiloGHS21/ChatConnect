@@ -18,7 +18,7 @@ const ActivityStreamToggle = () => {
   };
   return <>
       <div className="topbar-item d-none d-md-flex">
-        <button onClick={toggleActivityStreamOffcanvas} className="topbar-button">
+        <button type="button" onClick={toggleActivityStreamOffcanvas} className="topbar-button" aria-label="Ver actividad reciente">
           <IconifyIcon icon="iconamoon:history-duotone" className="fs-24 align-middle" />
         </button>
       </div>

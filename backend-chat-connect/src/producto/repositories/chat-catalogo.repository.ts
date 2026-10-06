@@ -171,6 +171,9 @@ export class ChatCatalogoRepository {
       }
 
       const wamid = sendData.messages?.[0]?.id;
+      if (typeof wamid !== 'string' || !wamid.trim()) {
+        throw new BadRequestException('Meta no devolvió un identificador válido de mensaje; no se puede guardar.');
+      }
 
       let convId = dto.conversacionId;
       if (!convId) {
@@ -186,8 +189,8 @@ export class ChatCatalogoRepository {
 
       if (convId) {
         await this.dataSource.query(
-          `INSERT INTO public.mensaje (empresa_id, conversacion_id, direccion, tipo, contenido, metadata, created_at)
-           VALUES ($1, $2, 'outbound', 'interactive', $3, $4, NOW());`,
+          `INSERT INTO public.mensaje (empresa_id, conversacion_id, direccion, tipo, contenido, metadata, external_message_id, created_at)
+           VALUES ($1, $2, 'outbound', 'interactive', $3, $4, $5, NOW());`,
           [
             empresaId,
             convId,
@@ -199,6 +202,7 @@ export class ChatCatalogoRepository {
               nombre_coleccion: dto.nombreColeccion,
               productos_count: productosEnviadosCount,
             }),
+            wamid,
           ],
         );
 
@@ -281,16 +285,20 @@ export class ChatCatalogoRepository {
     if (!res.ok) throw new BadRequestException(`Error de Meta al enviar producto: ${data.error?.message || JSON.stringify(data)}`);
 
     const wamid = data.messages?.[0]?.id;
+    if (typeof wamid !== 'string' || !wamid.trim()) {
+      throw new BadRequestException('Meta no devolvió un identificador válido de mensaje; no se puede guardar.');
+    }
 
     const insertRes = await this.dataSource.query(
-      `INSERT INTO public.mensaje (empresa_id, conversacion_id, direccion, tipo, contenido, metadata, created_at)
-       VALUES ($1, $2, 'outbound', 'interactive', $3, $4, NOW())
+      `INSERT INTO public.mensaje (empresa_id, conversacion_id, direccion, tipo, contenido, metadata, external_message_id, created_at)
+       VALUES ($1, $2, 'outbound', 'interactive', $3, $4, $5, NOW())
        RETURNING id_mensaje, created_at;`,
       [
         empresaId,
         conversacionId,
         `📦 Producto enviado: ${prod.nombre} (${prod.codigo_interno}) - $${Number(prod.precio).toLocaleString('es-CO')}`,
         JSON.stringify({ wamid, tipo_interactivo: 'product', producto_id: prod.id_producto, codigo_interno: prod.codigo_interno, nombre: prod.nombre }),
+        wamid,
       ],
     );
 
@@ -385,17 +393,21 @@ export class ChatCatalogoRepository {
     if (!res.ok) throw new BadRequestException(`Error de Meta al enviar catálogo: ${data.error?.message || JSON.stringify(data)}`);
 
     const wamid = data.messages?.[0]?.id;
+    if (typeof wamid !== 'string' || !wamid.trim()) {
+      throw new BadRequestException('Meta no devolvió un identificador válido de mensaje; no se puede guardar.');
+    }
     const catNombres = Array.from(sectionsMap.keys()).join(', ');
 
     const insertRes = await this.dataSource.query(
-      `INSERT INTO public.mensaje (empresa_id, conversacion_id, direccion, tipo, contenido, metadata, created_at)
-       VALUES ($1, $2, 'outbound', 'interactive', $3, $4, NOW())
+      `INSERT INTO public.mensaje (empresa_id, conversacion_id, direccion, tipo, contenido, metadata, external_message_id, created_at)
+       VALUES ($1, $2, 'outbound', 'interactive', $3, $4, $5, NOW())
        RETURNING id_mensaje, created_at;`,
       [
         empresaId,
         conversacionId,
         `📦 Catálogo enviado (${sections.length} categorías: ${catNombres} - ${totalItems} productos)`,
         JSON.stringify({ wamid, tipo_interactivo: 'product_list', secciones: sections.length, categorias: catNombres, total_productos: totalItems }),
+        wamid,
       ],
     );
 

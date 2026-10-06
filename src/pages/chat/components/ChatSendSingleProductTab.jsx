@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Form, Row, Col, Badge } from 'react-bootstrap';
+import { Form } from 'react-bootstrap';
 import IconifyIcon from '@/components/wrappers/IconifyIcon';
 
 const ChatSendSingleProductTab = ({
@@ -44,13 +44,14 @@ const ChatSendSingleProductTab = ({
             return (
               <div
                 key={p.codigo_interno}
-                onClick={() => !disabled && onSelectSku(p.codigo_interno)}
-                className={`d-flex align-items-center gap-2 p-2 rounded mb-1 cursor-pointer transition-all ${
+                className={`position-relative d-flex align-items-center gap-2 p-2 rounded mb-1 cursor-pointer transition-all ${
                   isSelected ? 'bg-success-subtle border border-success' : 'hover-bg-light border-bottom'
                 }`}
                 style={{ cursor: disabled ? 'not-allowed' : 'pointer' }}
               >
+                <label htmlFor={`catalogo-producto-${p.codigo_interno}`} className="stretched-link"><span className="visually-hidden">{p.nombre}</span></label>
                 <Form.Check
+                  id={`catalogo-producto-${p.codigo_interno}`}
                   type="radio"
                   name="selProd"
                   checked={isSelected}
@@ -61,13 +62,13 @@ const ChatSendSingleProductTab = ({
                 {p.imagen_principal ? (
                   <img src={p.imagen_principal} alt={p.nombre} width={36} height={36} className="rounded object-fit-cover border" />
                 ) : (
-                  <div className="avatar-xs rounded bg-light border d-flex align-items-center justify-content-center text-muted">
+                  <div className="avatar-xs rounded bg-body-tertiary border d-flex align-items-center justify-content-center text-muted">
                     <IconifyIcon icon="bx:package" />
                   </div>
                 )}
                 <div className="flex-grow-1 overflow-hidden">
                   <div className="d-flex justify-content-between align-items-center">
-                    <span className="fw-semibold text-dark fs-12 text-truncate">{p.nombre}</span>
+                    <span className="fw-semibold text-body fs-12 text-truncate">{p.nombre}</span>
                     <span className="text-success fw-bold fs-11">${Number(p.precio).toLocaleString('es-CO')}</span>
                   </div>
                   <div className="d-flex align-items-center gap-2 text-muted fs-10">
@@ -75,7 +76,7 @@ const ChatSendSingleProductTab = ({
                     <span>•</span>
                     <span>{p.categoria_nombre}</span>
                     <span>•</span>
-                    <span>Stock: {p.disponible}</span>
+                    <span>Existencias: {p.disponible}</span>
                   </div>
                 </div>
               </div>

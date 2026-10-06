@@ -85,8 +85,8 @@ const SessionsByCountry = () => {
           <Col lg={5} className="p-3">
             <h6 className="fw-semibold text-dark mb-3">Zonas con Mayor Demanda WhatsApp</h6>
             <div className="d-flex flex-column gap-3">
-              {zonasEntrega.map((zona, idx) => (
-                <div key={idx}>
+              {zonasEntrega.map((zona) => (
+                <div key={zona.name}>
                   <div className="d-flex justify-content-between align-items-center mb-1 fs-12">
                     <span className="fw-medium text-dark d-flex align-items-center gap-1">
                       <IconifyIcon icon={zona.icon} className={`text-${zona.variant} fs-14`} />

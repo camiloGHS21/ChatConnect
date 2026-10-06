@@ -1,4 +1,3 @@
-import React from 'react';
 import { Card, CardBody, Button, Row, Col, Badge } from 'react-bootstrap';
 import { useAuthContext } from '@/context/useAuthContext';
 
@@ -32,7 +31,7 @@ const DashboardView = () => {
             <CardBody>
               <div className="text-muted mb-1 small text-uppercase fw-semibold">Estado de Sesión</div>
               <h4 className="fw-bold text-success mb-2">Activa (JWT)</h4>
-              <p className="text-muted small mb-0">Autenticado vía NestJS Backend MVC</p>
+              <p className="text-muted small mb-0">Autenticado mediante el servidor NestJS MVC</p>
             </CardBody>
           </Card>
         </Col>

@@ -25,16 +25,16 @@ const ChatSidebar = ({
   );
 
   return (
-    <div className="d-flex flex-column h-100 bg-white">
+    <div className="d-flex flex-column h-100 bg-body">
       {/* Cabecera del Canal de WhatsApp */}
-      <div className="p-3 border-bottom bg-light">
+      <div className="p-3 border-bottom bg-body-tertiary">
         <div className="d-flex justify-content-between align-items-center mb-2">
           <div className="d-flex align-items-center gap-2">
             <div className="avatar-xs rounded-circle bg-success text-white d-flex align-items-center justify-content-center p-2">
               <IconifyIcon icon="bxl:whatsapp" className="fs-18" />
             </div>
             <div>
-              <h6 className="fw-bold mb-0 text-dark fs-13">{channelInfo.name}</h6>
+              <h6 className="fw-bold mb-0 text-body-emphasis fs-13">{channelInfo.name}</h6>
               <span className="fs-11 text-muted">{channelInfo.whatsapp}</span>
             </div>
           </div>
@@ -67,15 +67,17 @@ const ChatSidebar = ({
             const isIA = conv.modo === 'ia';
 
             return (
-              <div
+              <button
+                type="button"
+                aria-pressed={isActive}
                 key={conv.id}
                 onClick={() => onSelectChat(conv.id)}
-                className={`d-flex align-items-center gap-3 p-3 border-bottom cursor-pointer transition-all ${
+                className={`w-100 text-start border-top-0 border-end-0 text-body d-flex align-items-center gap-3 p-3 border-bottom cursor-pointer transition-all ${
                   isActive
                     ? 'bg-primary-subtle border-start border-3 border-primary'
-                    : 'hover-bg-light'
+                    : 'border-start-0 bg-transparent hover-bg-light'
                 }`}
-                style={{ cursor: 'pointer' }}
+                style={{ cursor: 'pointer', borderRadius: 0, fontFamily: 'inherit', fontSize: 'inherit' }}
               >
                 <div className="position-relative">
                   <img
@@ -96,7 +98,7 @@ const ChatSidebar = ({
 
                 <div className="flex-grow-1 overflow-hidden">
                   <div className="d-flex justify-content-between align-items-center mb-1">
-                    <span className="fw-semibold text-dark fs-13 text-truncate">
+                    <span className="fw-semibold text-body-emphasis fs-13 text-truncate">
                       {conv.nombre}
                     </span>
                     <span className="text-muted fs-10">{conv.hora}</span>
@@ -117,7 +119,7 @@ const ChatSidebar = ({
                     </Badge>
                   </div>
                 </div>
-              </div>
+              </button>
             );
           })
         )}

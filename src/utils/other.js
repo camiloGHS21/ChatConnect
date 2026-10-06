@@ -1,14 +1,14 @@
 export const getStockStatus = quantity => {
   let stockStatus = {
     variant: 'success',
-    text: 'In Stock'
+    text: 'Disponible'
   };
   if (quantity < 1) stockStatus = {
     variant: 'danger',
-    text: 'Out of Stock'
+    text: 'Agotado'
   };else if (quantity < 11) stockStatus = {
     variant: 'primary',
-    text: 'Limited'
+    text: 'Existencias limitadas'
   };
   return stockStatus;
 };

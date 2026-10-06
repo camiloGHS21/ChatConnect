@@ -5,7 +5,7 @@ const BaseVectorMap = ({
   options,
   type
 }) => {
-  const selectorId = type + new Date().getTime();
+  const [selectorId] = useState(() => type + Date.now());
   const [map, setMap] = useState();
   useEffect(() => {
     if (!map) {
@@ -13,16 +13,21 @@ const BaseVectorMap = ({
       const map = new window['jsVectorMap']({
         selector: '#' + selectorId,
         map: type,
+        onRegionTooltipShow: (tooltip, code) => {
+          if (type === 'world' && /^[A-Z]{2}$/.test(code)) {
+            tooltip.text(new Intl.DisplayNames(['es'], { type: 'region' }).of(code));
+          }
+        },
         ...options
       });
       setMap(map);
     }
   }, [selectorId, map, options, type]);
   return <>
-      <div id={selectorId} style={{
+      <section id={selectorId} aria-label="Mapa interactivo" style={{
       width: width,
       height: height
-    }}></div>
+    }}></section>
     </>;
 };
 export default BaseVectorMap;
