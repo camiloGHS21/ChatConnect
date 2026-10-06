@@ -25,7 +25,7 @@ const SessionsByCountry = () => {
       <CardHeader className="d-flex justify-content-between align-items-center border-bottom border-dashed bg-transparent">
         <div>
           <CardTitle as="h5" className="fw-bold mb-1">
-            Pedidos Recientes WhatsApp & Cobertura de Entregas
+            Pedidos Recientes WhatsApp y Cobertura de Entregas
           </CardTitle>
           <p className="text-muted fs-12 mb-0">
             Órdenes confirmadas vía Meta Cloud API en Bogotá y Sabana

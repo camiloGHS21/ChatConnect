@@ -134,7 +134,7 @@ const InventarioPage = () => {
             <Table hover className="table-centered align-middle mb-0">
               <thead className="table-light">
                 <tr className="fs-12 text-muted">
-                  <th>Producto & SKU</th>
+                  <th>Producto y SKU</th>
                   <th>Categoría</th>
                   <th>Existencia Física</th>
                   <th>Reservado (WhatsApp)</th>

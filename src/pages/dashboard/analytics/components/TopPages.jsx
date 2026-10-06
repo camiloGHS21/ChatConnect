@@ -22,7 +22,7 @@ const TopPages = () => {
         <Table hover className="table-nowrap table-centered m-0 align-middle">
           <thead className="table-light">
             <tr className="fs-12 text-muted">
-              <th>Producto & SKU</th>
+              <th>Producto y SKU</th>
               <th>Categoría</th>
               <th>Precio Unitario</th>
               <th>Consultas IA</th>

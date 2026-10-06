@@ -170,7 +170,7 @@ const Conversions = () => {
             <div className="p-3">
               <div className="d-flex justify-content-between align-items-center mb-2">
                 <CardTitle as={'h5'} className="fw-bold mb-0">
-                  Flujo de Mensajes & Pedidos WhatsApp
+                  Flujo de Mensajes y Pedidos WhatsApp
                 </CardTitle>
                 <span className="badge bg-success-subtle text-success px-2 py-1 rounded-pill">
                   Meta Cloud API Conectado

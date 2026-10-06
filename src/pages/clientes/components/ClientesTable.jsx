@@ -11,7 +11,7 @@ const ClientesTable = ({ clientes = [], onOpenDetail }) => {
             <th>Cliente</th>
             <th>WhatsApp</th>
             <th>Documento</th>
-            <th>Ubicación & Coordenadas</th>
+            <th>Ubicación y Coordenadas</th>
             <th>Total Pedidos</th>
             <th>Volumen de Compras</th>
             <th className="text-end">Acciones</th>

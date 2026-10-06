@@ -82,7 +82,7 @@ const CatalogoPage = () => {
         title={isSeeding ? 'Sincronizando...' : isDeletingAll ? 'Vaciando...' : 'Procesando...'}
         message={isSeeding ? 'Cargando productos de demostración en PostgreSQL y Meta...' : ''} badge="PostgreSQL" />
       <PageMetaData title="Productos - Catálogo" />
-      <PageBreadcrumb title="Catálogo de Productos" subName="Meta Commerce & WhatsApp" />
+      <PageBreadcrumb title="Catálogo de Productos" subName="Meta Commerce y WhatsApp" />
 
       <Row><Col><Card><CardBody>
         <WhatsAppCatalogInfoBanner />

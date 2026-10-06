@@ -29,7 +29,7 @@ const ClienteDetailModal = ({ show, onHide, client, orders = [] }) => {
             </div>
           </Col>
           <Col xs={12}>
-            <small className="text-muted">Dirección & Ciudad</small>
+            <small className="text-muted">Dirección y Ciudad</small>
             <div className="fw-medium">
               {client.direccion} ({client.ciudad || 'No especificada'})
             </div>

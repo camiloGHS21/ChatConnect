@@ -60,9 +60,9 @@ const PedidosTable = ({
             <thead className="table-light fs-12 text-muted">
               <tr>
                 <th>N° Pedido</th>
-                <th>Cliente & Contacto</th>
+                <th>Cliente y Contacto</th>
                 <th>Fecha</th>
-                <th>Modalidad & Destino</th>
+                <th>Modalidad y Destino</th>
                 <th>Total COP</th>
                 <th>Estado</th>
                 <th className="text-end">Acciones</th>
