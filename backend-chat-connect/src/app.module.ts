@@ -3,6 +3,8 @@ import { DatabaseModule } from './database/database.module.js';
 import { LoginModule } from './login/login.module.js';
 import { ProductoModule } from './producto/producto.module.js';
 import { PedidoModule } from './pedido/pedido.module.js';
+import { ClienteModule } from './cliente/cliente.module.js';
+import { InventarioModule } from './inventario/inventario.module.js';
 
 @Module({
   imports: [
@@ -10,6 +12,8 @@ import { PedidoModule } from './pedido/pedido.module.js';
     LoginModule,
     ProductoModule,
     PedidoModule,
+    ClienteModule,
+    InventarioModule,
   ],
 })
 export class AppModule {}
