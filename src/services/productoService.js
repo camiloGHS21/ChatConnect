@@ -311,6 +311,16 @@ export const productoService = {
   },
 
   /**
+   * Obtiene o inicia una conversación para un cliente en PostgreSQL.
+   */
+  async obtenerOCrearConversacion(clienteId, empresaId = 1) {
+    const res = await HttpClient.post(`/productos/chat/conversaciones/obtener-o-crear?empresa_id=${empresaId}`, {
+      cliente_id: Number(clienteId),
+    });
+    return res.data;
+  },
+
+  /**
    * Obtiene los mensajes de una conversación desde PostgreSQL.
    */
   async getMensajesConversacion(id, empresaId = 1) {

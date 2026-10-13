@@ -2,6 +2,7 @@ import {
   Injectable,
   Logger,
   BadRequestException,
+  NotFoundException,
   InternalServerErrorException,
 } from '@nestjs/common';
 import { DataSource } from 'typeorm';
@@ -90,7 +91,7 @@ export class ChatWhatsappRepository {
               ORDER BY id_mensaje DESC
               LIMIT 1
             ) m_in ON true
-            WHERE c.empresa_id = $1 AND COALESCE(TRIM(t.whatsapp), '') != ''
+            WHERE c.empresa_id = $1
             ORDER BY c.tercero_id, c.fecha_ultima_interaccion DESC NULLS LAST, c.id_conversacion DESC
          ) sub
          ORDER BY sub.fecha_ultima_interaccion DESC NULLS LAST, sub.id DESC;`,
@@ -139,6 +140,94 @@ export class ChatWhatsappRepository {
     } catch (err: any) {
       this.logger.error(`[Chat] Error al consultar conversaciones: ${err.message}`);
       throw new InternalServerErrorException('Error al consultar conversaciones de chat');
+    }
+  }
+
+  /**
+   * Obtiene o inicia una conversación para un cliente en PostgreSQL.
+   */
+  async obtenerOCrearConversacion(terceroId: number, empresaId = 1) {
+    try {
+      // 1. Verificar si ya existe conversación para este tercero
+      const existing = await this.dataSource.query(
+        `SELECT c.id_conversacion AS id
+         FROM public.conversacion c
+         WHERE c.tercero_id = $1 AND c.empresa_id = $2
+         ORDER BY c.fecha_ultima_interaccion DESC NULLS LAST, c.id_conversacion DESC
+         LIMIT 1;`,
+        [terceroId, empresaId],
+      );
+
+      if (existing.length > 0) {
+        const convId = Number(existing[0].id);
+        const all = await this.getConversacionesChat(empresaId);
+        const found = all.find((c: any) => c.id === convId);
+        if (found) return found;
+      }
+
+      // 2. Obtener datos del tercero
+      const terceroRows = await this.dataSource.query(
+        `SELECT id_tercero, nombre, apellido, razon_social, whatsapp, telefono
+         FROM public.tercero
+         WHERE id_tercero = $1 AND empresa_id = $2;`,
+        [terceroId, empresaId],
+      );
+      const tercero = terceroRows[0];
+      if (!tercero) {
+        throw new NotFoundException('Cliente no encontrado en la base de datos');
+      }
+
+      // 3. Obtener canal de WhatsApp de la empresa
+      const canalRows = await this.dataSource.query(
+        `SELECT id_canal FROM public.canal WHERE empresa_id = $1 AND tipo = 'whatsapp' ORDER BY id_canal ASC LIMIT 1;`,
+        [empresaId],
+      );
+      const canalId = canalRows[0]?.id_canal || 1;
+
+      // 4. Crear la conversación en PostgreSQL
+      const insertRes = await this.dataSource.query(
+        `INSERT INTO public.conversacion (empresa_id, tercero_id, canal_id, estado, modo, fecha_inicio, fecha_ultima_interaccion, created_at, updated_at)
+         VALUES ($1, $2, $3, 'activa', 'humano', NOW(), NOW(), NOW(), NOW())
+         RETURNING id_conversacion AS id;`,
+        [empresaId, terceroId, canalId],
+      );
+
+      const newId = Number(insertRes[0]?.id);
+      const all = await this.getConversacionesChat(empresaId);
+      const found = all.find((c: any) => c.id === newId);
+      if (found) return found;
+
+      const rawPhone = (tercero.whatsapp || tercero.telefono || '').replace(/\D/g, '');
+      const formattedPhone = rawPhone
+        ? (rawPhone.startsWith('57') ? `+${rawPhone}` : `+57${rawPhone}`)
+        : '';
+      const clientName = (
+        tercero.nombre
+          ? `${tercero.nombre} ${tercero.apellido || ''}`.trim()
+          : (tercero.razon_social || 'Cliente WhatsApp')
+      ).trim();
+
+      return {
+        id: newId,
+        cliente_id: Number(tercero.id_tercero),
+        nombre: clientName,
+        whatsapp: formattedPhone,
+        avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(clientName)}`,
+        modo: 'humano',
+        estado: 'activa',
+        ultimo_mensaje: 'Conversación iniciada',
+        hora: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        ventana_servicio: {
+          activa: false,
+          minutos_restantes: 0,
+          expira_at: null,
+          ultimo_cliente_at: null,
+        },
+      };
+    } catch (err: any) {
+      this.logger.error(`[Chat] Error al obtener o crear conversación: ${err.message}`);
+      if (err instanceof NotFoundException) throw err;
+      throw new InternalServerErrorException('Error al gestionar conversación del cliente');
     }
   }
 

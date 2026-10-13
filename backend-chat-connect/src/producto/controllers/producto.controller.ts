@@ -329,6 +329,16 @@ export class ProductoController {
     return await this.productoRepo.getConversacionesChat(id);
   }
 
+  @Post('chat/conversaciones/obtener-o-crear')
+  @HttpCode(HttpStatus.OK)
+  async obtenerOCrearConversacion(
+    @Body('cliente_id') clienteId: number,
+    @Query('empresa_id') empresaId?: string,
+  ) {
+    const empId = empresaId ? parseInt(empresaId, 10) : 1;
+    return await this.productoRepo.obtenerOCrearConversacion(Number(clienteId), empId);
+  }
+
   @Get('chat/conversaciones/:id/mensajes')
   async getMensajesConversacion(
     @Param('id') id: string,
@@ -398,4 +408,3 @@ export class ProductoController {
     return await this.productoRepo.enviarCatalogoMultiCategoria(parseInt(id, 10), empId);
   }
 }
-

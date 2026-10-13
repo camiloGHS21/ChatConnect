@@ -3,6 +3,16 @@ import { Link } from 'react-router-dom';
 import IconifyIcon from '@/components/wrappers/IconifyIcon';
 
 const ClientesTable = ({ clientes = [], onOpenDetail }) => {
+  const getChatUrl = (cliente) => {
+    const params = new URLSearchParams();
+    if (cliente.id) params.set('cliente_id', String(cliente.id));
+    if (cliente.whatsapp_raw || cliente.whatsapp) {
+      params.set('whatsapp', cliente.whatsapp_raw || cliente.whatsapp);
+    }
+    if (cliente.nombre) params.set('nombre', cliente.nombre);
+    return `/chat?${params.toString()}`;
+  };
+
   return (
     <div className="table-responsive">
       <Table hover className="table-centered align-middle mb-0">
@@ -44,15 +54,27 @@ const ClientesTable = ({ clientes = [], onOpenDetail }) => {
                   </div>
                 </td>
                 <td>
-                  <a
-                    href={`https://wa.me/${cliente.whatsapp_raw || cliente.whatsapp}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="d-flex align-items-center gap-1 text-success fw-medium text-decoration-none"
-                  >
-                    <IconifyIcon icon="bxl:whatsapp" className="fs-16" />
-                    {cliente.whatsapp}
-                  </a>
+                  <div className="d-flex align-items-center gap-1">
+                    <Link
+                      to={getChatUrl(cliente)}
+                      className="d-flex align-items-center gap-1 text-success fw-medium text-decoration-none"
+                      title={`Abrir chat con ${cliente.nombre} en ChatConnect`}
+                    >
+                      <IconifyIcon icon="bxl:whatsapp" className="fs-16" />
+                      {cliente.whatsapp || 'Sin WhatsApp'}
+                    </Link>
+                    {cliente.whatsapp_raw && cliente.whatsapp_raw !== 'Sin WhatsApp' && (
+                      <a
+                        href={`https://wa.me/${cliente.whatsapp_raw}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-muted ms-1 text-decoration-none"
+                        title="Abrir WhatsApp Web externo"
+                      >
+                        <IconifyIcon icon="tabler:external-link" className="fs-12" />
+                      </a>
+                    )}
+                  </div>
                   <span className="badge bg-success-subtle text-success fs-10">Verificado</span>
                 </td>
                 <td className="text-muted fs-12">{cliente.documento || cliente.numero_documento}</td>
@@ -85,9 +107,9 @@ const ClientesTable = ({ clientes = [], onOpenDetail }) => {
                       <IconifyIcon icon="bx:show" className="fs-16" />
                     </Button>
                     <Link
-                      to="/chat"
+                      to={getChatUrl(cliente)}
                       className="btn btn-sm btn-soft-success btn-icon rounded-circle"
-                      title="Abrir Chat en Vivo"
+                      title={`Abrir Chat con ${cliente.nombre}`}
                     >
                       <IconifyIcon icon="bxl:whatsapp" className="fs-16" />
                     </Link>

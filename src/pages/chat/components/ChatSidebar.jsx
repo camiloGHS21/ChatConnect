@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { Badge, Form } from 'react-bootstrap';
 import IconifyIcon from '@/components/wrappers/IconifyIcon';
 
@@ -9,9 +10,19 @@ const ChatSidebar = ({
   onSearchChange,
   channelInfo = { name: 'Línea Ferretería', whatsapp: '+57 302 4610721' },
 }) => {
-  // Deduplicación defensiva por número de WhatsApp o cliente_id
+  const activeItemRef = useRef(null);
+
+  // Scroll automático hacia la conversación activa si no está a la vista
+  useEffect(() => {
+    if (activeItemRef.current) {
+      activeItemRef.current.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+  }, [activeChatId]);
+
+  // Deduplicación defensiva por número de WhatsApp o cliente_id, priorizando el chat activo
   const seenKeys = new Set();
   const uniqueConversaciones = conversaciones.filter((c) => {
+    if (c.id === activeChatId) return true;
     const rawNumber = (c.whatsapp || '').replace(/\D/g, '');
     const key = rawNumber ? `phone_${rawNumber}` : (c.cliente_id ? `cliente_${c.cliente_id}` : `id_${c.id}`);
     if (seenKeys.has(key)) return false;
@@ -71,6 +82,7 @@ const ChatSidebar = ({
                 type="button"
                 aria-pressed={isActive}
                 key={conv.id}
+                ref={isActive ? activeItemRef : null}
                 onClick={() => onSelectChat(conv.id)}
                 className={`w-100 text-start border-top-0 border-end-0 text-body d-flex align-items-center gap-3 p-3 border-bottom cursor-pointer transition-all ${
                   isActive

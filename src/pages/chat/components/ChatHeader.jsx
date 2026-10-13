@@ -39,18 +39,18 @@ const ChatHeader = ({ activeChat, onToggleMode, togglingMode }) => {
           </div>
         </div>
 
-        {/* Interruptor Modo IA vs Humano */}
+        {/* Botón para cambiar de modo */}
         <div className="d-flex align-items-center gap-2">
           <Button
-            variant={isIA ? 'outline-info' : 'outline-warning'}
+            variant={isIA ? 'outline-warning' : 'outline-info'}
             size="sm"
             onClick={onToggleMode}
             disabled={togglingMode}
             className="d-flex align-items-center gap-1 shadow-sm py-1 px-2"
           >
-            <IconifyIcon icon={isIA ? 'mdi:robot' : 'mdi:account-tie'} className="fs-16" />
+            <IconifyIcon icon={isIA ? 'mdi:account-tie' : 'mdi:robot'} className="fs-16" />
             <strong className="fs-12">
-              {isIA ? 'Piloto Automático IA' : 'Atención Asesor'}
+              {isIA ? 'Cambiar a Asesor' : 'Cambiar a Bot IA'}
             </strong>
           </Button>
         </div>
@@ -68,7 +68,7 @@ const ChatHeader = ({ activeChat, onToggleMode, togglingMode }) => {
         <div className="bg-info-subtle text-info-emphasis px-3 py-1 fs-12 border-bottom d-flex align-items-center gap-2">
           <IconifyIcon icon="mdi:robot-excited-outline" className="fs-16 text-info flex-shrink-0" />
           <span>
-            <strong>Piloto Automático IA:</strong> Atendiendo al cliente en tiempo real.
+            <strong>Piloto Automático IA:</strong> Atendiendo al cliente en tiempo real. Para escribir manualmente, cambia a modo Asesor.
           </span>
         </div>
       )}
@@ -77,4 +77,3 @@ const ChatHeader = ({ activeChat, onToggleMode, togglingMode }) => {
 };
 
 export default ChatHeader;
-

@@ -7,6 +7,16 @@ const ClienteDetailModal = ({ show, onHide, client, orders = [], loading = false
 
   const orderList = client.pedidos && client.pedidos.length > 0 ? client.pedidos : orders;
 
+  const chatUrl = (() => {
+    const params = new URLSearchParams();
+    if (client.id) params.set('cliente_id', String(client.id));
+    if (client.whatsapp_raw || client.whatsapp) {
+      params.set('whatsapp', client.whatsapp_raw || client.whatsapp);
+    }
+    if (client.nombre) params.set('nombre', client.nombre);
+    return `/chat?${params.toString()}`;
+  })();
+
   return (
     <Modal show={show} onHide={onHide} size="lg" centered>
       <Modal.Header closeButton closeLabel="Cerrar">
@@ -83,7 +93,7 @@ const ClienteDetailModal = ({ show, onHide, client, orders = [], loading = false
         <Button variant="secondary" size="sm" onClick={onHide}>
           Cerrar
         </Button>
-        <Link to="/chat" className="btn btn-sm btn-success d-flex align-items-center gap-1">
+        <Link to={chatUrl} className="btn btn-sm btn-success d-flex align-items-center gap-1">
           <IconifyIcon icon="bxl:whatsapp" />
           Iniciar Conversación
         </Link>

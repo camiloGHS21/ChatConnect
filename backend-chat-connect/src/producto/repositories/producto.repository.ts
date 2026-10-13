@@ -206,6 +206,10 @@ export class ProductoRepository {
     return this.chatWhatsappRepo.getConversacionesChat(empresaId);
   }
 
+  async obtenerOCrearConversacion(clienteId: number, empresaId = 1) {
+    return this.chatWhatsappRepo.obtenerOCrearConversacion(clienteId, empresaId);
+  }
+
   async getCatalogoDisponibleChat(empresaId = 1) {
     return this.chatWhatsappRepo.getCatalogoDisponibleChat(empresaId);
   }

@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Row, Col, Card } from 'react-bootstrap';
+import { useSearchParams, useLocation } from 'react-router-dom';
 import PageBreadcrumb from '@/components/layout/PageBreadcrumb';
 import PageMetaData from '@/components/PageTitle';
 import productoService from '@/services/productoService';
@@ -10,6 +11,9 @@ import ChatInputBar from './components/ChatInputBar';
 import ChatSendCatalogModal from './components/ChatSendCatalogModal';
 
 const ChatPage = () => {
+  const [searchParams] = useSearchParams();
+  const location = useLocation();
+
   const [conversaciones, setConversaciones] = useState([]);
   const [activeChatId, setActiveChatId] = useState(null);
   const [mensajes, setMensajes] = useState([]);
@@ -19,18 +23,114 @@ const ChatPage = () => {
   const [togglingMode, setTogglingMode] = useState(false);
   const [sendingMsg, setSendingMsg] = useState(false);
 
-  const fetchConversaciones = useCallback(async (signal) => {
-    try {
-      const convs = await productoService.getConversaciones();
-      if (signal?.aborted) return;
-      if (Array.isArray(convs) && convs.length > 0) {
-        setConversaciones(convs);
-        setActiveChatId((prev) => prev || convs[0].id);
-      }
-    } catch {
-      if (!signal?.aborted) setConversaciones([]);
+  const prevLastInboundRef = useRef(null);
+
+  const targetClienteId =
+    searchParams.get('cliente_id') ||
+    searchParams.get('clienteId') ||
+    location.state?.clienteId ||
+    location.state?.cliente_id ||
+    location.state?.cliente?.id;
+
+  const targetChatId =
+    searchParams.get('chat_id') ||
+    searchParams.get('id');
+
+  const targetWhatsapp =
+    searchParams.get('whatsapp') ||
+    location.state?.whatsapp ||
+    location.state?.cliente?.whatsapp;
+
+  const targetNombre =
+    searchParams.get('nombre') ||
+    location.state?.nombre ||
+    location.state?.cliente?.nombre;
+
+  const orderAction = searchParams.get('action');
+  const pedidoNumero = searchParams.get('pedido');
+
+  useEffect(() => {
+    if (orderAction === 'despachado' && pedidoNumero) {
+      setInputText((prev) => prev || `¡Hola! Te informamos que tu pedido ${pedidoNumero} ha sido despachado 🚚📦.`);
     }
-  }, []);
+  }, [orderAction, pedidoNumero]);
+
+  const matchConversation = useCallback(
+    (list) => {
+      if (!Array.isArray(list) || list.length === 0) return null;
+
+      if (targetChatId) {
+        const byId = list.find((c) => String(c.id) === String(targetChatId));
+        if (byId) return byId;
+      }
+
+      if (targetClienteId) {
+        const byCliente = list.find((c) => String(c.cliente_id) === String(targetClienteId));
+        if (byCliente) return byCliente;
+      }
+
+      if (targetWhatsapp) {
+        const cleanTarget = String(targetWhatsapp).replace(/\D/g, '');
+        if (cleanTarget.length >= 7) {
+          const byPhone = list.find((c) => {
+            const cleanConv = String(c.whatsapp || '').replace(/\D/g, '');
+            return cleanConv.endsWith(cleanTarget) || cleanTarget.endsWith(cleanConv);
+          });
+          if (byPhone) return byPhone;
+        }
+      }
+
+      if (targetNombre && targetNombre.trim()) {
+        const normTarget = targetNombre.toLowerCase().trim();
+        const byName = list.find((c) => {
+          const normConv = (c.nombre || '').toLowerCase().trim();
+          return normConv.includes(normTarget) || normTarget.includes(normConv);
+        });
+        if (byName) return byName;
+      }
+
+      return null;
+    },
+    [targetChatId, targetClienteId, targetWhatsapp, targetNombre]
+  );
+
+  const fetchConversaciones = useCallback(
+    async (signal) => {
+      try {
+        let convs = await productoService.getConversaciones();
+        if (signal?.aborted) return;
+        if (!Array.isArray(convs)) convs = [];
+
+        let selected = matchConversation(convs);
+
+        if (!selected && targetClienteId) {
+          try {
+            const nuevaConv = await productoService.obtenerOCrearConversacion(targetClienteId);
+            if (nuevaConv && nuevaConv.id) {
+              const alreadyInList = convs.some((c) => c.id === nuevaConv.id);
+              if (!alreadyInList) {
+                convs = [nuevaConv, ...convs];
+              }
+              selected = nuevaConv;
+            }
+          } catch (err) {
+            console.warn('No se pudo obtener/crear conversación para el cliente:', err);
+          }
+        }
+
+        setConversaciones(convs);
+
+        if (selected) {
+          setActiveChatId(selected.id);
+        } else {
+          setActiveChatId((prev) => prev || (convs[0] ? convs[0].id : null));
+        }
+      } catch {
+        if (!signal?.aborted) setConversaciones([]);
+      }
+    },
+    [matchConversation, targetClienteId]
+  );
 
   const fetchMensajes = useCallback(async (convId, signal) => {
     if (!convId) return;
@@ -48,13 +148,60 @@ const ChatPage = () => {
     fetchConversaciones(controller.signal);
     return () => controller.abort();
   }, [fetchConversaciones]);
+
+  useEffect(() => {
+    if (conversaciones.length === 0) return;
+    if (targetChatId || targetClienteId || targetWhatsapp || targetNombre) {
+      const matched = matchConversation(conversaciones);
+      if (matched) {
+        setActiveChatId((prev) => (prev !== matched.id ? matched.id : prev));
+      }
+    }
+  }, [conversaciones, matchConversation, targetChatId, targetClienteId, targetWhatsapp, targetNombre]);
+
   useEffect(() => {
     const controller = new AbortController();
     if (activeChatId) fetchMensajes(activeChatId, controller.signal);
     return () => controller.abort();
   }, [activeChatId, fetchMensajes]);
 
+  // Polling periódico para recibir nuevos mensajes del cliente
+  useEffect(() => {
+    if (!activeChatId) return;
+    const interval = setInterval(() => {
+      fetchMensajes(activeChatId);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [activeChatId, fetchMensajes]);
+
   const activeChat = conversaciones.find((c) => c.id === activeChatId) || conversaciones[0];
+
+  // Si llega un nuevo mensaje del cliente estando en modo IA, desactivar la IA automáticamente y pasar a Asesor
+  useEffect(() => {
+    if (!activeChat || activeChat.modo !== 'ia') return;
+
+    // Buscar el último mensaje del cliente
+    const lastInboundMsg = [...mensajes].reverse().find((m) => m.emisor === 'cliente');
+    if (!lastInboundMsg) return;
+
+    if (prevLastInboundRef.current && prevLastInboundRef.current !== lastInboundMsg.id) {
+      // Llegó un nuevo mensaje del cliente: apagar la IA y pasar a asesor
+      productoService.cambiarModoConversacion(activeChat.id, 'humano').then(() => {
+        setConversaciones((prev) =>
+          prev.map((c) => (c.id === activeChat.id ? { ...c, modo: 'humano' } : c))
+        );
+      }).catch((err) => {
+        console.error('Error al pausar IA tras mensaje del cliente:', err);
+      });
+    }
+
+    prevLastInboundRef.current = lastInboundMsg.id;
+  }, [mensajes, activeChat]);
+
+  // Reset del ref al cambiar de chat
+  useEffect(() => {
+    prevLastInboundRef.current = null;
+  }, [activeChatId]);
 
   const handleToggleMode = async () => {
     if (!activeChat) return;
