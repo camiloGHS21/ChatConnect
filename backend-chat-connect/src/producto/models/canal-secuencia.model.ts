@@ -23,7 +23,7 @@ export class SecuenciaModel {
   modulo: string;
 
   @Column({ type: 'varchar', length: 50, name: 'prefijo', nullable: true })
-  prefijo?: string;
+  prefijo?: string | null;
 
   @Column({ type: 'bigint', name: 'consecutivo_actual', default: 0 })
   consecutivoActual: number;

@@ -1255,7 +1255,7 @@ CREATE TABLE public.pedido (
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
 
-    CONSTRAINT pedido_numero_pedido_unique UNIQUE (numero_pedido),
+    CONSTRAINT pedido_empresa_numero_pedido_unique UNIQUE (empresa_id, numero_pedido),
     CONSTRAINT pedido_totales_check CHECK (
         subtotal >= 0 AND descuento >= 0 AND impuesto >= 0
         AND envio >= 0 AND total >= 0
@@ -1515,6 +1515,102 @@ CREATE TRIGGER trg_asignar_codigo_interno_producto
 BEFORE INSERT ON public.producto
 FOR EACH ROW
 EXECUTE FUNCTION public.asignar_codigo_interno_producto();
+
+-- ------------------------------------------------------------
+-- 45.1.1 Consecutivos documentales y número automático de pedido
+-- ------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.generar_consecutivo_documento(
+    p_empresa_id BIGINT,
+    p_modulo VARCHAR
+)
+RETURNS VARCHAR
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_prefijo VARCHAR(50);
+    v_longitud INTEGER;
+    v_consecutivo BIGINT;
+    v_modulo VARCHAR(100) := UPPER(BTRIM(p_modulo));
+BEGIN
+    INSERT INTO public.secuencia (
+        empresa_id, modulo, prefijo, consecutivo_actual, longitud, estado
+    )
+    SELECT
+        p_empresa_id,
+        LOWER(v_modulo),
+        CASE v_modulo
+            WHEN 'PRODUCTO' THEN 'PRD-'
+            WHEN 'PEDIDO' THEN 'PED-'
+            WHEN 'REMISION' THEN 'REM-'
+            WHEN 'COTIZACION' THEN 'COT-'
+            ELSE ''
+        END,
+        0,
+        6,
+        'activo'
+    WHERE NOT EXISTS (
+        SELECT 1
+        FROM public.secuencia s
+        WHERE s.empresa_id = p_empresa_id
+          AND CASE UPPER(s.modulo)
+              WHEN 'PRODUCTOS' THEN 'PRODUCTO'
+              WHEN 'PEDIDOS' THEN 'PEDIDO'
+              WHEN 'REMISIONES' THEN 'REMISION'
+              WHEN 'COTIZACIONES' THEN 'COTIZACION'
+              ELSE UPPER(s.modulo)
+          END = v_modulo
+          AND s.estado = 'activo'
+    )
+    ON CONFLICT (empresa_id, modulo) DO UPDATE SET estado = 'activo';
+
+    UPDATE public.secuencia
+       SET consecutivo_actual = consecutivo_actual + 1
+     WHERE id_secuencia = (
+        SELECT s.id_secuencia
+        FROM public.secuencia s
+        WHERE s.empresa_id = p_empresa_id
+          AND CASE UPPER(s.modulo)
+              WHEN 'PRODUCTOS' THEN 'PRODUCTO'
+              WHEN 'PEDIDOS' THEN 'PEDIDO'
+              WHEN 'REMISIONES' THEN 'REMISION'
+              WHEN 'COTIZACIONES' THEN 'COTIZACION'
+              ELSE UPPER(s.modulo)
+          END = v_modulo
+          AND s.estado = 'activo'
+        ORDER BY s.id_secuencia
+        LIMIT 1
+        FOR UPDATE
+     )
+     RETURNING prefijo, longitud, consecutivo_actual
+          INTO v_prefijo, v_longitud, v_consecutivo;
+
+    IF v_consecutivo IS NULL THEN
+        RAISE EXCEPTION
+            'No existe consecutivo activo para % en la empresa %',
+            p_modulo,
+            p_empresa_id;
+    END IF;
+
+    RETURN COALESCE(v_prefijo, '')
+        || LPAD(v_consecutivo::TEXT, v_longitud, '0');
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.asignar_numero_pedido()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    NEW.numero_pedido :=
+        public.generar_consecutivo_documento(NEW.empresa_id, 'PEDIDO');
+    RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER trg_asignar_numero_pedido
+BEFORE INSERT ON public.pedido
+FOR EACH ROW
+EXECUTE FUNCTION public.asignar_numero_pedido();
 
 -- ------------------------------------------------------------
 -- 45.2 Validación de producto y subcategoría

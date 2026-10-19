@@ -12,6 +12,7 @@ import ImpuestosConfigTab from './components/ImpuestosConfigTab';
 import GeoConfigTab from './components/GeoConfigTab';
 import LimpiezaDatosTab from './components/LimpiezaDatosTab';
 import EmpresaConfigTab from './components/EmpresaConfigTab';
+import ConsecutivosConfigTab from './components/ConsecutivosConfigTab';
 import { useConfiguracion } from './useConfiguracion';
 
 const SECTION_CONFIG = {
@@ -20,6 +21,13 @@ const SECTION_CONFIG = {
     subName: 'Identidad, Contacto y Ubicación',
     tabs: [
       { key: 'empresa', label: 'Mi Empresa', icon: 'bx:building-house', countKey: 'empresa' },
+    ],
+  },
+  consecutivos: {
+    title: 'Configuración de Consecutivos',
+    subName: 'Numeración de Productos y Documentos',
+    tabs: [
+      { key: 'consecutivos', label: 'Consecutivos', icon: 'bx:hash', countKey: 'consecutivos' },
     ],
   },
   inventario: {
@@ -150,6 +158,7 @@ const ConfiguracionPage = () => {
       ) : (
         <>
           {activeMenu === 'empresa' && <EmpresaConfigTab />}
+          {activeMenu === 'consecutivos' && <ConsecutivosConfigTab />}
           {activeMenu === 'inventario' && activeTab === 'categorias' && (
             <CategoriasConfigTab
               categorias={catalogs.categorias}

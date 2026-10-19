@@ -52,6 +52,12 @@ export const MENU_ITEMS = [
         url: '/configuracion/empresa',
       },
       {
+        key: 'config-consecutivos',
+        label: 'Consecutivos',
+        parentKey: 'configuracion',
+        url: '/configuracion/consecutivos',
+      },
+      {
         key: 'config-inventario',
         label: 'Inventario',
         parentKey: 'configuracion',

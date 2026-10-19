@@ -4,6 +4,7 @@ import productoService from '@/services/productoService';
 
 const TAB_TO_MENU = {
   empresa: 'empresa',
+  consecutivos: 'consecutivos',
   categorias: 'inventario',
   marcas: 'inventario',
   listas: 'precios',
@@ -15,6 +16,7 @@ const TAB_TO_MENU = {
 
 const MENU_DEFAULT_TAB = {
   empresa: 'empresa',
+  consecutivos: 'consecutivos',
   inventario: 'categorias',
   precios: 'listas',
   geo: 'geo',
