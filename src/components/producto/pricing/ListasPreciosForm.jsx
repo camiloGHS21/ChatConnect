@@ -54,6 +54,9 @@ const ListasPreciosForm = ({
               onChange={e => handleSelectChange(e.target.value)}
               style={{ borderRadius: '6px' }}
             >
+              <option value="" disabled>
+                {allPriceLists.length > 0 ? 'Selecciona una lista...' : 'No hay listas disponibles'}
+              </option>
               {allPriceLists.map(lp => (
                 <option key={lp.id} value={lp.id} disabled={lp.isAssigned}>
                   {lp.nombre} {lp.isAssigned ? '— (Ya agregada)' : ''}

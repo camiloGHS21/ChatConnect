@@ -35,11 +35,8 @@ export const getInitialProductState = (siguienteCodigo = '') => ({
   utilidad_bruta: 71400, // Precio Final de Venta - Costo Final con Impuestos (172550 - 101150 = 71400)
   utilidad_porcentaje: 70.59,
 
-  // SECCIÓN 3 — Listas de precios
-  listas_precios: [
-    { id: 1, lista_precio_id: '2', nombre_lista: 'Precio Mayorista', precio_base: 120000, utilidad_porcentaje: 41.18, utilidad_valor: 35000, impuesto_porcentaje: 19, precio_venta: 142800, estado: 'activo' },
-    { id: 2, lista_precio_id: '3', nombre_lista: 'Precio Distribuidor', precio_base: 110000, utilidad_porcentaje: 29.41, utilidad_valor: 25000, impuesto_porcentaje: 19, precio_venta: 130900, estado: 'activo' }
-  ],
+  // SECCIÓN 3 — Listas de precios (solo registros reales seleccionados/creados)
+  listas_precios: [],
 
   // SECCIÓN 4 — Retenciones (No aplican para valores menores a $500.000 COP)
   retenciones: [],

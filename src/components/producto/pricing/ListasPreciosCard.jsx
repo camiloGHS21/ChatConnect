@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import ListasPreciosForm from './ListasPreciosForm';
 import ListasPreciosTable from './ListasPreciosTable';
 import ModalEditarListaPrecio from './ModalEditarListaPrecio';
@@ -24,7 +24,7 @@ const ListasPreciosCard = ({
   const listasPrecios = useMemo(() => formData?.listas_precios || [], [formData?.listas_precios]);
 
   const [newPriceList, setNewPriceList] = useState({
-    lista_precio_id: '1',
+    lista_precio_id: '',
     precio_base: 145000,
     utilidad_porcentaje: 70.59,
     impuesto_porcentaje: 19,
@@ -32,20 +32,15 @@ const ListasPreciosCard = ({
     estado: 'activo'
   });
 
-  // Auto-advance a la primera lista no agregada si la actual ya existe
-  useEffect(() => {
-    const isCurrentAdded = listasPrecios.some(
-      item => String(item.lista_precio_id) === String(newPriceList.lista_precio_id)
-    );
-    if (isCurrentAdded) {
-      const firstAvail = allPriceLists.find(
-        lp => !listasPrecios.some(item => String(item.lista_precio_id) === String(lp.id))
-      );
-      if (firstAvail) {
-        setNewPriceList(prev => ({ ...prev, lista_precio_id: String(firstAvail.id) }));
-      }
-    }
-  }, [listasPrecios, allPriceLists, newPriceList.lista_precio_id]);
+  const availablePriceLists = allPriceLists.filter(
+    lp => !listasPrecios.some(item => String(item.lista_precio_id) === String(lp.id))
+  );
+  const currentSelectionAvailable = availablePriceLists.some(
+    lp => String(lp.id) === String(newPriceList.lista_precio_id)
+  );
+  const selectedPriceListId = currentSelectionAvailable
+    ? String(newPriceList.lista_precio_id)
+    : (availablePriceLists[0] ? String(availablePriceLists[0].id) : '');
 
   const taxPercent = (formData?.impuestos_venta || [])
     .filter(t => t.tipo_calculo === 'PORCENTAJE')
@@ -68,11 +63,12 @@ const ListasPreciosCard = ({
 
   const handleAddPriceList = () => {
     const isAdded = listasPrecios.some(
-      item => String(item.lista_precio_id) === String(newPriceList.lista_precio_id)
+      item => String(item.lista_precio_id) === selectedPriceListId
     );
-    if (isAdded || !newPriceList.lista_precio_id || newPriceList.lista_precio_id === 'CREATE_NEW') return;
+    if (isAdded || !selectedPriceListId) return;
 
-    const lpMeta = allPriceLists.find(lp => String(lp.id) === String(newPriceList.lista_precio_id));
+    const lpMeta = allPriceLists.find(lp => String(lp.id) === selectedPriceListId);
+    if (!lpMeta) return;
     const pBase = parseFloat(newPriceList.precio_base) || parseFloat(formData?.precio_base) || 0;
     const cBase = parseFloat(costoBase) || 0;
     const utilPorc = parseFloat(newPriceList.utilidad_porcentaje) || (cBase > 0 ? ((pBase - cBase) / cBase) * 100 : 0);
@@ -81,8 +77,8 @@ const ListasPreciosCard = ({
 
     const newItem = {
       id: Date.now(),
-      lista_precio_id: newPriceList.lista_precio_id,
-      nombre_lista: lpMeta ? lpMeta.nombre : 'Lista Personalizada',
+      lista_precio_id: selectedPriceListId,
+      nombre_lista: lpMeta.nombre,
       precio_base: Math.round(pBase * 100) / 100,
       utilidad_porcentaje: Math.round(utilPorc * 100) / 100,
       utilidad_valor: Math.round(utilVal * 100) / 100,
@@ -94,8 +90,8 @@ const ListasPreciosCard = ({
     updateField('listas_precios', [...listasPrecios, newItem]);
   };
 
-  const isListAlreadyAdded = listasPrecios.some(
-    item => String(item.lista_precio_id) === String(newPriceList.lista_precio_id)
+  const isListAlreadyAdded = Boolean(selectedPriceListId) && listasPrecios.some(
+    item => String(item.lista_precio_id) === selectedPriceListId
   );
 
   const enrichedLists = allPriceLists.map(lp => ({
@@ -114,7 +110,7 @@ const ListasPreciosCard = ({
 
       <ListasPreciosForm
         allPriceLists={enrichedLists}
-        newPriceList={newPriceList}
+        newPriceList={{ ...newPriceList, lista_precio_id: selectedPriceListId }}
         isListAlreadyAdded={isListAlreadyAdded}
         precioBase={formData?.precio_base}
         onListChange={val => setNewPriceList(prev => ({ ...prev, lista_precio_id: val }))}
