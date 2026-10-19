@@ -2,9 +2,9 @@ import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import {
   AZUL_RGB,
-  EMPRESA,
-  ESLOGAN,
+
   GRIS_RGB,
+  datosEmpresaDocumento,
   estadoLabel,
   fechaGeneracion,
   fechaLegible,
@@ -21,39 +21,43 @@ import {
  * EXPORTACIÓN DE PEDIDOS A PDF (jsPDF + autoTable)
  * ============================================================================
  */
-export const exportPedidoToPdf = (order) => {
+export const exportPedidoToPdf = (order, empresa = {}) => {
   const doc = new jsPDF({ unit: 'pt', format: 'a4' });
   const ancho = doc.internal.pageSize.getWidth();
   const alto = doc.internal.pageSize.getHeight();
   const mx = 40;
 
-  // Encabezado
+  // Encabezado empresarial desde public.empresa
+  const { nombreComercial, razonSocial, nit, direccion } = datosEmpresaDocumento(empresa);
+
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(16);
   doc.setTextColor(30);
-  doc.text(EMPRESA, mx, 52);
+  doc.text(nombreComercial, mx, 40);
 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9);
-  doc.setTextColor(130);
-  doc.text(ESLOGAN, mx, 68);
+  doc.setTextColor(100);
+  doc.text(`Razón social: ${razonSocial}`, mx, 56);
+  doc.text(`NIT: ${nit}`, mx, 70);
+  doc.text(`Dirección: ${direccion}`, mx, 84, { maxWidth: ancho - (mx * 2) - 180 });
 
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(13);
   doc.setTextColor(30);
-  doc.text(`Orden ${numeroPedido(order)}`, ancho - mx, 52, { align: 'right' });
+  doc.text(`Orden ${numeroPedido(order)}`, ancho - mx, 42, { align: 'right' });
 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9);
   doc.setTextColor(130);
-  doc.text(`Estado: ${estadoLabel(order.estado)}`, ancho - mx, 68, { align: 'right' });
+  doc.text(`Estado: ${estadoLabel(order.estado)}`, ancho - mx, 58, { align: 'right' });
 
   doc.setDrawColor(225);
-  doc.line(mx, 80, ancho - mx, 80);
+  doc.line(mx, 100, ancho - mx, 100);
 
   // Datos generales del pedido
   autoTable(doc, {
-    startY: 94,
+    startY: 114,
     theme: 'plain',
     styles: { fontSize: 9, cellPadding: 2, textColor: [40, 40, 40] },
     body: [

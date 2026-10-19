@@ -4,12 +4,15 @@ import IconifyIcon from '@/components/wrappers/IconifyIcon';
 
 const ImpuestosConfigTab = ({
   impuestos = [],
+  onCreateImpuesto,
   onUpdateImpuesto,
   onToggleStatus,
 
   loading = false,
 }) => {
   const [search, setSearch] = useState('');
+  const [showCreate, setShowCreate] = useState(false);
+  const [createForm, setCreateForm] = useState({ codigo: '', nombre: '', tipo: 'PORCENTAJE', porcentaje: 19, valor: 0 });
   const [editingItem, setEditingItem] = useState(null);
   const [editForm, setEditForm] = useState({ nombre: '', tipo: 'PORCENTAJE', porcentaje: 0, valor: 0 });
 
@@ -28,6 +31,21 @@ const ImpuestosConfigTab = ({
     });
   };
 
+  const handleCreateSubmit = async (e) => {
+    e.preventDefault();
+    if (!createForm.nombre.trim() || !onCreateImpuesto) return;
+    const created = await onCreateImpuesto({
+      ...createForm,
+      codigo: createForm.codigo.trim() || undefined,
+      nombre: createForm.nombre.trim(),
+      porcentaje: createForm.tipo === 'PORCENTAJE' ? Number(createForm.porcentaje) || 0 : 0,
+      valor: createForm.tipo === 'VALOR_FIJO' ? Number(createForm.valor) || 0 : 0,
+    });
+    if (created === false) return;
+    setCreateForm({ codigo: '', nombre: '', tipo: 'PORCENTAJE', porcentaje: 19, valor: 0 });
+    setShowCreate(false);
+  };
+
   const handleEditSubmit = (e) => {
     e.preventDefault();
     if (!editingItem) return;
@@ -43,19 +61,30 @@ const ImpuestosConfigTab = ({
             <IconifyIcon icon="bx:receipt" className="me-2 text-warning fs-20" />
             Configuración de Impuestos y Tasas
           </h5>
-          <small className="text-muted">Ajusta los nombres y porcentajes de los impuestos aplicables en PostgreSQL</small>
+          <small className="text-muted">Crea y administra los impuestos disponibles para seleccionar en los productos</small>
         </div>
-        <InputGroup size="sm" style={{ width: 240 }}>
-          <InputGroup.Text className="bg-light text-muted border-end-0">
-            <IconifyIcon icon="bx:search" />
-          </InputGroup.Text>
-          <Form.Control
-            placeholder="Buscar por nombre o código..."
-            className="border-start-0 ps-0"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-          />
-        </InputGroup>
+        <div className="d-flex align-items-center gap-2">
+          <InputGroup size="sm" style={{ width: 240 }}>
+            <InputGroup.Text className="bg-light text-muted border-end-0">
+              <IconifyIcon icon="bx:search" />
+            </InputGroup.Text>
+            <Form.Control
+              placeholder="Buscar por nombre o código..."
+              className="border-start-0 ps-0"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+            />
+          </InputGroup>
+          <Button
+            variant="primary"
+            size="sm"
+            className="d-flex align-items-center gap-1 text-nowrap"
+            onClick={() => setShowCreate(true)}
+          >
+            <IconifyIcon icon="bx:plus" className="fs-15" />
+            Nuevo Impuesto
+          </Button>
+        </div>
       </Card.Header>
 
       <Card.Body className="p-0">
@@ -108,6 +137,74 @@ const ImpuestosConfigTab = ({
           </Table>
         </div>
       </Card.Body>
+
+      <Modal show={showCreate} onHide={() => setShowCreate(false)} centered>
+        <Modal.Header closeButton closeLabel="Cerrar" className="py-2 border-bottom">
+          <Modal.Title className="fs-15 fw-semibold text-dark">Crear Impuesto o Tasa</Modal.Title>
+        </Modal.Header>
+        <Form onSubmit={handleCreateSubmit}>
+          <Modal.Body className="py-3">
+            <Form.Group className="mb-3" controlId="config-impuesto-codigo">
+              <Form.Label className="fs-12 fw-semibold text-secondary mb-1">Código</Form.Label>
+              <Form.Control
+                value={createForm.codigo}
+                placeholder="Ej: IVA19"
+                maxLength={20}
+                onChange={e => setCreateForm(p => ({ ...p, codigo: e.target.value.toUpperCase() }))}
+              />
+              <Form.Text>Si lo dejas vacío, se genera automáticamente desde el nombre.</Form.Text>
+            </Form.Group>
+            <Form.Group className="mb-3" controlId="config-impuesto-nombre">
+              <Form.Label className="fs-12 fw-semibold text-secondary mb-1">Nombre del Impuesto *</Form.Label>
+              <Form.Control
+                value={createForm.nombre}
+                placeholder="Ej: IVA General 19%"
+                required
+                onChange={e => setCreateForm(p => ({ ...p, nombre: e.target.value }))}
+              />
+            </Form.Group>
+            <Form.Group className="mb-3" controlId="config-impuesto-tipo">
+              <Form.Label className="fs-12 fw-semibold text-secondary mb-1">Tipo de Cálculo</Form.Label>
+              <Form.Select
+                value={createForm.tipo}
+                onChange={e => setCreateForm(p => ({ ...p, tipo: e.target.value }))}
+              >
+                <option value="PORCENTAJE">Porcentaje (%)</option>
+                <option value="VALOR_FIJO">Valor fijo ($)</option>
+              </Form.Select>
+            </Form.Group>
+            {createForm.tipo === 'PORCENTAJE' ? (
+              <Form.Group controlId="config-impuesto-porcentaje">
+                <Form.Label className="fs-12 fw-semibold text-secondary mb-1">Porcentaje (%)</Form.Label>
+                <Form.Control
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={createForm.porcentaje}
+                  onChange={e => setCreateForm(p => ({ ...p, porcentaje: e.target.value }))}
+                />
+              </Form.Group>
+            ) : (
+              <Form.Group controlId="config-impuesto-valor">
+                <Form.Label className="fs-12 fw-semibold text-secondary mb-1">Valor fijo ($)</Form.Label>
+                <Form.Control
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={createForm.valor}
+                  onChange={e => setCreateForm(p => ({ ...p, valor: e.target.value }))}
+                />
+              </Form.Group>
+            )}
+          </Modal.Body>
+          <Modal.Footer className="py-2">
+            <Button variant="light" size="sm" onClick={() => setShowCreate(false)} disabled={loading}>Cancelar</Button>
+            <Button variant="primary" size="sm" type="submit" disabled={loading || !createForm.nombre.trim()}>
+              {loading ? 'Guardando...' : 'Guardar Impuesto'}
+            </Button>
+          </Modal.Footer>
+        </Form>
+      </Modal>
 
       <Modal show={Boolean(editingItem)} onHide={() => setEditingItem(null)} centered>
         <Modal.Header closeButton closeLabel="Cerrar" className="py-2 border-bottom">

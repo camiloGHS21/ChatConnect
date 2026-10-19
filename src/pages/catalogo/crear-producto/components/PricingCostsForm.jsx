@@ -6,7 +6,7 @@ import RentabilidadSummaryCard from '@/components/producto/pricing/RentabilidadS
 
 import ListasPreciosCard from '@/components/producto/pricing/ListasPreciosCard';
 import RetencionesCard from '@/components/producto/pricing/RetencionesCard';
-import ModalNuevoImpuesto from '@/components/producto/pricing/ModalNuevoImpuesto';
+
 import ModalNuevaListaPrecio from '@/components/producto/pricing/ModalNuevaListaPrecio';
 import {
   calculateReverseBase,
@@ -15,12 +15,12 @@ import {
 } from '@/components/producto/pricing/pricingCalculations';
 
 const PricingCostsForm = ({ formData, updateField, catalogs = {}, triggerDeleteConfirm }) => {
-  const [modalTax, setModalTax] = useState({ show: false, target: 'compra' });
+
   const [showPriceListModal, setShowPriceListModal] = useState(false);
-  const [allCustomTaxes, setAllCustomTaxes] = useState([]);
+
   const [allCustomLists, setAllCustomLists] = useState([]);
 
-  const taxesList = [...(catalogs.impuestos || []), ...allCustomTaxes];
+  const taxesList = catalogs.impuestos || [];
   const priceLists = [...(catalogs.listasPrecios || []), ...allCustomLists];
   const withholdingsList = catalogs.retenciones || [];
 
@@ -67,19 +67,6 @@ const PricingCostsForm = ({ formData, updateField, catalogs = {}, triggerDeleteC
     else handleCostoImpuestoChange(rounded);
   };
 
-  const handleSaveTax = (newTax, target) => {
-    setAllCustomTaxes(prev => [...prev, newTax]);
-    const field = target === 'compra' ? 'impuestos_compra' : 'impuestos_venta';
-    const updated = [...(formData[field] || []), newTax];
-    updateField(field, updated);
-    const fin = syncFinancials(
-      parseFloat(formData.costo_base) || 0,
-      parseFloat(formData.precio_base) || 0,
-      target === 'compra' ? updated : formData.impuestos_compra || [],
-      target === 'venta' ? updated : formData.impuestos_venta || []
-    );
-    Object.entries(fin).forEach(([k, v]) => { updateField(k, v); });
-  };
 
   return (
     <div className="product-pricing-form">
@@ -98,7 +85,7 @@ const PricingCostsForm = ({ formData, updateField, catalogs = {}, triggerDeleteC
           onCostoBaseChange={handleCostoBaseChange}
           onCostoImpuestoChange={handleCostoImpuestoChange}
           onSmartRound={() => handleSmartRound('costo')}
-          onOpenCustomTax={() => setModalTax({ show: true, target: 'compra' })}
+
           triggerDeleteConfirm={triggerDeleteConfirm}
         />
         <PreciosVentaCard
@@ -108,7 +95,7 @@ const PricingCostsForm = ({ formData, updateField, catalogs = {}, triggerDeleteC
           onPrecioBaseChange={handlePrecioBaseChange}
           onPrecioImpuestoChange={handlePrecioImpuestoChange}
           onSmartRound={() => handleSmartRound('precio')}
-          onOpenCustomTax={() => setModalTax({ show: true, target: 'venta' })}
+
           triggerDeleteConfirm={triggerDeleteConfirm}
         />
       </Row>
@@ -142,13 +129,6 @@ const PricingCostsForm = ({ formData, updateField, catalogs = {}, triggerDeleteC
         triggerDeleteConfirm={triggerDeleteConfirm}
       />
 
-      <ModalNuevoImpuesto
-        show={modalTax.show}
-        target={modalTax.target}
-        onHide={() => setModalTax({ show: false, target: 'compra' })}
-        onSave={handleSaveTax}
-        existingTaxes={taxesList}
-      />
 
       <ModalNuevaListaPrecio
         show={showPriceListModal}

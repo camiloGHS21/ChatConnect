@@ -11,9 +11,17 @@ import ListasPreciosConfigTab from './components/ListasPreciosConfigTab';
 import ImpuestosConfigTab from './components/ImpuestosConfigTab';
 import GeoConfigTab from './components/GeoConfigTab';
 import LimpiezaDatosTab from './components/LimpiezaDatosTab';
+import EmpresaConfigTab from './components/EmpresaConfigTab';
 import { useConfiguracion } from './useConfiguracion';
 
 const SECTION_CONFIG = {
+  empresa: {
+    title: 'Información de la Empresa',
+    subName: 'Identidad, Contacto y Ubicación',
+    tabs: [
+      { key: 'empresa', label: 'Mi Empresa', icon: 'bx:building-house', countKey: 'empresa' },
+    ],
+  },
   inventario: {
     title: 'Configuración de Inventario',
     subName: 'Categorías y Marcas',
@@ -69,6 +77,7 @@ const ConfiguracionPage = () => {
     handleToggleLista,
     handleCreateLista,
     handleDeleteLista,
+    handleCreateImpuesto,
     handleUpdateImpuesto,
   } = useConfiguracion();
 
@@ -94,7 +103,7 @@ const ConfiguracionPage = () => {
     setItemToDelete(null);
   };
 
-  const currentSection = SECTION_CONFIG[activeMenu] || SECTION_CONFIG.inventario;
+  const currentSection = SECTION_CONFIG[activeMenu] || SECTION_CONFIG.empresa;
 
   return (
     <>
@@ -140,6 +149,7 @@ const ConfiguracionPage = () => {
         <div className="text-center py-5"><Spinner animation="border" variant="primary" /></div>
       ) : (
         <>
+          {activeMenu === 'empresa' && <EmpresaConfigTab />}
           {activeMenu === 'inventario' && activeTab === 'categorias' && (
             <CategoriasConfigTab
               categorias={catalogs.categorias}
@@ -173,6 +183,7 @@ const ConfiguracionPage = () => {
           {activeMenu === 'precios' && activeTab === 'impuestos' && (
             <ImpuestosConfigTab
               impuestos={catalogs.impuestos}
+              onCreateImpuesto={handleCreateImpuesto}
               onUpdateImpuesto={handleUpdateImpuesto}
               loading={actionLoading}
             />

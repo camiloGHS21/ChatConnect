@@ -17,7 +17,6 @@ const PreciosVentaCard = ({
   onPrecioBaseChange,
   onPrecioImpuestoChange,
   onSmartRound,
-  onOpenCustomTax,
   triggerDeleteConfirm,
 }) => {
   const precioBase = parseFloat(formData?.precio_base) || 0;
@@ -84,7 +83,7 @@ const PreciosVentaCard = ({
             onAddTax={handleAddTax}
             onRemoveTax={handleRemoveTax}
             onUpdateValorFijo={handleUpdateValorFijo}
-            onOpenCustomTax={onOpenCustomTax}
+
             triggerDeleteConfirm={triggerDeleteConfirm}
           />
           <PreciosVentaSummary

@@ -17,7 +17,6 @@ const CostosCompraCard = ({
   onCostoBaseChange,
   onCostoImpuestoChange,
   onSmartRound,
-  onOpenCustomTax,
   triggerDeleteConfirm,
 }) => {
   const costoBase = parseFloat(formData?.costo_base) || 0;
@@ -84,7 +83,7 @@ const CostosCompraCard = ({
             onAddTax={handleAddTax}
             onRemoveTax={handleRemoveTax}
             onUpdateValorFijo={handleUpdateValorFijo}
-            onOpenCustomTax={onOpenCustomTax}
+
             triggerDeleteConfirm={triggerDeleteConfirm}
           />
           <CostosCompraSummary

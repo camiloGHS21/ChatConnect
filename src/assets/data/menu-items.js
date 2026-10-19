@@ -46,6 +46,12 @@ export const MENU_ITEMS = [
     label: 'Configuración',
     children: [
       {
+        key: 'config-empresa',
+        label: 'Mi Empresa',
+        parentKey: 'configuracion',
+        url: '/configuracion/empresa',
+      },
+      {
         key: 'config-inventario',
         label: 'Inventario',
         parentKey: 'configuracion',

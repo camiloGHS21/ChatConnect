@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { pedidoService } from '@/services/pedidoService';
 import { useNotificationContext } from '@/context/useNotificationContext';
+import { useAuthContext } from '@/context/useAuthContext';
+import empresaService from '@/services/empresaService';
 import { exportPedidoToPdf } from './utils/pedidoPdf';
 import { exportPedidoToExcel } from './utils/pedidoExcel';
 
@@ -12,6 +14,8 @@ import { exportPedidoToExcel } from './utils/pedidoExcel';
 export const usePedidos = () => {
   const navigate = useNavigate();
   const { showNotification } = useNotificationContext();
+  const { user: session } = useAuthContext();
+  const empresaId = Number(session?.user?.empresa_id || session?.empresa?.id || 1);
   const [statusFilter, setStatusFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedOrder, setSelectedOrder] = useState(null);
@@ -118,10 +122,19 @@ export const usePedidos = () => {
         if (detalle) pedido = detalle;
       }
 
+      let empresa = session?.empresa
+        ? { ...session.empresa, nombre_comercial: session.empresa.nombre_comercial || session.empresa.nombre }
+        : {};
+      try {
+        empresa = await empresaService.obtenerPerfil(empresaId);
+      } catch (empresaError) {
+        console.warn('No se pudo consultar el perfil empresarial; se usarán los datos de sesión:', empresaError);
+      }
+
       if (formato === 'excel') {
-        await exportPedidoToExcel(pedido);
+        await exportPedidoToExcel(pedido, empresa);
       } else {
-        exportPedidoToPdf(pedido);
+        exportPedidoToPdf(pedido, empresa);
       }
 
       showNotification({
@@ -133,7 +146,9 @@ export const usePedidos = () => {
       console.error('Error al exportar el pedido:', err);
       showNotification({
         title: 'Error al exportar',
-        message: 'No se pudo generar el archivo. Intenta nuevamente.',
+        message: err?.message
+          ? `No se pudo generar el archivo: ${err.message}`
+          : 'No se pudo generar el archivo. Intenta nuevamente.',
         variant: 'danger',
         delay: 3000,
       });

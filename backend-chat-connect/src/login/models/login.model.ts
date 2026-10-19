@@ -85,6 +85,10 @@ export class EmpresaModel {
   @Column({ type: 'varchar', length: 100, nullable: true })
   sector?: string;
 
+  /** Define si todo producto debe tener una categoría asignada */
+  @Column({ type: 'boolean', name: 'categoria_producto_obligatoria', default: true })
+  categoria_producto_obligatoria: boolean;
+
   /** Estado operativo de la empresa ('activo' | 'inactivo') */
   @Column({ type: 'varchar', length: 30, default: 'activo' })
   estado: string;

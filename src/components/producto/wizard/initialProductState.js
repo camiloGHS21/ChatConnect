@@ -21,18 +21,14 @@ export const getInitialProductState = (siguienteCodigo = '') => ({
 
   // SECCIÓN 2 — Costos y precios
   costo_base: 85000,
-  impuestos_compra: [
-    { id: 1, impuesto_id: 1, codigo: 'IVA19', nombre: 'IVA General 19%', tipo_calculo: 'PORCENTAJE', porcentaje: 19, valor_fijo: 0 }
-  ],
-  costo_impuesto: 101150,
+  impuestos_compra: [],
+  costo_impuesto: 85000,
   precio_base: 145000,
-  impuestos_venta: [
-    { id: 1, impuesto_id: 1, codigo: 'IVA19', nombre: 'IVA General 19%', tipo_calculo: 'PORCENTAJE', porcentaje: 19, valor_fijo: 0 }
-  ],
-  precio_impuesto: 172550,
+  impuestos_venta: [],
+  precio_impuesto: 145000,
   utilidad_valor: 60000,
-  ganancia_final: 71400,
-  utilidad_bruta: 71400, // Precio Final de Venta - Costo Final con Impuestos (172550 - 101150 = 71400)
+  ganancia_final: 60000,
+  utilidad_bruta: 60000,
   utilidad_porcentaje: 70.59,
 
   // SECCIÓN 3 — Listas de precios (solo registros reales seleccionados/creados)

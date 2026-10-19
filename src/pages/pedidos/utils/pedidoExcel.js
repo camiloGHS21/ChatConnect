@@ -2,11 +2,10 @@ import {
   AZUL_CLARO_HEX,
   AZUL_HEX,
   BORDE_HEX,
-  EMPRESA,
-  ESLOGAN,
   GRIS_TEXTO_HEX,
   TEXTO_HEX,
   coloresEstado,
+  datosEmpresaDocumento,
   estadoLabel,
   fechaGeneracion,
   fechaLegible,
@@ -15,7 +14,7 @@ import {
   nombreArchivo,
   numeroPedido,
   resumenTotales,
-} from './pedidoFormato';
+} from './pedidoFormato.js';
 
 /**
  * ============================================================================
@@ -31,9 +30,9 @@ const FONDO_ALT_HEX = 'FFF8FAFD';
 const FONDO_LABEL_HEX = 'FFF3F6FC';
 const ULTIMA_COLUMNA = 5;
 
-/** Carga diferida de ExcelJS para no inflar el bundle principal. */
+/** Carga la distribución de navegador (compatible con Safari) sin inflar el bundle principal. */
 const cargarExcelJS = async () => {
-  const mod = await import('exceljs');
+  const mod = await import('exceljs/dist/exceljs.min.js');
   return mod.default || mod;
 };
 
@@ -56,10 +55,11 @@ const combinarConEstilo = (ws, row, col1, col2, valor, estilizar) => {
 };
 
 /** Construye el libro Excel estilizado (sin descargarlo). */
-export const buildPedidoWorkbook = async (order) => {
+export const buildPedidoWorkbook = async (order, empresa = {}) => {
   const ExcelJS = await cargarExcelJS();
   const wb = new ExcelJS.Workbook();
-  wb.creator = EMPRESA;
+  const { nombreComercial, razonSocial, nit, direccion } = datosEmpresaDocumento(empresa);
+  wb.creator = nombreComercial;
   wb.created = new Date();
 
   const ws = wb.addWorksheet('Pedido', {
@@ -91,13 +91,26 @@ export const buildPedidoWorkbook = async (order) => {
   });
   ws.getRow(1).height = 30;
 
-  combinarConEstilo(ws, 2, 1, ULTIMA_COLUMNA, `${EMPRESA} · ${ESLOGAN}`, (cell) => {
-    pintar(cell, AZUL_CLARO_HEX);
-    cell.font = { size: 9, italic: true, color: { argb: GRIS_TEXTO_HEX } };
-    cell.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 };
+  const empresaInfo = [
+    [nombreComercial, true],
+    [`Razón social: ${razonSocial}`, false],
+    [`NIT: ${nit}`, false],
+    [`Dirección: ${direccion}`, false],
+  ];
+  empresaInfo.forEach(([texto, destacado], index) => {
+    const row = index + 2;
+    combinarConEstilo(ws, row, 1, ULTIMA_COLUMNA, texto, (cell) => {
+      pintar(cell, AZUL_CLARO_HEX);
+      cell.font = {
+        size: destacado ? 12 : 9,
+        bold: destacado,
+        color: { argb: destacado ? AZUL_HEX : GRIS_TEXTO_HEX },
+      };
+      cell.alignment = { vertical: 'middle', horizontal: 'left', indent: 1, wrapText: true };
+    });
+    ws.getRow(row).height = destacado ? 23 : 18;
   });
-  ws.getRow(2).height = 20;
-  ws.getRow(3).height = 8;
+  ws.getRow(6).height = 8;
 
   // --- Ficha del pedido ---
   const info = [
@@ -110,7 +123,7 @@ export const buildPedidoWorkbook = async (order) => {
   ];
 
   info.forEach(([label, valor], i) => {
-    const r = 4 + i;
+    const r = 7 + i;
     const cLabel = ws.getCell(r, 1);
     cLabel.value = label;
     cLabel.font = { size: 10, bold: true, color: { argb: GRIS_TEXTO_HEX } };
@@ -128,7 +141,7 @@ export const buildPedidoWorkbook = async (order) => {
     ws.getRow(r).height = 18;
   });
 
-  const filaEspacio = 4 + info.length;
+  const filaEspacio = 7 + info.length;
   ws.getRow(filaEspacio).height = 8;
 
   // --- Encabezado de la tabla de artículos ---
@@ -226,7 +239,7 @@ export const buildPedidoWorkbook = async (order) => {
 
   // --- Pie ---
   fila += 1;
-  combinarConEstilo(ws, fila, 1, ULTIMA_COLUMNA, `Generado el ${fechaGeneracion()} · ${EMPRESA}`, (cell) => {
+  combinarConEstilo(ws, fila, 1, ULTIMA_COLUMNA, `Generado el ${fechaGeneracion()} · ${nombreComercial}`, (cell) => {
     cell.font = { size: 8, italic: true, color: { argb: GRIS_TEXTO_HEX } };
     cell.alignment = { vertical: 'middle', horizontal: 'center' };
   });
@@ -249,14 +262,19 @@ const descargarWorkbook = async (workbook, nombre) => {
   const enlace = document.createElement('a');
   enlace.href = url;
   enlace.download = nombre;
+  enlace.style.display = 'none';
   document.body.appendChild(enlace);
   enlace.click();
-  enlace.remove();
-  URL.revokeObjectURL(url);
+
+  // Safari necesita que el enlace y el Blob permanezcan vivos hasta iniciar la descarga.
+  globalThis.setTimeout(() => {
+    enlace.remove();
+    URL.revokeObjectURL(url);
+  }, 1500);
 };
 
-export const exportPedidoToExcel = async (order) => {
-  const workbook = await buildPedidoWorkbook(order);
+export const exportPedidoToExcel = async (order, empresa = {}) => {
+  const workbook = await buildPedidoWorkbook(order, empresa);
   await descargarWorkbook(workbook, `Pedido_${nombreArchivo(order)}.xlsx`);
 };
 

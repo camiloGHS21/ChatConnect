@@ -36,6 +36,13 @@ export const ESTADO_COLORES = {
   default: { fondo: 'FFF1F2F4', texto: 'FF4B5563' },
 };
 
+export const datosEmpresaDocumento = (empresa = {}) => ({
+  nombreComercial: empresa.nombre_comercial || empresa.nombre || 'Empresa',
+  razonSocial: empresa.razon_social || '—',
+  nit: empresa.nit || '—',
+  direccion: [empresa.direccion, empresa.ciudad, empresa.departamento].filter(Boolean).join(', ') || '—',
+});
+
 export const estadoLabel = (estado) => ESTADOS[estado] || 'Pendiente';
 
 export const coloresEstado = (estado) => ESTADO_COLORES[estado] || ESTADO_COLORES.default;

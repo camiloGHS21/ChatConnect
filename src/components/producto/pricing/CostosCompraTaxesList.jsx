@@ -9,37 +9,26 @@ const CostosCompraTaxesList = ({
   onAddTax,
   onRemoveTax,
   onUpdateValorFijo,
-  onOpenCustomTax,
   triggerDeleteConfirm
 }) => {
   const [selectedTaxId, setSelectedTaxId] = useState('');
 
   const handleAssign = () => {
-    if (!selectedTaxId || selectedTaxId === 'CREATE_NEW') return;
+    if (!selectedTaxId) return;
     onAddTax(selectedTaxId);
     setSelectedTaxId('');
   };
 
   return (
     <div className="mb-3">
-      <div className="d-flex align-items-center justify-content-between mb-2">
-        <label htmlFor="producto-impuesto-compra" className="form-label fw-semibold mb-0 fs-13">Impuestos Aplicables a la Compra</label>
-        {onOpenCustomTax && (
-          <Button variant="link" size="sm" className="p-0 fs-12 text-primary fw-semibold" onClick={onOpenCustomTax}>
-            + Crear Impuesto Fijo/%
-          </Button>
-        )}
-      </div>
+      <label htmlFor="producto-impuesto-compra" className="form-label fw-semibold mb-2 fs-13">Impuestos Aplicables a la Compra</label>
 
       <div className="input-group mb-2">
         <Form.Select
           id="producto-impuesto-compra"
           size="sm"
           value={selectedTaxId}
-          onChange={e => {
-            if (e.target.value === 'CREATE_NEW' && onOpenCustomTax) onOpenCustomTax();
-            else setSelectedTaxId(e.target.value);
-          }}
+          onChange={e => setSelectedTaxId(e.target.value)}
         >
           <option value="">-- Seleccionar Impuesto --</option>
           {taxesCatalog.map(tax => {
@@ -50,9 +39,9 @@ const CostosCompraTaxesList = ({
               </option>
             );
           })}
-          <option value="CREATE_NEW" className="fw-bold text-primary">+ Crear nuevo impuesto...</option>
+
         </Form.Select>
-        <Button variant="outline-primary" size="sm" onClick={handleAssign} disabled={!selectedTaxId || selectedTaxId === 'CREATE_NEW'}>
+        <Button variant="outline-primary" size="sm" onClick={handleAssign} disabled={!selectedTaxId}>
           <IconifyIcon icon="bx:plus" className="me-1" /> Asignar
         </Button>
       </div>

@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import productoService from '@/services/productoService';
 
 const TAB_TO_MENU = {
+  empresa: 'empresa',
   categorias: 'inventario',
   marcas: 'inventario',
   listas: 'precios',
@@ -13,6 +14,7 @@ const TAB_TO_MENU = {
 };
 
 const MENU_DEFAULT_TAB = {
+  empresa: 'empresa',
   inventario: 'categorias',
   precios: 'listas',
   geo: 'geo',
@@ -23,8 +25,8 @@ export const useConfiguracion = () => {
   const { seccion, tab } = useParams();
   const navigate = useNavigate();
 
-  let resolvedMenu = 'inventario';
-  let resolvedTab = 'categorias';
+  let resolvedMenu = 'empresa';
+  let resolvedTab = 'empresa';
 
   if (seccion) {
     if (MENU_DEFAULT_TAB[seccion]) {
@@ -185,6 +187,30 @@ export const useConfiguracion = () => {
     finally { setActionLoading(false); }
   };
 
+  const handleCreateImpuesto = async (datos) => {
+    const normalizedName = (datos.nombre || '').trim().toLowerCase();
+    const normalizedCode = (datos.codigo || '').trim().toLowerCase();
+    const duplicate = catalogs.impuestos.some(impuesto =>
+      (impuesto.nombre || '').trim().toLowerCase() === normalizedName ||
+      (normalizedCode && (impuesto.codigo || '').trim().toLowerCase() === normalizedCode)
+    );
+    if (duplicate) {
+      notify('Ya existe un impuesto con el mismo nombre o código.', 'warning');
+      return false;
+    }
+    try {
+      setActionLoading(true);
+      const created = await productoService.crearImpuesto(datos, 1);
+      const normalized = { ...created, estado: created.estado || 'activo' };
+      setCatalogs(p => ({ ...p, impuestos: [...p.impuestos, normalized] }));
+      notify(`Impuesto "${normalized.nombre}" creado con éxito`);
+      return normalized;
+    } catch (err) {
+      notify(err.response?.data?.message || 'Error creando impuesto', 'danger');
+      return false;
+    } finally { setActionLoading(false); }
+  };
+
   const handleUpdateImpuesto = async (id, datos) => {
     try {
       setActionLoading(true);
@@ -270,6 +296,7 @@ export const useConfiguracion = () => {
     handleToggleLista,
     handleCreateLista,
     handleDeleteLista,
+    handleCreateImpuesto,
     handleUpdateImpuesto,
   };
 };

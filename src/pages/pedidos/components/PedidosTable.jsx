@@ -90,7 +90,17 @@ const PedidosTable = ({
               ) : (
                 orders.map((ord) => (
                   <tr key={ord.id}>
-                    <td><span className="font-monospace fw-bold text-primary fs-13">{ord.numero_pedido}</span></td>
+                    <td>
+                      <button
+                        type="button"
+                        className="font-monospace fw-bold text-primary fs-13 border-0 bg-transparent p-0 text-decoration-none"
+                        onClick={() => onOpenDetail(ord)}
+                        title={`Ver detalle del pedido ${ord.numero_pedido}`}
+                        style={{ cursor: 'pointer' }}
+                      >
+                        {ord.numero_pedido}
+                      </button>
+                    </td>
                     <td>
                       <div className="fw-semibold text-dark">{ord.cliente_nombre}</div>
                       <button

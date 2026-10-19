@@ -113,6 +113,7 @@ export class InventarioRepository {
         WHERE p.empresa_id = $1 AND p.estado_producto = 'activo'
       )
       SELECT
+        COUNT(*)::int AS total_productos,
         COALESCE(SUM(existencia), 0)::int AS total_existencia,
         COALESCE(SUM(reservado), 0)::int AS total_reservado,
         COALESCE(SUM(disponible), 0)::int AS total_disponible,
@@ -124,6 +125,7 @@ export class InventarioRepository {
     const r = rows[0] || {};
 
     return {
+      totalProductos: Number(r.total_productos || 0),
       totalExistencia: Number(r.total_existencia || 0),
       totalReservado: Number(r.total_reservado || 0),
       totalDisponible: Number(r.total_disponible || 0),

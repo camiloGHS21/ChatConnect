@@ -11,7 +11,7 @@ const InventarioPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [productos, setProductos] = useState([]);
   const [kpis, setKpis] = useState({
-    totalExistencia: 0,
+    totalProductos: 0,
     totalReservado: 0,
     totalDisponible: 0,
     totalCriticos: 0,
@@ -103,11 +103,11 @@ const InventarioPage = () => {
           <Card className="border-0 shadow-sm">
             <CardBody className="d-flex align-items-center gap-3">
               <div className="avatar-md rounded bg-primary-subtle text-primary flex-centered">
-                <IconifyIcon icon="mdi:warehouse" className="fs-24" />
+                <IconifyIcon icon="iconamoon:box-duotone" className="fs-24" />
               </div>
               <div>
-                <h4 className="fw-bold mb-0">{kpis.totalExistencia}</h4>
-                <span className="text-muted fs-12">Existencia en Bodega</span>
+                <h4 className="fw-bold mb-0">{kpis.totalProductos}</h4>
+                <span className="text-muted fs-12">Número de Productos</span>
               </div>
             </CardBody>
           </Card>
