@@ -1,8 +1,6 @@
 import IconifyIcon from '@/components/wrappers/IconifyIcon';
 import { Card, CardBody, CardHeader, CardTitle, Col, Row, ProgressBar, Badge } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
-import { CHATCONNECT_PEDIDOS } from '@/assets/data/chatconnect-data';
-import { zonasEntrega } from '../data';
 
 const getStatusBadge = (estado) => {
   switch (estado) {
@@ -19,7 +17,15 @@ const getStatusBadge = (estado) => {
   }
 };
 
-const SessionsByCountry = () => {
+const Vacio = ({ texto }) => (
+  <div className="text-center text-muted fs-12 py-4">{texto}</div>
+);
+
+/**
+ * Pedidos recientes y cobertura de entregas por zona, con datos reales de
+ * PostgreSQL (`public.pedido` y `public.tercero`).
+ */
+const SessionsByCountry = ({ pedidos = [], zonas = [] }) => {
   return (
     <Card className="border-0 shadow-sm">
       <CardHeader className="d-flex justify-content-between align-items-center border-bottom border-dashed bg-transparent">
@@ -28,7 +34,7 @@ const SessionsByCountry = () => {
             Pedidos Recientes WhatsApp y Cobertura de Entregas
           </CardTitle>
           <p className="text-muted fs-12 mb-0">
-            Órdenes confirmadas vía Meta Cloud API en Bogotá y Sabana
+            Órdenes confirmadas vía Meta Cloud API
           </p>
         </div>
         <Link to="/pedidos" className="btn btn-sm btn-outline-primary">
@@ -51,33 +57,41 @@ const SessionsByCountry = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {CHATCONNECT_PEDIDOS.slice(0, 4).map((pedido) => (
-                    <tr key={pedido.id}>
-                      <td>
-                        <span className="fw-semibold text-primary">{pedido.numero_pedido}</span>
-                        <div className="text-muted fs-11">{pedido.fecha}</div>
+                  {pedidos.length === 0 ? (
+                    <tr>
+                      <td colSpan={5}>
+                        <Vacio texto="Aún no hay pedidos formalizados." />
                       </td>
-                      <td>
-                        <div className="fw-medium text-dark">{pedido.cliente_nombre}</div>
-                        <div className="text-muted fs-11 d-flex align-items-center gap-1">
-                          <IconifyIcon icon="bxl:whatsapp" className="text-success fs-12" />
-                          {pedido.whatsapp}
-                        </div>
-                      </td>
-                      <td>
-                        <span className="text-capitalize fs-12 text-dark">
-                          {pedido.tipo_entrega === 'domicilio' ? '🚚 Domicilio' : '🏬 En Depósito'}
-                        </span>
-                        <div className="text-muted fs-11 text-truncate" style={{ maxWidth: 140 }}>
-                          {pedido.direccion_entrega}
-                        </div>
-                      </td>
-                      <td className="fw-bold text-dark fs-13">
-                        ${pedido.total.toLocaleString('es-CO')} COP
-                      </td>
-                      <td>{getStatusBadge(pedido.estado)}</td>
                     </tr>
-                  ))}
+                  ) : (
+                    pedidos.map((pedido) => (
+                      <tr key={pedido.id}>
+                        <td>
+                          <span className="fw-semibold text-primary">{pedido.numero_pedido}</span>
+                          <div className="text-muted fs-11">{pedido.fecha}</div>
+                        </td>
+                        <td>
+                          <div className="fw-medium text-dark">{pedido.cliente_nombre}</div>
+                          <div className="text-muted fs-11 d-flex align-items-center gap-1">
+                            <IconifyIcon icon="bxl:whatsapp" className="text-success fs-12" />
+                            {pedido.whatsapp || 'Sin WhatsApp'}
+                          </div>
+                        </td>
+                        <td>
+                          <span className="text-capitalize fs-12 text-dark">
+                            {pedido.tipo_entrega === 'domicilio' ? '🚚 Domicilio' : '🏬 En Depósito'}
+                          </span>
+                          <div className="text-muted fs-11 text-truncate" style={{ maxWidth: 140 }}>
+                            {pedido.direccion_entrega}
+                          </div>
+                        </td>
+                        <td className="fw-bold text-dark fs-13">
+                          ${Number(pedido.total || 0).toLocaleString('es-CO')} COP
+                        </td>
+                        <td>{getStatusBadge(pedido.estado)}</td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
@@ -85,23 +99,27 @@ const SessionsByCountry = () => {
           <Col lg={5} className="p-3">
             <h6 className="fw-semibold text-dark mb-3">Zonas con Mayor Demanda WhatsApp</h6>
             <div className="d-flex flex-column gap-3">
-              {zonasEntrega.map((zona) => (
-                <div key={zona.name}>
-                  <div className="d-flex justify-content-between align-items-center mb-1 fs-12">
-                    <span className="fw-medium text-dark d-flex align-items-center gap-1">
-                      <IconifyIcon icon={zona.icon} className={`text-${zona.variant} fs-14`} />
-                      {zona.name}
-                    </span>
-                    <span className="fw-bold text-dark">{zona.amount} despachos</span>
+              {zonas.length === 0 ? (
+                <Vacio texto="Sin despachos registrados por zona." />
+              ) : (
+                zonas.map((zona) => (
+                  <div key={zona.name}>
+                    <div className="d-flex justify-content-between align-items-center mb-1 fs-12">
+                      <span className="fw-medium text-dark d-flex align-items-center gap-1">
+                        <IconifyIcon icon={zona.icon} className={`text-${zona.variant} fs-14`} />
+                        {zona.name}
+                      </span>
+                      <span className="fw-bold text-dark">{zona.amount} despachos</span>
+                    </div>
+                    <ProgressBar
+                      variant={zona.variant}
+                      now={zona.value}
+                      style={{ height: 6 }}
+                      className="rounded-pill"
+                    />
                   </div>
-                  <ProgressBar
-                    variant={zona.variant}
-                    now={zona.value}
-                    style={{ height: 6 }}
-                    className="rounded-pill"
-                  />
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </Col>
         </Row>

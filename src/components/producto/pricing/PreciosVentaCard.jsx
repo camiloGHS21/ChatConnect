@@ -14,7 +14,6 @@ const PreciosVentaCard = ({
   formData,
   updateField,
   taxesCatalog = [],
-  costoImpuesto = 0,
   onPrecioBaseChange,
   onPrecioImpuestoChange,
   onSmartRound,
@@ -90,10 +89,10 @@ const PreciosVentaCard = ({
           />
           <PreciosVentaSummary
             precioBase={precioBase}
-            precioImpuesto={formData?.precio_impuesto}
-            costoImpuesto={costoImpuesto}
             taxBreakdown={taxBreakdown}
-            onPrecioImpuestoChange={onPrecioImpuestoChange}
+            precioFinal={formData?.precio_impuesto}
+            costoFinal={formData?.costo_impuesto}
+            onPrecioFinalChange={onPrecioImpuestoChange}
             onSmartRound={onSmartRound}
           />
         </Card.Body>

@@ -129,4 +129,5 @@ function HttpClient() {
   };
 }
 
+export { apiClient };
 export default HttpClient();

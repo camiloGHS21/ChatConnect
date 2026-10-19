@@ -1,6 +1,13 @@
 import { Row, Col, Modal, Table, Badge, Button, Spinner } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import IconifyIcon from '@/components/wrappers/IconifyIcon';
+import ClienteMapa from './ClienteMapa';
+import {
+  construirDireccionTexto,
+  formatearCoordenadas,
+  tieneCoordenadas,
+  urlBuscarDireccion,
+} from '@/utils/geo';
 
 const ClienteDetailModal = ({ show, onHide, client, orders = [], loading = false }) => {
   if (!client) return null;
@@ -17,6 +24,8 @@ const ClienteDetailModal = ({ show, onHide, client, orders = [], loading = false
     return `/chat?${params.toString()}`;
   })();
 
+  const direccionTexto = construirDireccionTexto(client);
+
   return (
     <Modal show={show} onHide={onHide} size="lg" centered>
       <Modal.Header closeButton closeLabel="Cerrar">
@@ -28,8 +37,15 @@ const ClienteDetailModal = ({ show, onHide, client, orders = [], loading = false
         <Row className="g-3 mb-3 p-2 bg-light rounded">
           <Col md={4}>
             <small className="text-muted">Teléfono WhatsApp</small>
-            <div className="fw-bold text-success">
-              {client.whatsapp || 'Sin WhatsApp'}
+            <div>
+              <Link
+                to={chatUrl}
+                className="fw-bold text-success text-decoration-none d-inline-flex align-items-center gap-1"
+                title={`Abrir chat con ${client.nombre} en ChatConnect`}
+              >
+                <IconifyIcon icon="bxl:whatsapp" className="fs-16" />
+                {client.whatsapp || 'Sin WhatsApp'}
+              </Link>
             </div>
           </Col>
           <Col md={4}>
@@ -45,10 +61,40 @@ const ClienteDetailModal = ({ show, onHide, client, orders = [], loading = false
           <Col xs={12}>
             <small className="text-muted">Dirección y Ciudad</small>
             <div className="fw-medium">
-              {client.direccion || 'Sin dirección'} ({client.ciudad || 'No especificada'}{client.departamento ? `, ${client.departamento}` : ''})
+              {direccionTexto ? (
+                <a
+                  href={urlBuscarDireccion(direccionTexto)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-decoration-none link-ubicacion"
+                  title={`Abrir "${direccionTexto}" en Google Maps`}
+                >
+                  {client.direccion || 'Ver ubicación'} ({client.ciudad || 'No especificada'}{client.departamento ? `, ${client.departamento}` : ''})
+                </a>
+              ) : (
+                <span>Sin dirección registrada</span>
+              )}
+            </div>
+          </Col>
+          <Col xs={12}>
+            <small className="text-muted">Coordenadas</small>
+            <div>
+              {tieneCoordenadas(client) ? (
+                <span className="d-inline-flex align-items-center gap-1 font-monospace fs-12 text-dark">
+                  <IconifyIcon icon="tabler:current-location" className="text-primary fs-14" />
+                  {formatearCoordenadas(client.latitud, client.longitud)}
+                </span>
+              ) : (
+                <span className="text-muted fs-12 fst-italic">Sin coordenadas registradas</span>
+              )}
             </div>
           </Col>
         </Row>
+
+        <h6 className="fw-bold mb-2">Ubicación Geográfica</h6>
+        <div className="mb-3">
+          <ClienteMapa cliente={client} />
+        </div>
 
         <h6 className="fw-bold mb-2">Historial de Pedidos WhatsApp</h6>
         {loading ? (

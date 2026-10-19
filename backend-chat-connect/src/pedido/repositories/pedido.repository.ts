@@ -1,15 +1,17 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { PedidoModel } from '../models/pedido.model.js';
+import { PedidoEstadoModel, PedidoModel } from '../models/pedido.model.js';
 
 /**
  * ============================================================================
- * REPOSITORIO DE PEDIDOS (Solo Lectura / Read-Only ──► PostgreSQL)
+ * REPOSITORIO DE PEDIDOS (Controller ──► Repository ──► PostgreSQL)
  * ============================================================================
- * Maneja consultas operativas de pedidos y órdenes WhatsApp en modo lectura.
- * No permite mutaciones destructivas, actualizaciones ni eliminaciones directas.
+ * Consultas operativas de pedidos y órdenes WhatsApp, más la transición de
+ * estado (con trazabilidad en `pedido_estado`). No elimina pedidos.
  */
+const ESTADOS_VALIDOS = ['pendiente', 'confirmado', 'en_preparacion', 'despachado', 'entregado', 'cancelado'];
+
 @Injectable()
 export class PedidoRepository {
   constructor(
@@ -91,6 +93,34 @@ export class PedidoRepository {
     }
 
     return this.mapearPedidoFrontend(pedido);
+  }
+
+  /**
+   * Actualiza el estado del pedido y registra el cambio en el historial,
+   * ambos dentro de una misma transacción.
+   */
+  async actualizarEstado(id: number, empresaId: number, estado: string, comentario?: string) {
+    const nuevo = (estado || '').trim().toLowerCase();
+    if (!ESTADOS_VALIDOS.includes(nuevo)) {
+      throw new BadRequestException(`Estado inválido: ${estado}`);
+    }
+
+    await this.pedidoRepo.manager.transaction(async (em) => {
+      const pedido = await em.findOne(PedidoModel, { where: { id, empresaId } });
+      if (!pedido) {
+        throw new NotFoundException(`Pedido #${id} no encontrado en la empresa ${empresaId}`);
+      }
+      if (pedido.estado === nuevo) return;
+
+      await em.update(PedidoModel, { id, empresaId }, { estado: nuevo });
+      await em.insert(PedidoEstadoModel, {
+        pedidoId: id,
+        estado: nuevo,
+        comentario: comentario || `Cambio a ${nuevo}`,
+      });
+    });
+
+    return this.obtenerPorId(id, empresaId);
   }
 
   /**

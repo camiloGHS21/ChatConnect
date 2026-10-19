@@ -3,6 +3,7 @@ import { Row } from 'react-bootstrap';
 import CostosCompraCard from '@/components/producto/pricing/CostosCompraCard';
 import PreciosVentaCard from '@/components/producto/pricing/PreciosVentaCard';
 import RentabilidadSummaryCard from '@/components/producto/pricing/RentabilidadSummaryCard';
+
 import ListasPreciosCard from '@/components/producto/pricing/ListasPreciosCard';
 import RetencionesCard from '@/components/producto/pricing/RetencionesCard';
 import ModalNuevoImpuesto from '@/components/producto/pricing/ModalNuevoImpuesto';
@@ -104,7 +105,6 @@ const PricingCostsForm = ({ formData, updateField, catalogs = {}, triggerDeleteC
           formData={formData}
           updateField={updateField}
           taxesCatalog={taxesList}
-          costoImpuesto={formData?.costo_impuesto}
           onPrecioBaseChange={handlePrecioBaseChange}
           onPrecioImpuestoChange={handlePrecioImpuestoChange}
           onSmartRound={() => handleSmartRound('precio')}
@@ -115,7 +115,7 @@ const PricingCostsForm = ({ formData, updateField, catalogs = {}, triggerDeleteC
 
       <RentabilidadSummaryCard
         utilidadValor={formData?.utilidad_valor}
-        utilidadPorcentaje={formData?.utilidad_porcentaje}
+
         costoFinal={formData?.costo_impuesto}
         precioFinal={formData?.precio_impuesto}
         costoBase={formData?.costo_base}
@@ -123,6 +123,7 @@ const PricingCostsForm = ({ formData, updateField, catalogs = {}, triggerDeleteC
         gananciaFinal={formData?.ganancia_final}
         utilidadBruta={formData?.utilidad_bruta ?? formData?.ganancia_final}
       />
+
 
       <ListasPreciosCard
         formData={formData}

@@ -47,12 +47,20 @@ const ClientesPage = () => {
     cargarDatos();
   }, [cargarDatos]);
 
-  const filteredClientes = listaClientes.filter((c) =>
-    (c.nombre || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (c.whatsapp || '').includes(searchTerm) ||
-    (c.documento || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (c.ciudad || '').toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredClientes = listaClientes.filter((c) => {
+    const term = searchTerm.toLowerCase();
+    const coords =
+      c.latitud !== null && c.latitud !== undefined && c.longitud !== null && c.longitud !== undefined
+        ? `${c.latitud},${c.longitud}`
+        : '';
+    return (
+      (c.nombre || '').toLowerCase().includes(term) ||
+      (c.whatsapp || '').includes(searchTerm) ||
+      (c.documento || '').toLowerCase().includes(term) ||
+      (c.ciudad || '').toLowerCase().includes(term) ||
+      coords.includes(searchTerm)
+    );
+  });
 
   const handleOpenDetail = async (client) => {
     setSelectedClient(client);
@@ -100,7 +108,7 @@ const ClientesPage = () => {
             <div className="search-bar" style={{ minWidth: 260 }}>
               <Form.Control
                 type="text"
-                placeholder="Buscar por nombre, WhatsApp o ciudad..."
+                placeholder="Buscar por nombre, WhatsApp, ciudad o coordenadas..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="form-control-sm"

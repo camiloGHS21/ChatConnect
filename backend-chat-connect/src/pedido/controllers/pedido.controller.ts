@@ -1,6 +1,8 @@
 import {
   Controller,
+  Body,
   Get,
+  Patch,
   Param,
   Query,
   ParseIntPipe,
@@ -9,10 +11,9 @@ import { PedidoRepository } from '../repositories/pedido.repository.js';
 
 /**
  * ============================================================================
- * CONTROLADOR DE PEDIDOS (Solo Lectura / Read-Only ──► PostgreSQL)
+ * CONTROLADOR DE PEDIDOS (Controller ──► Repository ──► PostgreSQL)
  * ============================================================================
- * Expone exclusivamente endpoints de consulta y visualización de pedidos.
- * Protegido contra modificaciones o eliminaciones desde la API.
+ * Endpoints de consulta de pedidos y actualización de estado.
  */
 @Controller(['pedidos', 'pedido'])
 export class PedidoController {
@@ -53,5 +54,19 @@ export class PedidoController {
   ) {
     const idEmpresa = empresaId ? parseInt(empresaId, 10) : 1;
     return this.pedidoRepo.obtenerPorId(id, idEmpresa);
+  }
+
+  /**
+   * PATCH /pedido/:id/estado
+   * Cambia el estado del pedido y lo persiste en PostgreSQL con historial.
+   */
+  @Patch(':id/estado')
+  async actualizarEstado(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: { estado: string; comentario?: string },
+    @Query('empresa_id') empresaId?: string,
+  ) {
+    const idEmpresa = empresaId ? parseInt(empresaId, 10) : 1;
+    return this.pedidoRepo.actualizarEstado(id, idEmpresa, body?.estado, body?.comentario);
   }
 }

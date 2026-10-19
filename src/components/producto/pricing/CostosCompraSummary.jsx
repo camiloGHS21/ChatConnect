@@ -38,15 +38,16 @@ const CostosCompraSummary = ({
         </span>
       </div>
 
-      <div className="border-top pt-2 mt-2 d-flex flex-wrap justify-content-between align-items-center gap-2">
+      <div className="border-top pt-3 mt-2">
         <div>
-          <span className="fw-bold fs-13 text-body-emphasis d-block">Costo Final con Impuestos:</span>
-          <small className="text-muted fs-11 font-monospace">(puedes editar el costo final para redondearlo)</small>
+          <Form.Label htmlFor="costo_final_input" className="fw-bold fs-13 text-body-emphasis d-block mb-1">Costo Final con Impuestos:</Form.Label>
+
         </div>
-        <div className="d-flex align-items-center gap-1">
-          <div className="input-group input-group-sm" style={{ maxWidth: '230px' }}>
+        <div>
+          <div className="input-group w-100">
             <span className="input-group-text bg-body fw-bold text-info">$</span>
             <Form.Control
+              id="costo_final_input"
               type="number"
               step="1"
               min="0"
@@ -54,13 +55,12 @@ const CostosCompraSummary = ({
               value={costoImpuesto ?? ''}
               onChange={e => onCostoImpuestoChange(e.target.value)}
               title="Costo final con impuestos redondeable"
-                            aria-label="Costo final con impuestos"
+              aria-label="Costo final con impuestos"
             />
             <Button
               variant="info"
               type="button"
-              size="sm"
-              className="text-white px-2 py-0 fs-11 fw-semibold d-flex align-items-center gap-1"
+              className="text-white fw-semibold d-flex align-items-center gap-1"
               title="Redondear a denominación COP"
               onClick={onSmartRound}
             >
@@ -68,6 +68,7 @@ const CostosCompraSummary = ({
               Redondear
             </Button>
           </div>
+          <Form.Text className="fs-11">Puedes editar el costo final para redondearlo.</Form.Text>
         </div>
       </div>
     </div>

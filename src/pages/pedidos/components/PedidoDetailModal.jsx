@@ -2,7 +2,7 @@ import { Modal, Button, Table, Row, Col } from 'react-bootstrap';
 import IconifyIcon from '@/components/wrappers/IconifyIcon';
 import { getStatusBadge } from './StatusBadge';
 
-const PedidoDetailModal = ({ show, onHide, order, onUpdateStatus, onNotificarDespacho }) => {
+const PedidoDetailModal = ({ show, onHide, order, onUpdateStatus, onNotificarDespacho, onExport }) => {
   if (!order) return null;
 
   return (
@@ -100,20 +100,42 @@ const PedidoDetailModal = ({ show, onHide, order, onUpdateStatus, onNotificarDes
           </div>
         </div>
       </Modal.Body>
-      <Modal.Footer>
-        <Button variant="secondary" size="sm" onClick={onHide}>Cerrar</Button>
-        <Button
-          variant="success"
-          size="sm"
-          onClick={() => {
-            onHide();
-            onNotificarDespacho(order);
-          }}
-          className="d-flex align-items-center gap-1"
-        >
-          <IconifyIcon icon="bxl:whatsapp" className="fs-16" />
-          Notificar Despacho en Consola WhatsApp
-        </Button>
+      <Modal.Footer className="d-flex justify-content-between flex-wrap gap-2">
+        <div className="d-flex gap-2">
+          <Button
+            variant="outline-danger"
+            size="sm"
+            className="d-flex align-items-center gap-1"
+            onClick={() => onExport(order, 'pdf')}
+          >
+            <IconifyIcon icon="bxs:file-pdf" className="fs-16" />
+            Exportar PDF
+          </Button>
+          <Button
+            variant="outline-success"
+            size="sm"
+            className="d-flex align-items-center gap-1"
+            onClick={() => onExport(order, 'excel')}
+          >
+            <IconifyIcon icon="bxs:file" className="fs-16" />
+            Exportar Excel
+          </Button>
+        </div>
+        <div className="d-flex gap-2">
+          <Button variant="secondary" size="sm" onClick={onHide}>Cerrar</Button>
+          <Button
+            variant="success"
+            size="sm"
+            onClick={() => {
+              onHide();
+              onNotificarDespacho(order);
+            }}
+            className="d-flex align-items-center gap-1"
+          >
+            <IconifyIcon icon="bxl:whatsapp" className="fs-16" />
+            Notificar Despacho
+          </Button>
+        </div>
       </Modal.Footer>
     </Modal>
   );

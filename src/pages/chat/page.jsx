@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Row, Col, Card } from 'react-bootstrap';
 import { useSearchParams, useLocation } from 'react-router-dom';
 import PageBreadcrumb from '@/components/layout/PageBreadcrumb';
@@ -23,7 +23,6 @@ const ChatPage = () => {
   const [togglingMode, setTogglingMode] = useState(false);
   const [sendingMsg, setSendingMsg] = useState(false);
 
-  const prevLastInboundRef = useRef(null);
 
   const targetClienteId =
     searchParams.get('cliente_id') ||
@@ -176,32 +175,6 @@ const ChatPage = () => {
 
   const activeChat = conversaciones.find((c) => c.id === activeChatId) || conversaciones[0];
 
-  // Si llega un nuevo mensaje del cliente estando en modo IA, desactivar la IA automáticamente y pasar a Asesor
-  useEffect(() => {
-    if (!activeChat || activeChat.modo !== 'ia') return;
-
-    // Buscar el último mensaje del cliente
-    const lastInboundMsg = [...mensajes].reverse().find((m) => m.emisor === 'cliente');
-    if (!lastInboundMsg) return;
-
-    if (prevLastInboundRef.current && prevLastInboundRef.current !== lastInboundMsg.id) {
-      // Llegó un nuevo mensaje del cliente: apagar la IA y pasar a asesor
-      productoService.cambiarModoConversacion(activeChat.id, 'humano').then(() => {
-        setConversaciones((prev) =>
-          prev.map((c) => (c.id === activeChat.id ? { ...c, modo: 'humano' } : c))
-        );
-      }).catch((err) => {
-        console.error('Error al pausar IA tras mensaje del cliente:', err);
-      });
-    }
-
-    prevLastInboundRef.current = lastInboundMsg.id;
-  }, [mensajes, activeChat]);
-
-  // Reset del ref al cambiar de chat
-  useEffect(() => {
-    prevLastInboundRef.current = null;
-  }, [activeChatId]);
 
   const handleToggleMode = async () => {
     if (!activeChat) return;

@@ -24,6 +24,7 @@ const PedidosPage = () => {
     handleUpdateStatus,
     handleNotificarDespachoChat,
     handleNavigateChat,
+    handleExport,
   } = usePedidos();
 
   return (
@@ -49,6 +50,7 @@ const PedidosPage = () => {
         onUpdateStatus={handleUpdateStatus}
         onNotificarDespacho={handleNotificarDespachoChat}
         onNavigateChat={handleNavigateChat}
+        onExport={handleExport}
       />
 
       <PedidoDetailModal
@@ -57,6 +59,7 @@ const PedidosPage = () => {
         order={selectedOrder}
         onUpdateStatus={handleUpdateStatus}
         onNotificarDespacho={handleNotificarDespachoChat}
+        onExport={handleExport}
       />
     </>
   );

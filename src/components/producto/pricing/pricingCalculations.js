@@ -68,6 +68,12 @@ export const calculateProfitMargins = (costoBase, precioBase) => {
   };
 };
 
+export const calculatePriceByMargin = (costo, margen) => {
+  const cost = Math.max(0, Number(costo) || 0);
+  const percentage = Math.max(-100, Number(margen) || 0);
+  return Math.round(cost * (1 + percentage / 100) * 100) / 100;
+};
+
 export const calculateUtilidadBruta = (precioFinalVenta, costoFinalConImpuestos) => {
   const pFinal = Number(precioFinalVenta) || 0;
   const cFinal = Number(costoFinalConImpuestos) || 0;

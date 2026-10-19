@@ -1,5 +1,6 @@
-import { Card, CardHeader, CardBody, CardTitle, Table, Button, Form, Dropdown } from 'react-bootstrap';
+import { Card, CardHeader, CardBody, CardTitle, Table, Button, Form } from 'react-bootstrap';
 import IconifyIcon from '@/components/wrappers/IconifyIcon';
+import PedidoActionsMenu from './PedidoActionsMenu';
 import { getStatusBadge } from './StatusBadge';
 
 const PedidosTable = ({
@@ -13,6 +14,7 @@ const PedidosTable = ({
   onUpdateStatus,
   onNotificarDespacho,
   onNavigateChat,
+  onExport,
 }) => {
   return (
     <Card className="border-0 shadow-sm">
@@ -123,22 +125,7 @@ const PedidosTable = ({
                         <Button variant="soft-success" size="sm" className="btn-icon rounded-circle" onClick={() => onNotificarDespacho(ord)} title="Notificar Despacho en Consola de WhatsApp">
                           <IconifyIcon icon="bxl:whatsapp" className="fs-16" />
                         </Button>
-                        <Dropdown align="end">
-                          <Dropdown.Toggle variant="light" size="sm" className="btn-icon rounded-circle content-none arrow-none" title="Más Opciones">
-                            <IconifyIcon icon="bx:dots-vertical-rounded" className="fs-16" />
-                          </Dropdown.Toggle>
-                          <Dropdown.Menu className="fs-12 shadow-sm border-0">
-                            <Dropdown.Header>Actualizar Estado</Dropdown.Header>
-                            <Dropdown.Item onClick={() => onUpdateStatus(ord.id, 'pendiente')}>Marcar Pendiente</Dropdown.Item>
-                            <Dropdown.Item onClick={() => onUpdateStatus(ord.id, 'en_preparacion')}>Marcar En Preparación</Dropdown.Item>
-                            <Dropdown.Item onClick={() => onUpdateStatus(ord.id, 'despachado')}>Marcar Despachado</Dropdown.Item>
-                            <Dropdown.Item onClick={() => onUpdateStatus(ord.id, 'entregado')}>Marcar Entregado</Dropdown.Item>
-                            <Dropdown.Divider />
-                            <Dropdown.Item onClick={() => onNotificarDespacho(ord)} className="text-success d-flex align-items-center gap-1">
-                              <IconifyIcon icon="bxl:whatsapp" /> Notificar Despacho
-                            </Dropdown.Item>
-                          </Dropdown.Menu>
-                        </Dropdown>
+                        <PedidoActionsMenu order={ord} onUpdateStatus={onUpdateStatus} onNotificarDespacho={onNotificarDespacho} onExport={onExport} />
                       </div>
                     </td>
                   </tr>

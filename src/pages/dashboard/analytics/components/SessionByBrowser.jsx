@@ -1,10 +1,15 @@
 import IconifyIcon from '@/components/wrappers/IconifyIcon';
-import { canalesAtencion } from '../data';
 import { Card, CardBody, CardHeader, CardTitle, ProgressBar } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import { formatNumber } from '../../spanishPresentation';
 
-const SessionByBrowser = () => {
+const VARIANTES = ['success', 'primary', 'info', 'warning', 'danger'];
+
+/**
+ * Canales de atención con volumen real de conversaciones agrupadas por canal
+ * (`public.conversacion` ──► `public.canal`).
+ */
+const SessionByBrowser = ({ canales = [] }) => {
   return (
     <Card className="border-0 shadow-sm h-100">
       <CardHeader className="d-flex justify-content-between align-items-center border-bottom border-dashed bg-transparent">
@@ -12,29 +17,35 @@ const SessionByBrowser = () => {
           <CardTitle as="h5" className="fw-bold mb-0">
             Canales de Atención
           </CardTitle>
-          <span className="text-muted fs-12">Dispositivos y origen de tráfico</span>
+          <span className="text-muted fs-12">Origen de las conversaciones</span>
         </div>
         <span className="badge bg-success-subtle text-success">WhatsApp</span>
       </CardHeader>
       <CardBody className="p-3 d-flex flex-column justify-content-between">
         <div className="d-flex flex-column gap-3">
-          {canalesAtencion.map((canal, idx) => (
-            <div key={canal.name}>
-              <div className="d-flex justify-content-between align-items-center mb-1 fs-12">
-                <span className="fw-semibold text-dark d-flex align-items-center gap-1">
-                  <IconifyIcon icon="bxl:whatsapp" className="text-success fs-14" />
-                  {canal.name}
-                </span>
-                <span className="text-muted">{canal.amount.replace(/(\d),(?=\d{3}\b)/g, '$1.')} ({formatNumber(canal.percentage)}%)</span>
+          {canales.length === 0 ? (
+            <div className="text-center text-muted fs-12 py-4">Sin conversaciones registradas.</div>
+          ) : (
+            canales.map((canal, idx) => (
+              <div key={canal.name}>
+                <div className="d-flex justify-content-between align-items-center mb-1 fs-12">
+                  <span className="fw-semibold text-dark d-flex align-items-center gap-1">
+                    <IconifyIcon icon="bxl:whatsapp" className="text-success fs-14" />
+                    {canal.name}
+                  </span>
+                  <span className="text-muted">
+                    {formatNumber(canal.amount)} ({formatNumber(canal.percentage)}%)
+                  </span>
+                </div>
+                <ProgressBar
+                  variant={VARIANTES[idx % VARIANTES.length]}
+                  now={canal.percentage}
+                  style={{ height: 6 }}
+                  className="rounded-pill"
+                />
               </div>
-              <ProgressBar
-                variant={idx === 0 ? 'success' : idx === 1 ? 'primary' : 'info'}
-                now={canal.percentage}
-                style={{ height: 6 }}
-                className="rounded-pill"
-              />
-            </div>
-          ))}
+            ))
+          )}
         </div>
 
         <div className="mt-4 p-3 bg-light rounded text-center border">

@@ -224,8 +224,8 @@ const InventarioPage = () => {
                   <tr className="fs-12 text-muted">
                     <th>Producto y SKU</th>
                     <th>Categoría</th>
-                    <th>Existencia Física</th>
-                    <th>Reservado (WhatsApp)</th>
+                    <th>Existencia</th>
+                    <th>Reservado</th>
                     <th>Disponible</th>
                     <th style={{ width: 180 }}>Nivel de existencias</th>
                     <th>Estado</th>

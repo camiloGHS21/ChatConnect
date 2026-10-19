@@ -1,6 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { pedidoService } from '@/services/pedidoService';
+import { useNotificationContext } from '@/context/useNotificationContext';
+import { exportPedidoToPdf } from './utils/pedidoPdf';
+import { exportPedidoToExcel } from './utils/pedidoExcel';
 
 /**
  * Hook personalizado para la gestión y orquestación del módulo de pedidos.
@@ -8,6 +11,7 @@ import { pedidoService } from '@/services/pedidoService';
  */
 export const usePedidos = () => {
   const navigate = useNavigate();
+  const { showNotification } = useNotificationContext();
   const [statusFilter, setStatusFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedOrder, setSelectedOrder] = useState(null);
@@ -102,6 +106,40 @@ export const usePedidos = () => {
     navigate(`/chat?clienteId=${clienteId}`);
   };
 
+  /**
+   * Exporta un pedido a PDF o Excel. Si el registro no trae ítems, consulta el
+   * detalle completo en el backend antes de generar el documento.
+   */
+  const handleExport = async (order, formato) => {
+    try {
+      let pedido = order;
+      if (!pedido.items || pedido.items.length === 0) {
+        const detalle = await pedidoService.getPedido(order.id, 1);
+        if (detalle) pedido = detalle;
+      }
+
+      if (formato === 'excel') {
+        await exportPedidoToExcel(pedido);
+      } else {
+        exportPedidoToPdf(pedido);
+      }
+
+      showNotification({
+        title: 'Exportación lista',
+        message: `Pedido ${pedido.numero_pedido || pedido.id} descargado en ${formato === 'excel' ? 'Excel' : 'PDF'}.`,
+        variant: 'success',
+      });
+    } catch (err) {
+      console.error('Error al exportar el pedido:', err);
+      showNotification({
+        title: 'Error al exportar',
+        message: 'No se pudo generar el archivo. Intenta nuevamente.',
+        variant: 'danger',
+        delay: 3000,
+      });
+    }
+  };
+
   return {
     statusFilter,
     setStatusFilter,
@@ -122,6 +160,7 @@ export const usePedidos = () => {
     handleUpdateStatus,
     handleNotificarDespachoChat,
     handleNavigateChat,
+    handleExport,
   };
 };
 

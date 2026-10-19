@@ -1,8 +1,13 @@
-import { Button, Card, CardBody, CardTitle, Col, Row } from 'react-bootstrap';
+import { Card, CardBody, CardTitle, Col, Row } from 'react-bootstrap';
+import { Link } from 'react-router-dom';
 import ReactApexChart from 'react-apexcharts';
 import { spanishChartLocale, formatNumber } from '../../spanishPresentation';
 
-const Conversions = () => {
+/**
+ * Panel de automatización WhatsApp. Consume métricas reales de conversaciones
+ * (modo IA vs humano) y las series mensuales de mensajes y pedidos.
+ */
+const Conversions = ({ automatizacion, series }) => {
   const chartOptions = {
     chart: {
       ...spanishChartLocale,
@@ -48,7 +53,7 @@ const Conversions = () => {
       dashArray: 4,
     },
     colors: ['#25D366', '#7f56da'],
-    series: [86.4],
+    series: [automatizacion?.ia_porcentaje ?? 0],
     labels: ['Resuelto por IA'],
     responsive: [
       {
@@ -88,7 +93,7 @@ const Conversions = () => {
       },
     },
     xaxis: {
-      categories: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'],
+      categories: series?.etiquetas ?? [],
       axisTicks: {
         show: false,
       },
@@ -123,12 +128,12 @@ const Conversions = () => {
       {
         name: 'Mensajes WhatsApp',
         type: 'column',
-        data: [450, 620, 890, 1100, 1250, 980, 1340, 1420, 1680, 1550, 1720, 1890],
+        data: series?.mensajes ?? [],
       },
       {
         name: 'Pedidos Formalizados',
         type: 'line',
-        data: [35, 48, 72, 85, 96, 78, 110, 118, 142, 130, 150, 168],
+        data: series?.pedidos ?? [],
       },
     ],
   };
@@ -152,17 +157,17 @@ const Conversions = () => {
               <Row className="text-center">
                 <Col xs={6}>
                   <p className="text-muted mb-1 fs-12">Atención IA (automática)</p>
-                  <h4 className="text-success mb-2 fw-bold">1.106</h4>
+                  <h4 className="text-success mb-2 fw-bold">{formatNumber(automatizacion?.ia ?? 0)}</h4>
                 </Col>
                 <Col xs={6}>
                   <p className="text-muted mb-1 fs-12">Asesor Humano</p>
-                  <h4 className="text-primary mb-2 fw-bold">174</h4>
+                  <h4 className="text-primary mb-2 fw-bold">{formatNumber(automatizacion?.humano ?? 0)}</h4>
                 </Col>
               </Row>
               <div className="text-center">
-                <Button variant="outline-success" size="sm" type="button" className="w-100 rounded-pill">
+                <Link to="/chat" className="btn btn-sm btn-outline-success w-100 rounded-pill">
                   Supervisar Conversaciones
-                </Button>
+                </Link>
               </div>
             </div>
           </Col>

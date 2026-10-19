@@ -3,14 +3,11 @@ import { Card, Col, Row } from 'react-bootstrap';
 import IconifyIcon from '@/components/wrappers/IconifyIcon';
 
 /**
- * 3 Tarjetas de Rentabilidad y Utilidad:
- * 1. Utilidad Base (de antes: precio_base - costo_base)
- * 2. Ganancia Real en Mano (la nueva: precio_final - costo_final)
- * 3. Margen Porcentual (de antes: utilidad_porcentaje)
+ * Resumen de utilidad base, utilidad con impuestos y margen sobre costo base.
  */
 const RentabilidadSummaryCard = ({
   utilidadValor = 0,
-  utilidadPorcentaje = 0,
+
   costoFinal,
   precioFinal,
   costoBase,
@@ -33,8 +30,7 @@ const RentabilidadSummaryCard = ({
     ? (pFinal - cFinal)
     : (Number(utilidadBruta ?? gananciaFinal ?? 0) || valorBase);
 
-  // 3. Margen de Utilidad Porcentual (de antes)
-  const porcentaje = Number(utilidadPorcentaje || 0);
+  const porcentaje = cBase > 0 ? (valorBase / cBase) * 100 : 0;
 
   return (
     <Row className="g-3 mb-4">
@@ -93,7 +89,7 @@ const RentabilidadSummaryCard = ({
             </div>
             <div className="overflow-hidden">
               <span className="text-muted fs-11 text-uppercase fw-semibold d-block text-truncate">
-                Margen de Utilidad (%)
+                Margen de Utilidad Base (%)
               </span>
               <h4 className="mb-0 fw-bold text-info font-monospace">
                 {porcentaje.toFixed(2)}%

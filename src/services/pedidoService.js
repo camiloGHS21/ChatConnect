@@ -38,10 +38,11 @@ export const pedidoService = {
   },
 
   /**
-   * Actualiza el estado en el frontend (el backend es de solo lectura).
+   * Actualiza el estado del pedido en PostgreSQL (con historial).
    */
-  async actualizarEstado(id, estado) {
-    return { id, estado };
+  async actualizarEstado(id, estado, comentario, empresaId = 1) {
+    const res = await HttpClient.patch(`/pedido/${id}/estado?empresa_id=${empresaId}`, { estado, comentario });
+    return res.data;
   },
 };
 

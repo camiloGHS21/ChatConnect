@@ -11,13 +11,12 @@ const ChatSidebar = ({
   channelInfo = { name: 'Línea Ferretería', whatsapp: '+57 302 4610721' },
 }) => {
   const activeItemRef = useRef(null);
-
   // Scroll automático hacia la conversación activa si no está a la vista
   useEffect(() => {
     if (activeItemRef.current) {
       activeItemRef.current.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
     }
-  }, [activeChatId]);
+  }, []);
 
   // Deduplicación defensiva por número de WhatsApp o cliente_id, priorizando el chat activo
   const seenKeys = new Set();

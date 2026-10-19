@@ -58,3 +58,17 @@
 .email-offcanvas {
   --#{$prefix}offcanvas-width: 780px;
 }
+
+.link-ubicacion {
+  cursor: pointer;
+
+  &:hover {
+    color: var(--#{$prefix}primary) !important;
+    text-decoration: underline;
+
+    .fw-medium {
+      color: var(--#{$prefix}primary) !important;
+      text-decoration: underline;
+    }
+  }
+}

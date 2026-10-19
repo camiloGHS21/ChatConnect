@@ -187,7 +187,7 @@ export class ChatWhatsappRepository {
       // 4. Crear la conversación en PostgreSQL
       const insertRes = await this.dataSource.query(
         `INSERT INTO public.conversacion (empresa_id, tercero_id, canal_id, estado, modo, fecha_inicio, fecha_ultima_interaccion, created_at, updated_at)
-         VALUES ($1, $2, $3, 'activa', 'humano', NOW(), NOW(), NOW(), NOW())
+         VALUES ($1, $2, $3, 'activa', 'ia', NOW(), NOW(), NOW(), NOW())
          RETURNING id_conversacion AS id;`,
         [empresaId, terceroId, canalId],
       );
@@ -213,7 +213,7 @@ export class ChatWhatsappRepository {
         nombre: clientName,
         whatsapp: formattedPhone,
         avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(clientName)}`,
-        modo: 'humano',
+        modo: 'ia',
         estado: 'activa',
         ultimo_mensaje: 'Conversación iniciada',
         hora: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),

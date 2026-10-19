@@ -1,6 +1,7 @@
 import { Table, Badge, Button } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import IconifyIcon from '@/components/wrappers/IconifyIcon';
+import ClienteUbicacion from './ClienteUbicacion';
 
 const ClientesTable = ({ clientes = [], onOpenDetail }) => {
   const getChatUrl = (cliente) => {
@@ -61,31 +62,14 @@ const ClientesTable = ({ clientes = [], onOpenDetail }) => {
                       title={`Abrir chat con ${cliente.nombre} en ChatConnect`}
                     >
                       <IconifyIcon icon="bxl:whatsapp" className="fs-16" />
-                      {cliente.whatsapp || 'Sin WhatsApp'}
+                      <span>{cliente.whatsapp || 'Sin WhatsApp'}</span>
                     </Link>
-                    {cliente.whatsapp_raw && cliente.whatsapp_raw !== 'Sin WhatsApp' && (
-                      <a
-                        href={`https://wa.me/${cliente.whatsapp_raw}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-muted ms-1 text-decoration-none"
-                        title="Abrir WhatsApp Web externo"
-                      >
-                        <IconifyIcon icon="tabler:external-link" className="fs-12" />
-                      </a>
-                    )}
                   </div>
                   <span className="badge bg-success-subtle text-success fs-10">Verificado</span>
                 </td>
                 <td className="text-muted fs-12">{cliente.documento || cliente.numero_documento}</td>
                 <td>
-                  <div className="d-flex align-items-center gap-1 text-dark fs-12">
-                    <IconifyIcon icon="tabler:map-pin" className="text-danger fs-14" />
-                    {cliente.ciudad} {cliente.departamento ? `(${cliente.departamento})` : ''}
-                  </div>
-                  <div className="text-muted fs-11 text-truncate" style={{ maxWidth: 200 }}>
-                    {cliente.direccion}
-                  </div>
+                  <ClienteUbicacion cliente={cliente} />
                 </td>
                 <td>
                   <Badge bg="primary-subtle" className="text-primary px-2 py-1">
