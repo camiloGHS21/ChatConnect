@@ -74,6 +74,21 @@ export const calculatePriceByMargin = (costo, margen) => {
   return Math.round(cost * (1 + percentage / 100) * 100) / 100;
 };
 
+
+export const calculateGrossUtilityMargin = (costoBase, costoFinal, precioFinal) => {
+  const baseCost = Math.max(0, Number(costoBase) || 0);
+  const finalCost = Math.max(0, Number(costoFinal) || 0);
+  const finalPrice = Math.max(0, Number(precioFinal) || 0);
+  return baseCost > 0 ? ((finalPrice - finalCost) / baseCost) * 100 : 0;
+};
+
+export const calculatePriceByGrossUtilityMargin = (costoBase, costoFinal, margen) => {
+  const baseCost = Math.max(0, Number(costoBase) || 0);
+  const finalCost = Math.max(0, Number(costoFinal) || 0);
+  const percentage = Number(margen) || 0;
+  return Math.max(0, Math.round((finalCost + (baseCost * percentage) / 100) * 100) / 100);
+};
+
 export const calculateUtilidadBruta = (precioFinalVenta, costoFinalConImpuestos) => {
   const pFinal = Number(precioFinalVenta) || 0;
   const cFinal = Number(costoFinalConImpuestos) || 0;

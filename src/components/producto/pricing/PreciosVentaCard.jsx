@@ -90,6 +90,7 @@ const PreciosVentaCard = ({
           <PreciosVentaSummary
             precioBase={precioBase}
             taxBreakdown={taxBreakdown}
+            costoBase={formData?.costo_base}
             precioFinal={formData?.precio_impuesto}
             costoFinal={formData?.costo_impuesto}
             onPrecioFinalChange={onPrecioImpuestoChange}

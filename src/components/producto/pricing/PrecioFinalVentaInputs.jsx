@@ -1,18 +1,21 @@
 import { useState } from 'react';
 import { Button, Col, Form, Row } from 'react-bootstrap';
 import IconifyIcon from '@/components/wrappers/IconifyIcon';
-import { calculatePriceByMargin, calculateProfitMargins } from './pricingCalculations';
+import {
+  calculateGrossUtilityMargin,
+  calculatePriceByGrossUtilityMargin,
+} from './pricingCalculations';
 
-const PrecioFinalVentaInputs = ({ precioFinal, costoFinal, onPrecioFinalChange, onSmartRound }) => {
+const PrecioFinalVentaInputs = ({ costoBase, precioFinal, costoFinal, onPrecioFinalChange, onSmartRound }) => {
   const [marginDraft, setMarginDraft] = useState(null);
+  const base = Number(costoBase) || 0;
   const costo = Number(costoFinal) || 0;
-  const { utilidadPorcentaje } = calculateProfitMargins(costo, precioFinal);
-  const margen = Math.round(utilidadPorcentaje * 100) / 100;
+  const margen = Math.round(calculateGrossUtilityMargin(base, costo, precioFinal) * 100) / 100;
 
   const handleMarginChange = (value) => {
     setMarginDraft(value);
     if (value === '' || !Number.isFinite(Number(value))) return;
-    onPrecioFinalChange(calculatePriceByMargin(costo, value));
+    onPrecioFinalChange(calculatePriceByGrossUtilityMargin(base, costo, value));
   };
 
   return (
@@ -29,15 +32,15 @@ const PrecioFinalVentaInputs = ({ precioFinal, costoFinal, onPrecioFinalChange, 
               value={marginDraft ?? margen}
               onChange={(e) => handleMarginChange(e.target.value)}
               onBlur={() => setMarginDraft(null)}
-              disabled={costo <= 0}
+              disabled={base <= 0}
               aria-describedby="margen_final_help"
             />
             <span className="input-group-text bg-body fw-bold">%</span>
           </div>
           <Form.Text id="margen_final_help" className="fs-11">
-            {costo > 0
-              ? 'Utilidad bruta / costo final × 100.'
-              : 'Ingresa un costo final mayor que cero.'}
+            {base > 0
+              ? 'Utilidad bruta / costo base × 100.'
+              : 'Ingresa un costo base mayor que cero.'}
           </Form.Text>
         </Form.Group>
       </Col>

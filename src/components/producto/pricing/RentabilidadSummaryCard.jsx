@@ -3,11 +3,10 @@ import { Card, Col, Row } from 'react-bootstrap';
 import IconifyIcon from '@/components/wrappers/IconifyIcon';
 
 /**
- * Resumen de utilidad base, utilidad con impuestos y margen sobre costo base.
+ * Utilidades base y bruta con sus respectivos márgenes sobre costo.
  */
 const RentabilidadSummaryCard = ({
   utilidadValor = 0,
-
   costoFinal,
   precioFinal,
   costoBase,
@@ -31,18 +30,19 @@ const RentabilidadSummaryCard = ({
     : (Number(utilidadBruta ?? gananciaFinal ?? 0) || valorBase);
 
   const porcentaje = cBase > 0 ? (valorBase / cBase) * 100 : 0;
+  const porcentajeBruto = cBase > 0 ? (valorReal / cBase) * 100 : 0;
 
   return (
     <Row className="g-3 mb-4">
       {/* Tarjeta 1: Utilidad Base */}
-      <Col lg={4} md={6}>
+      <Col lg={3} md={6} className="order-1">
         <Card className="border border-primary border-opacity-25 bg-primary bg-opacity-10 shadow-none rounded-3 h-100 mb-0">
           <Card.Body className="py-3 d-flex align-items-center gap-3">
             <div className="avatar-md bg-primary text-white rounded-circle d-flex align-items-center justify-content-center shadow-sm flex-shrink-0">
               <IconifyIcon icon="bx:trending-up" className="fs-26" />
             </div>
             <div className="overflow-hidden">
-              <span className="text-muted fs-11 text-uppercase fw-semibold d-block text-truncate">
+              <span className="text-muted fs-11 text-uppercase fw-semibold d-block text-wrap">
                 Utilidad Base (Sin Impuestos)
               </span>
               <h4 className="mb-0 fw-bold text-primary font-monospace">
@@ -56,8 +56,8 @@ const RentabilidadSummaryCard = ({
         </Card>
       </Col>
 
-      {/* Tarjeta 2: Utilidad Bruta (Precio Final de Venta - Costo Final con Impuestos) */}
-      <Col lg={4} md={6}>
+      {/* Tarjeta 3: Utilidad Bruta (Precio Final de Venta - Costo Final con Impuestos) */}
+      <Col lg={3} md={6} className="order-3">
         <Card className={`border ${valorReal >= 0 ? 'border-success bg-success' : 'border-danger bg-danger'} border-opacity-25 bg-opacity-10 shadow-none rounded-3 h-100 mb-0`}>
           <Card.Body className="py-3 d-flex align-items-center gap-3">
             <div className={`avatar-md ${valorReal >= 0 ? 'bg-success' : 'bg-danger'} text-white rounded-circle d-flex align-items-center justify-content-center shadow-sm flex-shrink-0`}>
@@ -80,22 +80,43 @@ const RentabilidadSummaryCard = ({
         </Card>
       </Col>
 
-      {/* Tarjeta 3 (De antes): Margen Porcentual */}
-      <Col lg={4} md={12}>
+      {/* Tarjeta 2: Margen Base */}
+      <Col lg={3} md={6} className="order-2">
         <Card className="border border-info border-opacity-25 bg-info bg-opacity-10 shadow-none rounded-3 h-100 mb-0">
           <Card.Body className="py-3 d-flex align-items-center gap-3">
             <div className="avatar-md bg-info text-white rounded-circle d-flex align-items-center justify-content-center shadow-sm flex-shrink-0">
               <IconifyIcon icon="bx:pie-chart-alt" className="fs-26" />
             </div>
             <div className="overflow-hidden">
-              <span className="text-muted fs-11 text-uppercase fw-semibold d-block text-truncate">
+              <span className="text-muted fs-11 text-uppercase fw-semibold d-block text-wrap">
                 Margen de Utilidad Base (%)
               </span>
               <h4 className="mb-0 fw-bold text-info font-monospace">
                 {porcentaje.toFixed(2)}%
               </h4>
               <span className="text-muted fs-11 mt-1 d-block text-truncate">
-                Rentabilidad sobre costo base
+                Utilidad base / costo base × 100
+              </span>
+            </div>
+          </Card.Body>
+        </Card>
+      </Col>
+
+      <Col lg={3} md={6} className="order-4">
+        <Card className={`border ${valorReal >= 0 ? 'border-warning bg-warning' : 'border-danger bg-danger'} border-opacity-25 bg-opacity-10 shadow-none rounded-3 h-100 mb-0`}>
+          <Card.Body className="py-3 d-flex align-items-center gap-3">
+            <div className={`avatar-md ${valorReal >= 0 ? 'bg-warning' : 'bg-danger'} text-white rounded-circle d-flex align-items-center justify-content-center shadow-sm flex-shrink-0`}>
+              <IconifyIcon icon="bx:bar-chart-alt-2" className="fs-26" />
+            </div>
+            <div className="overflow-hidden">
+              <span className="text-muted fs-11 text-uppercase fw-semibold d-block text-wrap">
+                Margen de Utilidad Bruta (%)
+              </span>
+              <h4 className={`mb-0 fw-bold ${valorReal >= 0 ? 'text-warning' : 'text-danger'} font-monospace`}>
+                {porcentajeBruto.toFixed(2)}%
+              </h4>
+              <span className="text-muted fs-11 mt-1 d-block">
+                Utilidad bruta / costo base × 100
               </span>
             </div>
           </Card.Body>

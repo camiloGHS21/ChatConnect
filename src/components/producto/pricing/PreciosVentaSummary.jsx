@@ -3,6 +3,7 @@ import PrecioFinalVentaInputs from './PrecioFinalVentaInputs';
 const PreciosVentaSummary = ({
   precioBase = 0,
   taxBreakdown = {},
+  costoBase,
   precioFinal,
   costoFinal,
   onPrecioFinalChange,
@@ -37,6 +38,7 @@ const PreciosVentaSummary = ({
     </div>
     <div className="border-top pt-3 mt-2">
       <PrecioFinalVentaInputs
+        costoBase={costoBase}
         precioFinal={precioFinal}
         costoFinal={costoFinal}
         onPrecioFinalChange={onPrecioFinalChange}
