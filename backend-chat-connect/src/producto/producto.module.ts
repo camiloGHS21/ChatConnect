@@ -4,6 +4,8 @@ import { ProductoController } from './controllers/producto.controller.js';
 import { ProductoRepository } from './repositories/producto.repository.js';
 import { CatalogoRepository } from './repositories/catalogo.repository.js';
 import { CatalogoConfigRepository } from './repositories/catalogo-config.repository.js';
+import { RetencionRepository } from './repositories/retencion.repository.js';
+import { RetencionModel } from './models/retencion.model.js';
 import { GeografiaProveedorRepository } from './repositories/geografia-proveedor.repository.js';
 import { ProductoQueryRepository } from './repositories/producto-query.repository.js';
 import { ProductoCreateRepository } from './repositories/producto-create.repository.js';
@@ -36,6 +38,7 @@ const repositories = [
   ProductoRepository,
   CatalogoRepository,
   CatalogoConfigRepository,
+  RetencionRepository,
   GeografiaProveedorRepository,
   ProductoQueryRepository,
   ProductoCreateRepository,
@@ -64,6 +67,7 @@ const repositories = [
       SubcategoriaModel,
       MarcaModel,
       ImpuestoModel,
+      RetencionModel,
       ListaPrecioModel,
       AtributoModel,
       AtributoComponenteModel,

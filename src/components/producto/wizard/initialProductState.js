@@ -34,7 +34,7 @@ export const getInitialProductState = (siguienteCodigo = '') => ({
   // SECCIÓN 3 — Listas de precios (solo registros reales seleccionados/creados)
   listas_precios: [],
 
-  // SECCIÓN 4 — Retenciones (No aplican para valores menores a $500.000 COP)
+  // SECCIÓN 4 — Asignación de retenciones del catálogo al producto
   retenciones: [],
 
   // SECCIÓN 5 — Inventario

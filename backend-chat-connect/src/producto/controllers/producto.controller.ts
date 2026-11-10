@@ -1,5 +1,6 @@
 import { Controller, Get, Post, Put, Patch, Delete, Body, Query, Param, HttpCode, HttpStatus } from '@nestjs/common';
 import { ProductoRepository } from '../repositories/producto.repository.js';
+import { RetencionRepository } from '../repositories/retencion.repository.js';
 import { CreateProductoDto } from '../dto/create-producto.dto.js';
 import { UpdateProductoDto } from '../dto/update-producto.dto.js';
 import { CreateColeccionDto } from '../dto/create-coleccion.dto.js';
@@ -16,7 +17,10 @@ import { EnviarCategoriasChatDto } from '../dto/enviar-categorias-chat.dto.js';
  */
 @Controller('productos')
 export class ProductoController {
-  constructor(private readonly productoRepo: ProductoRepository) { }
+  constructor(
+    private readonly productoRepo: ProductoRepository,
+    private readonly retencionRepo: RetencionRepository,
+  ) { }
 
   @Get('catalogos')
   async getCatalogos(@Query('empresa_id') empresaId?: string) {
@@ -224,6 +228,15 @@ export class ProductoController {
   ) {
     const empId = empresaId ? parseInt(empresaId, 10) : 1;
     return await this.productoRepo.eliminarListaPrecio(parseInt(id, 10), empId);
+  }
+
+  @Patch('configuraciones/retenciones/:id')
+  async actualizarRetencion(
+    @Param('id') id: string,
+    @Body() dto: { estado: string },
+    @Query('empresa_id') empresaId?: string,
+  ) {
+    return this.retencionRepo.actualizarEstado(Number(id), dto?.estado, Number(empresaId ?? 1));
   }
 
   @Patch('configuraciones/impuestos/:id')

@@ -1,0 +1,802 @@
+{
+  "backend-chat-connect/src/cliente/controllers/cliente.controller.ts": {
+    "hash": 7373264778633367844,
+    "es": "Define los endpoints de clientes para listar, consultar métricas y obtener, crear o actualizar registros mediante el repositorio."
+  },
+  "backend-chat-connect/src/cliente/dto/cliente.dto.ts": {
+    "hash": 5216847206874798639,
+    "es": "Define los campos opcionales permitidos para crear y actualizar clientes mediante solicitudes de la API."
+  },
+  "backend-chat-connect/src/cliente/repositories/cliente.repository.ts": {
+    "hash": 1777151844309912235,
+    "es": "Consulta y administra clientes de la empresa, con listados, métricas, búsqueda y operaciones de creación y actualización."
+  },
+  "backend-chat-connect/src/consecutivo/controllers/consecutivo.controller.ts": {
+    "hash": 84584668951918779,
+    "es": "Expone rutas para listar consecutivos por empresa y actualizar uno mediante el repositorio correspondiente."
+  },
+  "backend-chat-connect/src/consecutivo/repositories/consecutivo.repository.ts": {
+    "hash": 17324806044444980035,
+    "es": "Administra los consecutivos de distintos módulos, inicializándolos, validándolos y manteniéndolos en la base de datos."
+  },
+  "backend-chat-connect/src/dashboard/controllers/dashboard.controller.ts": {
+    "hash": 15580415669277038354,
+    "es": "Expone las rutas de resumen del panel y obtiene sus datos para la empresa solicitada."
+  },
+  "backend-chat-connect/src/dashboard/repositories/dashboard-chat.repository.ts": {
+    "hash": 15472049450890533965,
+    "es": "Consulta y agrega métricas de conversaciones, mensajes y canales de chat para el panel de control."
+  },
+  "backend-chat-connect/src/dashboard/repositories/dashboard-operacion.repository.ts": {
+    "hash": 9769818981526408666,
+    "es": "Consulta métricas operativas de clientes, pedidos, inventario, productos y zonas de entrega para el dashboard."
+  },
+  "backend-chat-connect/src/dashboard/repositories/dashboard.repository.ts": {
+    "hash": 7017675095589080389,
+    "es": "Coordina repositorios del dashboard para consolidar datos operativos y de chat en un resumen."
+  },
+  "backend-chat-connect/src/database/database.module.ts": {
+    "hash": 10682887842400372090,
+    "es": "Configura y exporta globalmente la conexión PostgreSQL con TypeORM y los servicios de base de datos y semillas."
+  },
+  "backend-chat-connect/src/database/database.service.ts": {
+    "hash": 18187608528421557720,
+    "es": "Proporciona acceso a la conexión TypeORM y permite ejecutar consultas SQL parametrizadas."
+  },
+  "backend-chat-connect/src/database/seed.service.ts": {
+    "hash": 9539644709258096460,
+    "es": "Verifica y crea al iniciar la aplicación la empresa y el usuario predeterminados, y permite ejecutar el semillado manualmente."
+  },
+  "backend-chat-connect/src/database/seeds/import-dian-divipola.cjs": {
+    "hash": 4532629758895646033,
+    "es": "Descarga y normaliza el catálogo DIVIPOLA del DANE para importar municipios y departamentos en la base de datos."
+  },
+  "backend-chat-connect/src/empresa/controllers/empresa.controller.ts": {
+    "hash": 9365059708326257217,
+    "es": "Expone endpoints para consultar y actualizar el perfil de una empresa."
+  },
+  "backend-chat-connect/src/empresa/repositories/empresa.repository.ts": {
+    "hash": 16407308227818573056,
+    "es": "Consulta y actualiza perfiles de empresa, validando campos obligatorios y correo electrónico."
+  },
+  "backend-chat-connect/src/inventario/controllers/inventario.controller.ts": {
+    "hash": 17646445498033101491,
+    "es": "Expone endpoints para listar el inventario, consultar sus métricas y ajustar existencias."
+  },
+  "backend-chat-connect/src/inventario/repositories/inventario.repository.ts": {
+    "hash": 506299411311985463,
+    "es": "Consulta productos y métricas de inventario, y aplica ajustes de stock en la base de datos."
+  },
+  "backend-chat-connect/src/login/controllers/login.controller.ts": {
+    "hash": 143291246029056974,
+    "es": "Gestiona el inicio de sesión, valida credenciales y emite JWT; también ofrece endpoints de estado y token CSRF."
+  },
+  "backend-chat-connect/src/login/guards/csrf.guard.spec.ts": {
+    "hash": 17634284434616136199,
+    "es": "Prueba que CsrfGuard permita métodos seguros y aplique correctamente la protección CSRF."
+  },
+  "backend-chat-connect/src/login/guards/csrf.guard.ts": {
+    "hash": 11345837291971156665,
+    "es": "Valida las solicitudes HTTP mutables mediante protección CSRF y permite los métodos de solo lectura."
+  },
+  "backend-chat-connect/src/login/models/login.model.ts": {
+    "hash": 11395015807610843841,
+    "es": "Define entidades TypeORM para empresas, usuarios y respuestas de inicio de sesión."
+  },
+  "backend-chat-connect/src/login/repositories/login.repository.ts": {
+    "hash": 10748150651373455084,
+    "es": "Centraliza las consultas y actualizaciones de usuarios necesarias para la autenticación."
+  },
+  "backend-chat-connect/src/pedido/controllers/pedido.controller.ts": {
+    "hash": 17270143089872294492,
+    "es": "Expone endpoints para listar pedidos, consultar sus indicadores y detalles, y actualizar su estado."
+  },
+  "backend-chat-connect/src/pedido/models/pedido.model.ts": {
+    "hash": 1674215853144721093,
+    "es": "Define modelos TypeORM de terceros, productos, pedidos, detalles, impuestos y estados para representar y consultar la estructura de pedidos."
+  },
+  "backend-chat-connect/src/pedido/repositories/pedido.repository.spec.ts": {
+    "hash": 11983353550806471661,
+    "es": "Prueba el repositorio de pedidos con constructores de datos y dobles de consultas para verificar su comportamiento."
+  },
+  "backend-chat-connect/src/pedido/repositories/pedido.repository.ts": {
+    "hash": 3484957487601027698,
+    "es": "Consulta pedidos y métricas, actualiza estados y adapta los datos al formato de interfaz."
+  },
+  "backend-chat-connect/src/producto/controllers/empresa-limpieza.controller.ts": {
+    "hash": 6928402366214069318,
+    "es": "Expone endpoints para consultar resúmenes y purgar datos de una empresa."
+  },
+  "backend-chat-connect/src/producto/controllers/producto.controller.ts": {
+    "hash": 416568394311805392,
+    "es": "Expone endpoints para consultar, crear, actualizar y eliminar productos y sus catálogos mediante el repositorio."
+  },
+  "backend-chat-connect/src/producto/dto/create-producto.dto.ts": {
+    "hash": 4671880161323201206,
+    "es": "Define los tipos de datos y la estructura de validación para crear productos con sus opciones relacionadas."
+  },
+  "backend-chat-connect/src/producto/models/atributo.model.ts": {
+    "hash": 10777427274149173679,
+    "es": "Define entidades TypeORM para atributos y componentes de productos, destinadas a mapear sus datos en la base de datos."
+  },
+  "backend-chat-connect/src/producto/models/canal-secuencia.model.ts": {
+    "hash": 557467372062718637,
+    "es": "Define las entidades TypeORM de secuencias y canales, usadas para representar configuraciones de generación de consecutivos."
+  },
+  "backend-chat-connect/src/producto/models/catalogo.model.ts": {
+    "hash": 4939390347452571417,
+    "es": "Define entidades TypeORM para categorías, subcategorías, marcas, impuestos y listas de precios, mapeándolas a tablas de PostgreSQL."
+  },
+  "backend-chat-connect/src/producto/models/geografia.model.ts": {
+    "hash": 4385121246656922665,
+    "es": "Define entidades TypeORM de departamentos y ciudades para almacenar y relacionar datos geográficos."
+  },
+  "backend-chat-connect/src/producto/repositories/catalogo-config.repository.ts": {
+    "hash": 5669869570440222384,
+    "es": "Asegura la configuración DIAN predeterminada y ofrece catálogos de configuración para cada empresa."
+  },
+  "backend-chat-connect/src/producto/repositories/catalogo.repository.ts": {
+    "hash": 4153594797709471129,
+    "es": "Implementa operaciones de persistencia y consulta para catálogos de productos, junto con su configuración relacionada."
+  },
+  "backend-chat-connect/src/producto/repositories/chat-catalogo.repository.spec.ts": {
+    "hash": 12548541010056556045,
+    "es": "Prueba el envío de mensajes del catálogo por WhatsApp y el manejo de respuestas inválidas."
+  },
+  "backend-chat-connect/src/producto/repositories/chat-catalogo.repository.ts": {
+    "hash": 326087918062935712,
+    "es": "Coordina el envío de productos y colecciones de catálogo por WhatsApp, usando los repositorios de Meta y mensajería."
+  },
+  "backend-chat-connect/src/producto/repositories/chat-whatsapp-modo.repository.spec.ts": {
+    "hash": 4220603261326638464,
+    "es": "Prueba los modos de atención del repositorio de WhatsApp con datos simulados para verificar consultas y resultados."
+  },
+  "backend-chat-connect/src/producto/repositories/chat-whatsapp.repository.ts": {
+    "hash": 14025237145098927330,
+    "es": "Gestiona conversaciones, mensajes y catálogo de WhatsApp, incluyendo la ventana de atención de 24 horas."
+  },
+  "backend-chat-connect/src/producto/repositories/empresa-limpieza.repository.ts": {
+    "hash": 13082775517883194105,
+    "es": "Consulta resúmenes y purga transaccionalmente los datos de una empresa en PostgreSQL."
+  },
+  "backend-chat-connect/src/producto/repositories/geografia-proveedor.repository.ts": {
+    "hash": 12015152513148540232,
+    "es": "Consulta y crea departamentos, ciudades y proveedores, normalizando y resolviendo datos geográficos y atributos asociados."
+  },
+  "backend-chat-connect/src/producto/repositories/meta-catalog.helper.ts": {
+    "hash": 3275507841200274899,
+    "es": "Limpia y adapta textos de productos a las políticas de Meta, y ayuda a procesar variantes y sus imágenes."
+  },
+  "backend-chat-connect/src/producto/repositories/meta-catalog.repository.ts": {
+    "hash": 1150075614982326009,
+    "es": "Obtiene la configuración del catálogo de Meta y coordina su activación y sincronización de productos."
+  },
+  "backend-chat-connect/src/producto/repositories/meta-coleccion.repository.ts": {
+    "hash": 9485531212345104998,
+    "es": "Gestiona la consulta, creación, eliminación y sincronización de colecciones de productos en el catálogo de Meta para WhatsApp."
+  },
+  "backend-chat-connect/src/producto/repositories/meta-sync.repository.spec.ts": {
+    "hash": 8503598587923386268,
+    "es": "Prueba el repositorio de sincronización de productos con Meta mediante respuestas y datos simulados."
+  },
+  "backend-chat-connect/src/producto/repositories/meta-sync.repository.ts": {
+    "hash": 967391701308853883,
+    "es": "Sincroniza productos y sus variantes con el catálogo de Meta Commerce."
+  },
+  "backend-chat-connect/src/producto/repositories/producto-create.repository.spec.ts": {
+    "hash": 5515030033043373948,
+    "es": "Prueba el repositorio de creación de productos con mocks de transacciones y consultas para verificar su comportamiento."
+  },
+  "backend-chat-connect/src/producto/repositories/producto-create.repository.ts": {
+    "hash": 3304846012798314767,
+    "es": "Crea productos y sus entidades dependientes dentro de una transacción, validando datos y asignando códigos internos."
+  },
+  "backend-chat-connect/src/producto/repositories/producto-delete.repository.spec.ts": {
+    "hash": 17767192830667972391,
+    "es": "Prueba el repositorio de eliminación de productos con dependencias simuladas para verificar sus respuestas y errores."
+  },
+  "backend-chat-connect/src/producto/repositories/producto-delete.repository.ts": {
+    "hash": 8462368793904580834,
+    "es": "Elimina productos de la base de datos y del catálogo de Meta, y gestiona la carga inicial de productos de ferretería."
+  },
+  "backend-chat-connect/src/producto/repositories/producto-query.repository.ts": {
+    "hash": 12528412623035683081,
+    "es": "Consulta productos y genera el siguiente código secuencial para una empresa."
+  },
+  "backend-chat-connect/src/producto/repositories/producto-update.repository.spec.ts": {
+    "hash": 12381348571587171872,
+    "es": "Prueba el repositorio de actualización de productos, incluidas sus transacciones y consultas."
+  },
+  "backend-chat-connect/src/producto/repositories/producto-update.repository.ts": {
+    "hash": 6477416250734505644,
+    "es": "Actualiza un producto y sus entidades dependientes, consultando los datos actuales y validando la operación."
+  },
+  "backend-chat-connect/src/producto/repositories/producto.repository.ts": {
+    "hash": 10875964278678351965,
+    "es": "Coordina los repositorios de productos para ofrecer operaciones de catálogo, geografía y gestión de productos a otras capas."
+  },
+  "chat-responsive.js": {
+    "hash": 16791444687502862318,
+    "es": "Genera una interfaz de chat adaptable a distintos tamaños de pantalla mediante componentes de diseño y funciones auxiliares."
+  },
+  "responsive-views.js": {
+    "hash": 15199998969786144412,
+    "es": "Genera una interfaz adaptable para chat que ajusta su distribución y estilos según el tamaño de pantalla."
+  },
+  "src/App.jsx": {
+    "hash": 16872391346113935959,
+    "es": "Configura las rutas de la aplicación y protege las páginas administrativas mediante autenticación."
+  },
+  "src/components/ActivityStream.jsx": {
+    "hash": 4558427365589843846,
+    "es": "Muestra un flujo de actividad con elementos, archivos, iconos, estados y detalles en un panel desplazable."
+  },
+  "src/components/Table/Pagination.jsx": {
+    "hash": 8322661353778319762,
+    "es": "Calcula y muestra páginas visibles y controles de navegación para paginar una tabla."
+  },
+  "src/components/ThemeCustomizer.jsx": {
+    "hash": 13113808093056114316,
+    "es": "Permite personalizar el tema visual de la aplicación, incluidos los colores, la barra superior, el menú y la barra lateral."
+  },
+  "src/components/VectorMap/BaseVectorMap.jsx": {
+    "hash": 15741935052065871998,
+    "es": "Crea un mapa vectorial interactivo y adapta al español los nombres de regiones del mapa mundial."
+  },
+  "src/components/form/ChoicesFormInput.jsx": {
+    "hash": 9474866815934806399,
+    "es": "Inicializa Choices.js en un selector y adapta sus opciones y cambios para ofrecer búsqueda y selección."
+  },
+  "src/components/form/SelectFormInput.jsx": {
+    "hash": 3277263371073766194,
+    "es": "Integra un selector accesible y en español con formularios, validación y comparación flexible de valores."
+  },
+  "src/components/form/selectSpanishMessages.js": {
+    "hash": 10594034428050373785,
+    "es": "Proporciona mensajes en español para orientar la interacción con el selector accesible."
+  },
+  "src/components/layout/TopNavigationBar/components/ActivityStreamToggle.jsx": {
+    "hash": 12537041010949354575,
+    "es": "Muestra un botón para abrir o cerrar el panel de actividad reciente, cargándolo de forma diferida."
+  },
+  "src/components/layout/TopNavigationBar/components/LeftSideBarToggle.jsx": {
+    "hash": 11583891583319711962,
+    "es": "Permite alternar el tamaño de la barra lateral y gestiona su comportamiento según la ruta."
+  },
+  "src/components/layout/TopNavigationBar/components/Notifications.jsx": {
+    "hash": 14484401792623917481,
+    "es": "Presenta un menú desplegable con las notificaciones y sus datos traducidos."
+  },
+  "src/components/layout/TopNavigationBar/components/ThemeCustomizerToggle.jsx": {
+    "hash": 13871372204255576486,
+    "es": "Muestra un botón para abrir o cerrar el personalizador de tema, cargado de forma diferida."
+  },
+  "src/components/layout/VerticalNavigationBar/components/AppMenu.jsx": {
+    "hash": 9258120621284126764,
+    "es": "Renderiza la navegación vertical y gestiona la apertura, activación y desplazamiento de sus menús."
+  },
+  "src/components/layout/VerticalNavigationBar/components/HoverMenuToggle.jsx": {
+    "hash": 9879617693081643141,
+    "es": "Alterna la barra lateral entre estados de navegación compacta y completa, y la oculta en pantallas estrechas."
+  },
+  "src/components/producto/attributes/AttributesAssignedList.jsx": {
+    "hash": 7154054470156945697,
+    "es": "Lista los atributos asignados a un producto y permite gestionar sus componentes y opciones."
+  },
+  "src/components/producto/attributes/AttributesSelectorCard.jsx": {
+    "hash": 3393202816479578649,
+    "es": "Permite seleccionar y asignar al producto atributos disponibles, o abrir el formulario para crear uno nuevo."
+  },
+  "src/components/producto/attributes/ModalComponente.jsx": {
+    "hash": 10187253598880278195,
+    "es": "Crea o edita un componente de atributo mediante un formulario y guarda sus datos."
+  },
+  "src/components/producto/attributes/ModalNuevoAtributo.jsx": {
+    "hash": 13229063926751645995,
+    "es": "Valida y crea un atributo nuevo con sus opciones y propiedades para el catálogo de productos."
+  },
+  "src/components/producto/gallery/GalleryImagesGrid.jsx": {
+    "hash": 9494342767029843214,
+    "es": "Muestra las imágenes de la galería de un producto y permite organizarlas, elegir la principal o eliminarlas."
+  },
+  "src/components/producto/general/GeneralCodeNameInputs.jsx": {
+    "hash": 13000146783895501541,
+    "es": "Muestra y actualiza el código interno, nombre y referencia comercial del producto, sincronizando esta última con sus referencias."
+  },
+  "src/components/producto/general/GeneralQuickModals.jsx": {
+    "hash": 14061386721244125580,
+    "es": "Muestra modales rápidos para crear categorías, subcategorías y marcas durante la edición de productos."
+  },
+  "src/components/producto/general/GeneralTaxonomyFields.jsx": {
+    "hash": 12950517035957326826,
+    "es": "Permite elegir la categoría, su subcategoría y la marca, y abrir formularios para crear opciones."
+  },
+  "src/components/producto/general/GeneralTaxonomyInputs.jsx": {
+    "hash": 8641078915803553372,
+    "es": "Muestra campos de categoría, subcategoría, marca y presentación, con subcategorías dependientes de la categoría seleccionada."
+  },
+  "src/components/producto/general/ProductRichTextEditor.jsx": {
+    "hash": 15248165991113350712,
+    "es": "Muestra un editor de texto enriquecido y localiza su interfaz y atributos de accesibilidad en español."
+  },
+  "src/components/producto/general/productQuillLocale.js": {
+    "hash": 1267586402865591199,
+    "es": "Asigna etiquetas y títulos en español a los controles y opciones de la interfaz de Quill."
+  },
+  "src/components/producto/general/productQuillLocale.test.js": {
+    "hash": 9761992707806622778,
+    "es": "Prueba la localización de la interfaz de Quill con dobles mínimos del DOM, para verificar su comportamiento en Node."
+  },
+  "src/components/producto/inventory/CodigosBarrasCard.jsx": {
+    "hash": 5658665143855213356,
+    "es": "Permite agregar, eliminar y definir códigos de barras principales en el formulario de inventario de un producto."
+  },
+  "src/components/producto/inventory/CodigosBarrasTable.jsx": {
+    "hash": 13583759384702633597,
+    "es": "Muestra los códigos de barras del producto y permite marcarlos como principales o eliminarlos con confirmación."
+  },
+  "src/components/producto/inventory/ModalNuevoProveedor.jsx": {
+    "hash": 10224819888938068583,
+    "es": "Muestra un formulario modal para validar y registrar nuevos proveedores."
+  },
+  "src/components/producto/inventory/ModalProveedorGeoFields.jsx": {
+    "hash": 6829875333051303533,
+    "es": "Carga departamentos y ciudades para seleccionar la ubicación geográfica del proveedor en el formulario."
+  },
+  "src/components/producto/inventory/ProveedoresCard.jsx": {
+    "hash": 10704316547485725972,
+    "es": "Permite asignar proveedores a un producto, definir el principal y gestionar su eliminación."
+  },
+  "src/components/producto/inventory/ProveedoresTable.jsx": {
+    "hash": 13038419029213015957,
+    "es": "Muestra los proveedores asociados a un producto y permite desvincularlos con confirmación."
+  },
+  "src/components/producto/inventory/ReferenciasCard.jsx": {
+    "hash": 3581003367424807181,
+    "es": "Administra las referencias de un producto, permite agregarlas y eliminarlas, y valida que no estén vacías ni duplicadas."
+  },
+  "src/components/producto/metadata/SeoInputsCard.jsx": {
+    "hash": 4026292529286654528,
+    "es": "Permite editar los campos SEO del producto y agregar o quitar palabras clave."
+  },
+  "src/components/producto/pricing/CostosCompraCard.jsx": {
+    "hash": 2798436187472484363,
+    "es": "Gestiona los costos de compra y sus impuestos, calcula los valores tributarios y presenta un resumen del costo final."
+  },
+  "src/components/producto/pricing/CostosCompraTaxesList.jsx": {
+    "hash": 4316812331885299430,
+    "es": "Lista y asigna impuestos de compra, permite editar sus valores fijos y gestionar su eliminación."
+  },
+  "src/components/producto/pricing/ListasPreciosCard.jsx": {
+    "hash": 15803695041112491315,
+    "es": "Gestiona las listas de precios del producto, calcula precios y coordina su creación, edición y eliminación."
+  },
+  "src/components/producto/pricing/ListasPreciosForm.jsx": {
+    "hash": 7911388066172305164,
+    "es": "Permite configurar una lista de precios y sus valores antes de agregarla al producto, o abrir la creación de una lista."
+  },
+  "src/components/producto/pricing/ListasPreciosTable.jsx": {
+    "hash": 4342580246207102826,
+    "es": "Muestra las listas de precios asignadas a un producto y permite editarlas, activarlas o eliminarlas con confirmación."
+  },
+  "src/components/producto/pricing/ModalEditarListaPrecio.jsx": {
+    "hash": 3983908834127378255,
+    "es": "Permite editar una lista de precios asignada y recalcula dinámicamente sus valores según los cambios."
+  },
+  "src/components/producto/pricing/ModalNuevaListaPrecio.jsx": {
+    "hash": 15191743827905163755,
+    "es": "Valida y crea una lista de precios nueva, evitando nombres duplicados."
+  },
+  "src/components/producto/pricing/PrecioFinalVentaInputs.jsx": {
+    "hash": 7206166025362470453,
+    "es": "Muestra y permite editar el margen y el precio final de venta de un producto, con opciones de redondeo comercial."
+  },
+  "src/components/producto/pricing/PreciosVentaCard.jsx": {
+    "hash": 13485487819838604297,
+    "es": "Gestiona los precios de venta y sus impuestos, calcula los valores tributarios y presenta un resumen del precio final."
+  },
+  "src/components/producto/pricing/PreciosVentaTaxesList.jsx": {
+    "hash": 4382251774496380528,
+    "es": "Lista y asigna impuestos de venta, permite editar sus valores fijos y gestionar su eliminación."
+  },
+  "src/components/producto/pricing/RetencionesCard.jsx": {
+    "hash": 1291174947868107978,
+    "es": "Administra las retenciones del producto y las aplica únicamente cuando el precio base alcanza el umbral requerido."
+  },
+  "src/components/producto/pricing/RetencionesTable.jsx": {
+    "hash": 6182004489392635999,
+    "es": "Muestra las retenciones fiscales del producto y permite eliminarlas con confirmación."
+  },
+  "src/components/producto/pricing/pricingCalculations.js": {
+    "hash": 16478955924968366590,
+    "es": "Reúne funciones para calcular impuestos, precios, costos, márgenes y redondeos comerciales."
+  },
+  "src/components/producto/pricing/pricingForm.test.js": {
+    "hash": 6579400762459808529,
+    "es": "Prueba el formulario de costos y precios, verificando sus campos y cálculos con un entorno React simulado."
+  },
+  "src/components/producto/pricing/roundingHelpers.js": {
+    "hash": 5677590508993709773,
+    "es": "Genera sugerencias de redondeo comercial y calcula precios ajustados a distintos intervalos en pesos colombianos."
+  },
+  "src/components/producto/productErrorMessage.js": {
+    "hash": 12323212139802742372,
+    "es": "Extrae mensajes de error en español para mostrarlos sin deducir causas a partir del código HTTP."
+  },
+  "src/components/producto/productLocale.test.js": {
+    "hash": 13761240577360320602,
+    "es": "Prueba la localización de Quill y las utilidades de productos mediante dobles del DOM y validaciones."
+  },
+  "src/components/producto/wizard/WizardNavigation.jsx": {
+    "hash": 15129453238465118801,
+    "es": "Proporciona controles para retroceder, avanzar o guardar el producto en el asistente paso a paso."
+  },
+  "src/components/producto/wizard/productValidation.js": {
+    "hash": 11389170378062768376,
+    "es": "Valida los campos del producto por pasos y en conjunto para prevenir datos incompletos o incompatibles con las restricciones de la base de datos."
+  },
+  "src/components/producto/wizard/productValidation.test.js": {
+    "hash": 1672823642734340336,
+    "es": "Prueba las validaciones de los pasos del formulario y de los datos completos de un producto."
+  },
+  "src/components/producto/wizard/useProductCatalogs.js": {
+    "hash": 3893680363370837873,
+    "es": "Carga los catálogos del producto y el siguiente código para estructurar los datos iniciales del formulario."
+  },
+  "src/components/producto/wizard/useProductSaveHandler.js": {
+    "hash": 6926756036560835492,
+    "es": "Carga productos existentes para editarlos y gestiona el envío, la validación y el reinicio del formulario de producto."
+  },
+  "src/components/wrappers/AppProvidersWrapper.jsx": {
+    "hash": 13555435166698261148,
+    "es": "Configura proveedores de contexto de la aplicación y adapta al español las etiquetas de las notificaciones y el título de página."
+  },
+  "src/context/useAuthContext.jsx": {
+    "hash": 11214580637326515890,
+    "es": "Proporciona el contexto de autenticación para consultar la sesión y gestionar su persistencia."
+  },
+  "src/context/useChatContext.jsx": {
+    "hash": 4993641368407312971,
+    "es": "Proporciona un contexto React para administrar el chat activo y los paneles de conversación, perfil, ajustes y llamadas."
+  },
+  "src/context/useEmailContext.jsx": {
+    "hash": 8848683313719596615,
+    "es": "Proporciona un contexto React para controlar la etiqueta y el correo activos, además de los paneles de navegación, detalles y redacción."
+  },
+  "src/context/useLayoutContext.jsx": {
+    "hash": 8221008009215569075,
+    "es": "Gestiona la configuración visual de la aplicación, permitiendo cambiar temas, menú y opciones de diseño."
+  },
+  "src/context/useNotificationContext.jsx": {
+    "hash": 7770804546242460548,
+    "es": "Proporciona notificaciones toast y métodos para mostrarlas y ocultarlas desde la aplicación."
+  },
+  "src/helpers/data.js": {
+    "hash": 3350868279793828647,
+    "es": "Proporciona datos de ejemplo y utilidades de acceso para las secciones de productos, ventas, redes sociales y otras áreas."
+  },
+  "src/helpers/httpClient.js": {
+    "hash": 18104629206399095795,
+    "es": "Centraliza las peticiones HTTP con Axios y gestiona la autenticación, las cookies y la protección CSRF."
+  },
+  "src/helpers/menu.js": {
+    "hash": 7123903970284734982,
+    "es": "Ofrece funciones para consultar elementos del menú y encontrar sus rutas y relaciones jerárquicas."
+  },
+  "src/helpers/product.js": {
+    "hash": 34569134781056435,
+    "es": "Calcula descuentos y precios de productos, y normaliza URLs de imágenes en distintos formatos."
+  },
+  "src/hooks/useClipboard.js": {
+    "hash": 12888584168178381447,
+    "es": "Proporciona un hook para copiar texto al portapapeles y consultar el último texto copiado."
+  },
+  "src/hooks/useFileUploader.js": {
+    "hash": 7907318964812182954,
+    "es": "Administra archivos seleccionados, genera vistas previas de imágenes y permite quitarlos de la selección."
+  },
+  "src/hooks/useLocalStorage.js": {
+    "hash": 15940281357479494703,
+    "es": "Proporciona un hook para leer, actualizar y sincronizar valores persistidos en localStorage."
+  },
+  "src/hooks/useModal.js": {
+    "hash": 14506681088591642736,
+    "es": "Gestiona el estado y la configuración de apertura de modales para ofrecer tamaños, clases CSS y desplazamiento personalizados."
+  },
+  "src/hooks/useRangeSlider.js": {
+    "hash": 6734306270298460996,
+    "es": "Mantiene los valores y rangos seleccionados de controles deslizantes para reflejar sus cambios en la interfaz."
+  },
+  "src/hooks/useScrollEvent.js": {
+    "hash": 11951522623917283444,
+    "es": "Proporciona un hook que registra la posición de desplazamiento, el progreso y la altura del documento."
+  },
+  "src/hooks/useViewPort.js": {
+    "hash": 15870537742112512318,
+    "es": "useViewPort devuelve el ancho y alto actuales de la ventana y los actualiza al cambiar su tamaño."
+  },
+  "src/pages/catalogo/components/CatalogoProductsTable.jsx": {
+    "hash": 13368757466083328736,
+    "es": "Construye y muestra la tabla del catálogo de productos con información, precios, existencias y acciones de gestión y sincronización."
+  },
+  "src/pages/catalogo/components/DeleteAllProductsBtn.jsx": {
+    "hash": 885066732419108889,
+    "es": "DeleteAllProductsBtn permite confirmar y ejecutar la eliminación de todos los productos, informando el resultado mediante callbacks."
+  },
+  "src/pages/catalogo/components/ProductoExcelActions.jsx": {
+    "hash": 18054911521392103142,
+    "es": "ProductoExcelActions ofrece descargar una plantilla, importar productos desde Excel y exportarlos, mostrando errores del proceso."
+  },
+  "src/pages/catalogo/components/SeedFerreteriBtn.jsx": {
+    "hash": 2895300669565695652,
+    "es": "SeedFerreteriBtn inicia la carga de productos de demostración de ferretería y notifica el resultado mediante callbacks."
+  },
+  "src/pages/catalogo/components/WhatsAppCatalogInfoBanner.jsx": {
+    "hash": 8462541852633809653,
+    "es": "WhatsAppCatalogInfoBanner muestra un aviso sobre la sincronización del catálogo de WhatsApp y permite ocultarlo permanentemente."
+  },
+  "src/pages/catalogo/crear-producto/components/AttributesComponentsForm.jsx": {
+    "hash": 13349937565245024289,
+    "es": "Permite asignar atributos y componentes a productos, editar sus propiedades y regenerar variantes desde el formulario."
+  },
+  "src/pages/catalogo/crear-producto/components/CreateProductForms.jsx": {
+    "hash": 7980818302475284967,
+    "es": "Coordina el asistente de creación y edición de productos, controlando pasos, validaciones, catálogos y guardado."
+  },
+  "src/pages/catalogo/crear-producto/components/FinishAndGalleryForm.jsx": {
+    "hash": 3806833586621964205,
+    "es": "Administra la galería del producto, optimizando imágenes y permitiendo añadirlas, ordenarlas, elegir la principal o eliminarlas."
+  },
+  "src/pages/catalogo/crear-producto/components/GeneralDetailsForm.jsx": {
+    "hash": 8708852788746548513,
+    "es": "Presenta el formulario de datos generales del producto y permite gestionar categorías, subcategorías y marcas."
+  },
+  "src/pages/catalogo/crear-producto/components/InventoryCodesForm.jsx": {
+    "hash": 12429672168786634089,
+    "es": "InventoryCodesForm reúne los campos de inventario, códigos, referencias, proveedores y variantes del formulario de producto."
+  },
+  "src/pages/catalogo/crear-producto/components/MetaDataForm.jsx": {
+    "hash": 16311394976030856284,
+    "es": "MetaDataForm presenta los campos SEO y metadatos del producto, e incluye una opción simulada para generar contenido con IA."
+  },
+  "src/pages/catalogo/crear-producto/components/PricingCostsForm.jsx": {
+    "hash": 5851816643966766624,
+    "es": "Gestiona costos, precios, impuestos, retenciones y listas de precios, sincronizando cálculos financieros del producto."
+  },
+  "src/pages/catalogo/crear-producto/components/productConstants.js": {
+    "hash": 16482221693364496218,
+    "es": "productConstants obtiene de productoService los catálogos maestros y el siguiente código oficial de producto."
+  },
+  "src/pages/catalogo/hooks/useProductoExcel.js": {
+    "hash": 15284491475710554211,
+    "es": "Gestiona la exportación, importación y previsualización de productos en Excel, incluyendo el seguimiento del progreso y los informes."
+  },
+  "src/pages/catalogo/page.jsx": {
+    "hash": 682282972996478901,
+    "es": "Muestra y gestiona el catálogo de productos, con búsqueda, sincronización y confirmación de eliminaciones."
+  },
+  "src/pages/catalogo/utils/productoExcel.js": {
+    "hash": 11604847352804198229,
+    "es": "Genera y descarga libros Excel de productos, y permite leer archivos importados."
+  },
+  "src/pages/catalogo/utils/productoExcel.test.js": {
+    "hash": 1916345279529942878,
+    "es": "Prueba la generación y lectura de plantillas Excel de productos, verificando columnas obligatorias, impuestos y datos importados."
+  },
+  "src/pages/catalogo/utils/productoExcelRelations.js": {
+    "hash": 7037784979040320674,
+    "es": "Valida y transforma las relaciones de productos para importar y exportar datos vinculados a catálogos."
+  },
+  "src/pages/catalogo/utils/productoExcelRelations.test.js": {
+    "hash": 2733421336216920811,
+    "es": "Prueba la importación de productos y sus relaciones con impuestos, proveedores y listas de precios."
+  },
+  "src/pages/chat/components/ChatInputBar.jsx": {
+    "hash": 2640846033054076295,
+    "es": "Presenta la barra para redactar y enviar mensajes en chats, con plantillas rápidas y restricciones según el modo y la ventana de servicio."
+  },
+  "src/pages/chat/components/ChatSendCatalogModal.jsx": {
+    "hash": 6171594560292992340,
+    "es": "Permite elegir y enviar productos o categorías del catálogo al chat activo, mostrando el estado de carga y posibles errores."
+  },
+  "src/pages/chat/components/ChatSendCollectionModal.jsx": {
+    "hash": 15436107158627933429,
+    "es": "Permite elegir una colección de Meta y enviarla al chat activo como mensaje."
+  },
+  "src/pages/chat/page.jsx": {
+    "hash": 2084203962486781424,
+    "es": "Muestra el chat, administra conversaciones y mensajes, y permite alternar el modo y enviar catálogos."
+  },
+  "src/pages/chat/page.test.js": {
+    "hash": 6424257382775733312,
+    "es": "Prueba la interfaz del chat en un entorno DOM simulado, verificando interacciones y cambios de modo."
+  },
+  "src/pages/clientes/components/ClientesMetricsCards.jsx": {
+    "hash": 11692496381450039442,
+    "es": "Muestra tarjetas con métricas de clientes, pedidos, ventas por WhatsApp y georreferenciación."
+  },
+  "src/pages/clientes/components/ClientesTable.jsx": {
+    "hash": 10472600045345396201,
+    "es": "Muestra clientes en una tabla con sus datos, ubicación, compras y acciones para abrir el chat o consultar detalles."
+  },
+  "src/pages/clientes/components/ClientesTable.test.js": {
+    "hash": 13185129256155332978,
+    "es": "Verifica que la tabla de clientes renderice encabezados, datos de contacto y coordenadas."
+  },
+  "src/pages/clientes/components/ModalNuevoCliente.jsx": {
+    "hash": 764193146162568484,
+    "es": "Presenta un formulario modal para crear clientes, gestionar sus datos y ubicación, validar documentos y guardar la información."
+  },
+  "src/pages/clientes/page.jsx": {
+    "hash": 16419764810798173834,
+    "es": "Presenta métricas y clientes, y permite buscar, consultar detalles y crear registros."
+  },
+  "src/pages/configuracion/components/CategoriasConfigTab.jsx": {
+    "hash": 11197245657419617102,
+    "es": "Permite buscar, crear, editar, activar, desactivar y eliminar categorías desde la configuración."
+  },
+  "src/pages/configuracion/components/ConsecutivosConfigTab.jsx": {
+    "hash": 341683758571547815,
+    "es": "Permite consultar, previsualizar y guardar la configuración de consecutivos de la empresa."
+  },
+  "src/pages/configuracion/components/EmpresaConfigTab.jsx": {
+    "hash": 16390305934939140766,
+    "es": "Carga y actualiza el perfil de la empresa, y ofrece un formulario para guardar su configuración."
+  },
+  "src/pages/configuracion/components/GeoConfigTab.jsx": {
+    "hash": 3051023130164882426,
+    "es": "Permite seleccionar departamentos, consultar sus ciudades y crear nuevos departamentos y ciudades."
+  },
+  "src/pages/configuracion/components/ImpuestosConfigTab.jsx": {
+    "hash": 18259707667529906454,
+    "es": "Permite buscar, crear, editar y cambiar el estado de los impuestos de la configuración."
+  },
+  "src/pages/configuracion/components/ImpuestosConfigTab.test.js": {
+    "hash": 1828790307349376942,
+    "es": "Prueba que la pestaña de configuración de impuestos renderice y responda a cambios en sus controles."
+  },
+  "src/pages/configuracion/components/LimpiezaDatosTab.jsx": {
+    "hash": 15665109445566357643,
+    "es": "Muestra un resumen de datos y permite seleccionar, confirmar y ejecutar su eliminación."
+  },
+  "src/pages/configuracion/components/ListasPreciosConfigTab.jsx": {
+    "hash": 14796846975642007079,
+    "es": "Muestra y administra listas de precios mediante búsqueda, creación, edición y cambio de estado para configurar el catálogo."
+  },
+  "src/pages/configuracion/components/MarcasConfigTab.jsx": {
+    "hash": 1791994491873375287,
+    "es": "Muestra y administra marcas mediante búsqueda, creación, edición y cambio de estado para configurar el catálogo."
+  },
+  "src/pages/configuracion/components/ModalEditarNombre.jsx": {
+    "hash": 11959263763609539588,
+    "es": "Permite renombrar elementos de catálogos mediante un modal con validación y confirmación."
+  },
+  "src/pages/configuracion/page.jsx": {
+    "hash": 16400419085291264713,
+    "es": "Administra la configuración de la empresa y sus catálogos mediante pestañas, coordinando la carga y confirmación de eliminaciones."
+  },
+  "src/pages/configuracion/useConfiguracion.js": {
+    "hash": 4102499661519535999,
+    "es": "Gestiona el estado, la navegación y las acciones de configuración de categorías, marcas, listas de precios e impuestos."
+  },
+  "src/pages/dashboard/analytics/components/Conversions.jsx": {
+    "hash": 9135583025954336634,
+    "es": "Presenta métricas de automatización de WhatsApp y gráficos de conversaciones, mensajes y pedidos."
+  },
+  "src/pages/dashboard/analytics/components/SessionsByCountry.jsx": {
+    "hash": 12023305538601488390,
+    "es": "Muestra pedidos recientes y cobertura de entregas por zona, con estados visuales y mensajes para datos vacíos."
+  },
+  "src/pages/dashboard/analytics/components/Stats.jsx": {
+    "hash": 17640065441575282586,
+    "es": "Presenta tarjetas KPI con valores e iconos para resumir las métricas del panel de analítica."
+  },
+  "src/pages/dashboard/analytics/useDashboard.js": {
+    "hash": 14688013595883445413,
+    "es": "Consulta y adapta los datos del panel de inicio, formateando cifras y montos para los componentes de métricas."
+  },
+  "src/pages/dashboard/finance/components/ExpensesChart.jsx": {
+    "hash": 634383453097996489,
+    "es": "Presenta un gráfico comparativo de gastos por mes y año con formato localizado."
+  },
+  "src/pages/dashboard/finance/components/RevenueChart.jsx": {
+    "hash": 1212988947104979934,
+    "es": "Presenta un gráfico de ingresos y gastos con series temporales y formato localizado."
+  },
+  "src/pages/dashboard/finance/components/RevenueSources.jsx": {
+    "hash": 1036079000641922860,
+    "es": "Visualiza las fuentes de ingresos en un gráfico y una tabla para consultar su distribución."
+  },
+  "src/pages/dashboard/finance/components/Stats.jsx": {
+    "hash": 13518639205603402452,
+    "es": "Muestra tarjetas con indicadores financieros, variaciones e iconos para resumir el desempeño."
+  },
+  "src/pages/dashboard/finance/components/Transactions.jsx": {
+    "hash": 7927528596837447251,
+    "es": "Obtiene y presenta las transacciones en una tabla para revisar sus datos y estados."
+  },
+  "src/pages/dashboard/sales/components/OverviewChart.jsx": {
+    "hash": 13191590800826720180,
+    "es": "Presenta un gráfico de ingresos y pedidos para resumir su evolución."
+  },
+  "src/pages/dashboard/sales/components/RecentOrders.jsx": {
+    "hash": 4309015253531227830,
+    "es": "Obtiene y muestra los pedidos recientes para consultar sus fechas, estados y métodos de pago."
+  },
+  "src/pages/dashboard/spanishPresentation.js": {
+    "hash": 18342877403782329295,
+    "es": "Define la configuración regional es-CO de ApexCharts y funciones para formatear números, fechas y etiquetas de estados y métodos de pago."
+  },
+  "src/pages/inventario/page.jsx": {
+    "hash": 18223687075484560881,
+    "es": "Gestiona la vista de inventario: carga productos e indicadores, permite buscar y filtrar existencias, ajustar stock y exportar datos."
+  },
+  "src/pages/pedidos/components/PedidoActionsMenu.jsx": {
+    "hash": 882542102114242809,
+    "es": "Muestra un menú contextual para pedidos que permite actualizar estados, notificar despachos y exportar información."
+  },
+  "src/pages/pedidos/usePedidos.js": {
+    "hash": 4635660127693310423,
+    "es": "Orquesta la gestión de pedidos, incluyendo consulta, filtros, notificaciones, navegación y exportación a PDF o Excel."
+  },
+  "src/pages/pedidos/utils/pedidoExcel.js": {
+    "hash": 9072918657964123543,
+    "es": "Genera y descarga archivos Excel de pedidos con estilos, datos, artículos y totales para facilitar su presentación y análisis."
+  },
+  "src/pages/pedidos/utils/pedidoFormato.js": {
+    "hash": 7115700660588962585,
+    "es": "Proporciona constantes y funciones de formato compartidas para exportar pedidos a PDF y Excel."
+  },
+  "src/services/clienteService.js": {
+    "hash": 12096736410097064633,
+    "es": "Consulta y gestiona clientes mediante la API, incluidos listados, métricas, detalles y modificaciones."
+  },
+  "src/services/inventarioService.js": {
+    "hash": 17306495210817476287,
+    "es": "Consulta inventario y sus indicadores, y permite ajustar existencias mediante la API."
+  },
+  "src/services/pedidoService.js": {
+    "hash": 7476840877059220064,
+    "es": "Centraliza las solicitudes a la API de pedidos para consultar listas, indicadores y detalles, y actualizar estados."
+  },
+  "src/services/productoService.js": {
+    "hash": 13337444882348942521,
+    "es": "Centraliza las llamadas HTTP al backend para gestionar productos, catálogos, configuraciones y datos geográficos."
+  },
+  "src/test-utils/viteSsr.js": {
+    "hash": 14155654162416481058,
+    "es": "Crea un cargador SSR de Vite para importar módulos del proyecto en pruebas y cerrar el servidor al terminar."
+  },
+  "src/utils/change-casing.js": {
+    "hash": 6600867206676367095,
+    "es": "Ofrece funciones para convertir texto entre formatos de mayúsculas y abreviar números grandes."
+  },
+  "src/utils/date.js": {
+    "hash": 14330136866830461204,
+    "es": "Calcula fechas sumando o restando días y minutos, y expresa cuánto tiempo ha transcurrido desde una fecha."
+  },
+  "src/utils/geo.js": {
+    "hash": 1108086778836856976,
+    "es": "Valida y formatea coordenadas y direcciones de clientes, y genera enlaces de Google Maps para consultar sus ubicaciones."
+  },
+  "src/utils/get-icons.js": {
+    "hash": 2165688407773084197,
+    "es": "Asigna iconos según la extensión de un archivo y el tipo de actividad o evento."
+  },
+  "src/utils/imageOptimizer.js": {
+    "hash": 6213769786791584779,
+    "es": "Recorta y comprime imágenes para adaptarlas a los requisitos de publicación en Meta y WhatsApp Commerce."
+  },
+  "src/utils/imageOptimizer.test.js": {
+    "hash": 11760362444295168483,
+    "es": "Prueba la optimización de imágenes con un DOM simulado y verifica la generación, el tamaño y la liberación de blobs."
+  },
+  "src/utils/layout.test.js": {
+    "hash": 15256941391681906667,
+    "es": "Prueba el cambio de atributos del documento usando un documento simulado en Node.js."
+  },
+  "src/utils/other.js": {
+    "hash": 5131116840468726310,
+    "es": "Determina variantes de estado para existencias y calificaciones, y convierte tamaños de archivo a unidades legibles."
+  }
+}

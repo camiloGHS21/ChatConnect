@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
+import { RetencionRepository } from './retencion.repository.js';
 import {
   ImpuestoModel,
   DepartamentoModel,
@@ -26,6 +27,7 @@ export class CatalogoConfigRepository {
     private readonly ciudadRepo: Repository<CiudadModel>,
 
     private readonly dataSource: DataSource,
+    private readonly retencionRepo: RetencionRepository,
   ) { }
 
   /**
@@ -96,8 +98,9 @@ export class CatalogoConfigRepository {
    */
   async getCatalogosConfiguracion(empresaId = 1) {
     try {
+      await this.retencionRepo.asegurarPorDefecto(empresaId);
       await this.asegurarConfiguracionDianPorDefecto(empresaId);
-      const [categoriasRaw, marcasRaw, listasPreciosRaw, impuestos, departamentos, ciudades] = await Promise.all([
+      const [categoriasRaw, marcasRaw, listasPreciosRaw, impuestos, departamentos, ciudades, retenciones] = await Promise.all([
         this.dataSource.query(
           `SELECT c.id_categoria AS id, c.nombre, c.estado,
                   COUNT(p.id_producto)::int AS total_productos
@@ -131,9 +134,11 @@ export class CatalogoConfigRepository {
         this.impuestoRepo.find({ where: { empresaId }, order: { nombre: 'ASC' } }),
         this.departamentoRepo.find({ where: { estado: 'activo' }, order: { nombre: 'ASC' } }),
         this.ciudadRepo.find({ where: { estado: 'activo' }, order: { nombre: 'ASC' } }),
+        this.retencionRepo.listar(empresaId),
       ]);
 
       return {
+        retenciones,
         categorias: categoriasRaw.map((c: any) => ({
           id: Number(c.id),
           nombre: c.nombre,

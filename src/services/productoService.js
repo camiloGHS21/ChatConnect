@@ -214,6 +214,14 @@ export const productoService = {
   },
 
   /**
+   * Persiste el estado de una retención del catálogo de referencia.
+   */
+  async actualizarRetencion(id, datos, empresaId = 1) {
+    const res = await HttpClient.patch(`/productos/configuraciones/retenciones/${id}?empresa_id=${empresaId}`, datos);
+    return res.data;
+  },
+
+  /**
    * Obtiene el catálogo de departamentos.
    */
   async getDepartamentos() {

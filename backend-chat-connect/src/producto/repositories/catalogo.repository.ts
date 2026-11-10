@@ -17,6 +17,7 @@ import {
   AtributoComponenteModel,
 } from '../models/producto.model.js';
 import { CatalogoConfigRepository } from './catalogo-config.repository.js';
+import { RetencionRepository } from './retencion.repository.js';
 
 @Injectable()
 export class CatalogoRepository {
@@ -46,6 +47,7 @@ export class CatalogoRepository {
 
     private readonly dataSource: DataSource,
     private readonly catalogoConfigRepo: CatalogoConfigRepository,
+    private readonly retencionRepo: RetencionRepository,
   ) { }
 
   /**
@@ -61,6 +63,7 @@ export class CatalogoRepository {
    */
   async getCatalogos(empresaId = 1) {
     try {
+      await this.retencionRepo.asegurarPorDefecto(empresaId);
       await this.asegurarConfiguracionDianPorDefecto(empresaId);
       const [
         categorias,
@@ -82,10 +85,7 @@ export class CatalogoRepository {
         this.listaPrecioRepo.find({ where: { empresaId, estado: 'activo' }, order: { id: 'ASC' } }),
         this.atributoRepo.find({ where: { empresaId, estado: 'activo' }, order: { nombre: 'ASC' } }),
         this.componenteRepo.find({ where: { empresaId, estado: 'activo' }, order: { orden: 'ASC', nombre: 'ASC' } }),
-        this.dataSource.query(
-          `SELECT id_retencion AS id, nombre FROM public.retencion WHERE empresa_id = $1 AND estado = 'activo' ORDER BY nombre`,
-          [empresaId],
-        ),
+        this.retencionRepo.listar(empresaId, true),
         this.dataSource.query(
           `SELECT id_tipo_inventario AS id, nombre, descripcion FROM public.tipo_inventario WHERE empresa_id = $1 AND estado = 'activo' ORDER BY nombre`,
           [empresaId],

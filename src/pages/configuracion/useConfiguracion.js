@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import productoService from '@/services/productoService';
+import { useRetencionesConfig } from './useRetencionesConfig';
 
 const TAB_TO_MENU = {
   empresa: 'empresa',
@@ -9,6 +10,7 @@ const TAB_TO_MENU = {
   marcas: 'inventario',
   listas: 'precios',
   impuestos: 'precios',
+  retenciones: 'precios',
   geo: 'geo',
   ciudades: 'geo',
   limpieza: 'limpieza',
@@ -69,9 +71,11 @@ export const useConfiguracion = () => {
     marcas: [],
     listasPrecios: [],
     impuestos: [],
+    retenciones: [],
     departamentos: [],
     ciudades: [],
   });
+  const retencionesConfig = useRetencionesConfig({ retenciones: catalogs.retenciones, setCatalogs });
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [notification, setNotification] = useState({ type: '', message: '' });
@@ -281,6 +285,7 @@ export const useConfiguracion = () => {
     handleSelectMenu,
     handleSelectTab,
     catalogs,
+    retencionesConfig,
     loading,
     actionLoading,
     notification,

@@ -7,6 +7,7 @@ import {
 import { DataSource } from 'typeorm';
 import { UpdateProductoDto } from '../dto/update-producto.dto.js';
 import { resolverUrlPublicaImagen } from './image-upload.helper.js';
+import { resolverRetencionProducto } from './producto-retencion.helper.js';
 import { MetaCatalogRepository } from './meta-catalog.repository.js';
 import { ProductoQueryRepository } from './producto-query.repository.js';
 
@@ -184,26 +185,31 @@ export class ProductoUpdateRepository {
         }
       }
 
-      // 6. Retenciones (base >= 500.000 COP)
+      // 6. Asignación de catálogo; las condiciones tributarias se evalúan en la operación.
       if (dto.retenciones !== undefined) {
+        const previas: { retencion_id: string | number }[] = await queryRunner.query(
+          `SELECT pr.retencion_id FROM public.producto_retencion pr
+           JOIN public.producto p ON p.id_producto = pr.producto_id
+           WHERE pr.producto_id = $1 AND p.empresa_id = $2 AND pr.estado = 'activo';`,
+          [productoId, empresaId],
+        );
+        const idsPrevios = new Set(previas.map(ret => Number(ret.retencion_id)));
         await queryRunner.query(`DELETE FROM public.producto_retencion WHERE producto_id = $1;`, [productoId]);
-        const baseRet = Math.max(precioBase, precioImpuesto, costoBase);
-        if (baseRet >= 500000) {
-          for (const ret of dto.retenciones) {
-            if (ret.retencion_id) {
-              await queryRunner.query(
-                `INSERT INTO public.producto_retencion (producto_id, retencion_id, tipo, porcentaje, valor_fijo, estado)
-                 VALUES ($1, $2, $3, $4, $5, 'activo') ON CONFLICT DO NOTHING;`,
-                [
-                  productoId,
-                  Number(ret.retencion_id),
-                  ret.tipo || 'PORCENTAJE',
-                  ret.tipo === 'PORCENTAJE' ? Number(ret.porcentaje) || 0 : null,
-                  ret.tipo === 'VALOR_FIJO' ? Number(ret.valor_fijo) || 0 : null,
-                ],
-              );
-            }
-          }
+        for (const ret of dto.retenciones) {
+          const retencion = await resolverRetencionProducto(
+            queryRunner, ret, empresaId, idsPrevios.has(Number(ret.retencion_id)),
+          );
+          await queryRunner.query(
+            `INSERT INTO public.producto_retencion (producto_id, retencion_id, tipo, porcentaje, valor_fijo, estado)
+             VALUES ($1, $2, $3, $4, $5, 'activo') ON CONFLICT DO NOTHING;`,
+            [
+              productoId,
+              retencion.retencion_id,
+              retencion.tipo,
+              retencion.porcentaje,
+              retencion.valor_fijo,
+            ],
+          );
         }
       }
 

@@ -9,6 +9,7 @@ import CategoriasConfigTab from './components/CategoriasConfigTab';
 import MarcasConfigTab from './components/MarcasConfigTab';
 import ListasPreciosConfigTab from './components/ListasPreciosConfigTab';
 import ImpuestosConfigTab from './components/ImpuestosConfigTab';
+import RetencionesConfigTab from './components/RetencionesConfigTab';
 import GeoConfigTab from './components/GeoConfigTab';
 import LimpiezaDatosTab from './components/LimpiezaDatosTab';
 import EmpresaConfigTab from './components/EmpresaConfigTab';
@@ -44,6 +45,7 @@ const SECTION_CONFIG = {
     tabs: [
       { key: 'listas', label: 'Listas de Precios', icon: 'bx:list-ul', countKey: 'listasPrecios' },
       { key: 'impuestos', label: 'Impuestos y Tasas', icon: 'bx:receipt', countKey: 'impuestos' },
+      { key: 'retenciones', label: 'Retenciones', icon: 'bx:calculator', countKey: 'retenciones' },
     ],
   },
   geo: {
@@ -68,6 +70,7 @@ const ConfiguracionPage = () => {
     activeTab,
     handleSelectTab,
     catalogs,
+    retencionesConfig,
     loading,
     actionLoading,
     notification,
@@ -196,6 +199,9 @@ const ConfiguracionPage = () => {
               onUpdateImpuesto={handleUpdateImpuesto}
               loading={actionLoading}
             />
+          )}
+          {activeMenu === 'precios' && activeTab === 'retenciones' && (
+            <RetencionesConfigTab {...retencionesConfig} />
           )}
           {activeMenu === 'geo' && (
             <GeoConfigTab

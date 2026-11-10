@@ -6,6 +6,7 @@ import {
 import { DataSource } from 'typeorm';
 import { CreateProductoDto } from '../dto/create-producto.dto.js';
 import { resolverUrlPublicaImagen } from './image-upload.helper.js';
+import { resolverRetencionProducto } from './producto-retencion.helper.js';
 import { MetaCatalogRepository } from './meta-catalog.repository.js';
 
 @Injectable()
@@ -158,29 +159,23 @@ export class ProductoCreateRepository {
         }
       }
 
-      // 5. Retenciones (base >= 500.000 COP)
-      const baseRetencionCrear = Math.max(
-        Number(dto.precio_base || 0),
-        Number(dto.precio_impuesto || 0),
-        Number(dto.costo_base || 0),
-      );
-      if (baseRetencionCrear >= 500000 && dto.retenciones && dto.retenciones.length > 0) {
+      // 5. Asignación de catálogo; las condiciones tributarias se evalúan en la operación.
+      if (dto.retenciones && dto.retenciones.length > 0) {
         for (const ret of dto.retenciones) {
-          if (ret.retencion_id) {
-            await queryRunner.query(
-              `INSERT INTO public.producto_retencion (
-                 producto_id, retencion_id, tipo, porcentaje, valor_fijo, estado
-               ) VALUES ($1, $2, $3, $4, $5, 'activo')
-               ON CONFLICT (producto_id, retencion_id) DO NOTHING;`,
-              [
-                productoId,
-                Number(ret.retencion_id),
-                ret.tipo || 'PORCENTAJE',
-                ret.tipo === 'PORCENTAJE' ? Number(ret.porcentaje) || 0 : null,
-                ret.tipo === 'VALOR_FIJO' ? Number(ret.valor_fijo) || 0 : null,
-              ],
-            );
-          }
+          const retencion = await resolverRetencionProducto(queryRunner, ret, empresaId);
+          await queryRunner.query(
+            `INSERT INTO public.producto_retencion (
+               producto_id, retencion_id, tipo, porcentaje, valor_fijo, estado
+             ) VALUES ($1, $2, $3, $4, $5, 'activo')
+             ON CONFLICT (producto_id, retencion_id) DO NOTHING;`,
+            [
+              productoId,
+              retencion.retencion_id,
+              retencion.tipo,
+              retencion.porcentaje,
+              retencion.valor_fijo,
+            ],
+          );
         }
       }
 

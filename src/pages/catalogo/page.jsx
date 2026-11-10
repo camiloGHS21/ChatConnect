@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
+import ProductoExcelActions from './components/ProductoExcelActions';
 import { Card, CardBody, Col, Row, Spinner, Alert } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import PageBreadcrumb from '@/components/layout/PageBreadcrumb';
@@ -8,7 +9,6 @@ import DeleteConfirmationModal from '@/components/DeleteConfirmationModal';
 import FullPageLoader from '@/components/FullPageLoader';
 import productoService from '@/services/productoService';
 import CatalogoProductsTable from './components/CatalogoProductsTable';
-import SeedFerreteriBtn from './components/SeedFerreteriBtn';
 import DeleteAllProductsBtn from './components/DeleteAllProductsBtn';
 import WhatsAppCatalogInfoBanner from './components/WhatsAppCatalogInfoBanner';
 
@@ -20,7 +20,6 @@ const CatalogoPage = () => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isDeletingAll, setIsDeletingAll] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
-  const [isSeeding, setIsSeeding] = useState(false);
   const [feedback, setFeedback] = useState(null);
 
   const fetchCatalogData = useCallback(async (signal) => {
@@ -78,9 +77,8 @@ const CatalogoPage = () => {
 
   return (
     <>
-      <FullPageLoader show={isDeleting || isSyncing || isSeeding || isDeletingAll}
-        title={isSeeding ? 'Sincronizando...' : isDeletingAll ? 'Vaciando...' : 'Procesando...'}
-        message={isSeeding ? 'Cargando productos de demostración en PostgreSQL y Meta...' : ''} badge="PostgreSQL" />
+      <FullPageLoader show={isDeleting || isSyncing || isDeletingAll}
+        title={isDeletingAll ? 'Vaciando...' : 'Procesando...'} badge="PostgreSQL" />
       <PageMetaData title="Productos - Catálogo" />
       <PageBreadcrumb title="Catálogo de Productos" subName="Meta Commerce y WhatsApp" />
 
@@ -98,13 +96,11 @@ const CatalogoPage = () => {
             <input type="search" className="form-control" placeholder="Buscar producto..."
               value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
           </div>
-          <div className="d-flex gap-2">
+          <div className="d-flex flex-wrap align-items-center gap-2">
             <DeleteAllProductsBtn disabled={productsList.length === 0} onLoadingChange={setIsDeletingAll}
               onComplete={(res) => { fetchCatalogData(); setFeedback({ type: 'success', text: res.message }); }}
               onError={(msg) => setFeedback({ type: 'danger', text: msg })} />
-            <SeedFerreteriBtn onLoadingChange={setIsSeeding}
-              onComplete={(res) => { fetchCatalogData(); setFeedback({ type: 'success', text: res.message }); }}
-              onError={(msg) => setFeedback({ type: 'danger', text: msg })} />
+            <ProductoExcelActions onImported={fetchCatalogData} />
             <Link to="/catalogo/crear-producto" className="btn btn-primary d-flex align-items-center">
               <IconifyIcon icon="bx:plus" className="me-1" /> Crear Producto
             </Link>

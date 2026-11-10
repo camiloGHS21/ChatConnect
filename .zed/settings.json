@@ -1,0 +1,16 @@
+{
+  "languages": {
+    "JavaScript": {
+      "language_servers": ["vtsls", "!typescript-language-server", "!eslint", "!tailwindcss-language-server", "..."]
+    },
+    "JSX": {
+      "language_servers": ["vtsls", "!typescript-language-server", "!eslint", "!tailwindcss-language-server", "..."]
+    },
+    "TypeScript": {
+      "language_servers": ["vtsls", "!typescript-language-server", "!eslint", "!tailwindcss-language-server", "..."]
+    },
+    "TSX": {
+      "language_servers": ["vtsls", "!typescript-language-server", "!eslint", "!tailwindcss-language-server", "..."]
+    }
+  }
+}
